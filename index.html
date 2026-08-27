@@ -959,7 +959,6 @@ body.has-glow .glow{opacity:1}
           <p>Hosting, SSL, backups, monitoring, and upkeep, quietly managed by BlinkLoop in the background. You focus on the business, we keep the site alive and well.</p>
           <div class="cta-row">
             <a class="btn btn-primary" href="hosting.html">View hosting plans <span class="arrow" aria-hidden="true">&rarr;</span></a>
-            <a class="btn btn-ghost" href="#start">Talk to BlinkLoop</a>
           </div>
         </div>
         <div class="tier-pills" aria-label="Plan overview">
@@ -991,8 +990,7 @@ body.has-glow .glow{opacity:1}
         <h2>Your next big idea is one blink away.</h2>
         <p>Stop letting sparks fade in notebooks and forgotten tabs. Start a loop, invite your people, and watch momentum take over.</p>
         <div class="cta-row" style="justify-content:center">
-          <a class="btn btn-primary" href="#top">Start your loop <span class="arrow" aria-hidden="true">→</span></a>
-          <a class="btn btn-ghost" href="#how">See how it works</a>
+          <a class="btn btn-primary" href="hosting.html">Start your loop <span class="arrow" aria-hidden="true">→</span></a>
         </div>
       </div>
     </div>
@@ -1257,7 +1255,7 @@ body.has-glow .glow{opacity:1}
     var whisper = document.createElement('div');
     whisper.className = 'whisper'; whisper.setAttribute('aria-hidden','true');
     document.body.appendChild(whisper);
-    var wTargets = Array.prototype.slice.call(document.querySelectorAll('.btn-primary, .nav-cta, .plan .btn, .tp'));
+    var wTargets = Array.prototype.slice.call(document.querySelectorAll('.btn-primary, .plan .btn'));
     var wActive = null, wIdx = -1, wHover = false;
     window.addEventListener('pointermove', function(e){
       var best = null, bestD = 1e9;

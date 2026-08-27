@@ -818,9 +818,6 @@ body.has-glow .glow{opacity:1}
         </article>
       </div>
 
-      <div class="host-cta reveal">
-        <a class="btn btn-ghost" href="#start">Talk to BlinkLoop</a>
-      </div>
     </div>
   </section>
 
@@ -1099,7 +1096,7 @@ body.has-glow .glow{opacity:1}
     var whisper = document.createElement('div');
     whisper.className = 'whisper'; whisper.setAttribute('aria-hidden','true');
     document.body.appendChild(whisper);
-    var wTargets = Array.prototype.slice.call(document.querySelectorAll('.btn-primary, .nav-cta, .plan .btn, .tp'));
+    var wTargets = Array.prototype.slice.call(document.querySelectorAll('.btn-primary, .plan .btn'));
     var wActive = null, wIdx = -1, wHover = false;
     window.addEventListener('pointermove', function(e){
       var best = null, bestD = 1e9;
