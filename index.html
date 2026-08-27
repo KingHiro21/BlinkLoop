@@ -89,7 +89,12 @@ header.scrolled{
 .brand-word-sm{height:20px}
 .brand .lp{color:var(--rust)}
 .nav-links{display:flex;align-items:center;gap:34px;font-size:.92rem;color:var(--muted)}
-.nav-links a{transition:color .25s}
+.nav-links a{transition:color .25s;position:relative}
+.nav-links a.active:not(.nav-cta){color:var(--ink)}
+.nav-links a.active:not(.nav-cta)::after{
+  content:"";position:absolute;left:50%;bottom:-9px;width:5px;height:5px;border-radius:50%;
+  background:var(--rust);transform:translateX(-50%);box-shadow:0 0 8px rgba(210,90,40,.5);
+}
 .nav-links a:hover{color:var(--ink)}
 .nav-cta{
   padding:10px 22px;border-radius:999px;background:var(--rust);color:#FFF7EC;
@@ -127,6 +132,7 @@ header.scrolled{
 .hero p.lede{font-size:1.12rem;color:var(--muted);max-width:34rem;margin-bottom:38px}
 .cta-row{display:flex;gap:16px;flex-wrap:wrap}
 .btn{
+  position:relative;overflow:hidden;
   display:inline-flex;align-items:center;gap:10px;
   padding:16px 32px;border-radius:999px;font-weight:600;font-size:.98rem;
   transition:translate .35s var(--ease), scale .35s var(--ease), transform .25s var(--ease), box-shadow .35s var(--ease), background .3s;
@@ -134,6 +140,12 @@ header.scrolled{
 }
 .btn-primary{background:linear-gradient(120deg,var(--rust-deep),var(--rust) 55%,#E8813A);color:#FFF7EC;box-shadow:0 6px 24px rgba(193,71,32,.32)}
 .btn-primary:hover{translate:0 -3px;scale:1.02;box-shadow:0 14px 40px rgba(193,71,32,.42)}
+.btn-primary::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(110deg,transparent 32%,rgba(255,255,255,.38) 50%,transparent 68%);
+  transform:translateX(-130%);transition:transform .7s var(--ease);
+}
+.btn-primary:hover::after{transform:translateX(130%)}
 .btn-primary .arrow{transition:transform .3s var(--ease)}
 .btn-primary:hover .arrow{transform:translateX(4px)}
 .btn-ghost{border:1px solid var(--line);background:var(--glass);color:var(--ink)}
@@ -202,14 +214,23 @@ section{padding:120px 0;position:relative}
 .sec-head p{color:var(--muted);font-size:1.05rem}
 
 /* reveal */
-.reveal{opacity:0;transform:translateY(34px);transition:opacity .9s var(--ease), transform .9s var(--ease)}
-.reveal.in{opacity:1;transform:none}
+.reveal{opacity:0;transform:translateY(34px);filter:blur(10px);transition:opacity .95s var(--ease), transform .95s var(--ease), filter .95s var(--ease)}
+.reveal-l{transform:translate(-48px,18px)}
+.reveal-r{transform:translate(48px,18px)}
+.reveal.in{opacity:1;transform:none;filter:blur(0)}
 .reveal[data-delay="1"]{transition-delay:.12s}
 .reveal[data-delay="2"]{transition-delay:.24s}
 .reveal[data-delay="3"]{transition-delay:.36s}
 
 /* ---------- how it works ---------- */
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;position:relative}
+.steps::before{
+  content:"";position:absolute;left:4%;right:4%;top:94px;height:2px;z-index:-1;
+  background:repeating-linear-gradient(90deg,var(--rust) 0 10px,transparent 10px 20px);
+  opacity:.5;transform:scaleX(0);transform-origin:left;
+  transition:transform 1.4s var(--ease) .2s;
+}
+.steps.in::before{transform:scaleX(1)}
 .step{
   position:relative;padding:38px 32px;border-radius:var(--r-lg);
   background:var(--glass);border:1px solid var(--line);
@@ -291,6 +312,13 @@ section{padding:120px 0;position:relative}
   transition:border-color .3s, color .3s, transform .3s var(--ease), background .3s;
 }
 .chip:hover{border-color:var(--vc);color:var(--ink);transform:translateY(-2px);background:color-mix(in srgb, var(--vc) 10%, transparent)}
+.svc .chip{opacity:0;translate:0 10px}
+.svc.in .chip{animation:chipIn .55s var(--ease) forwards}
+.svc.in .chip:nth-child(1){animation-delay:.25s}
+.svc.in .chip:nth-child(2){animation-delay:.35s}
+.svc.in .chip:nth-child(3){animation-delay:.45s}
+.svc.in .chip:nth-child(4){animation-delay:.55s}
+@keyframes chipIn{to{opacity:1;translate:0 0}}
 .v-rust{--vc:var(--rust-deep)}.v-rose{--vc:var(--rose-ink)}.v-amber{--vc:var(--amber-ink)}.v-cream{--vc:var(--maroon)}
 
 /* ---------- final CTA ---------- */
@@ -324,6 +352,7 @@ footer{border-top:1px solid var(--line);padding:56px 0 42px;color:var(--muted);f
   .hero-grid{grid-template-columns:1fr;gap:24px}
   .orbit{height:460px;margin-top:10px}
   .steps{grid-template-columns:1fr}
+  .steps::before{display:none}
   .f-wide,.f-narrow{grid-column:span 12}
   .svc-grid{grid-template-columns:1fr}
 }
@@ -366,6 +395,9 @@ body.has-glow .glow{opacity:1}
 .stagger .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding:0 .06em .04em;margin:0 -.06em -.04em}
 .stagger .wi{display:inline-block;transform:translateY(115%);animation:riseUp .9s var(--ease) forwards}
 .stagger.done .w{overflow:visible}
+.split .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding:0 .05em .1em;margin:0 -.05em -.1em}
+.split .wi{display:inline-block;transform:translateY(118%)}
+.split.play .wi{animation:riseUp .85s var(--ease) forwards}
 @keyframes riseUp{to{transform:translateY(0)}}
 
 /* marquee */
@@ -379,6 +411,7 @@ body.has-glow .glow{opacity:1}
 }
 .marquee::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
 .marquee::after{right:0;background:linear-gradient(-90deg,var(--bg),transparent)}
+.marquee-inner{will-change:transform}
 .marquee-track{display:flex;width:max-content;animation:marquee 36s linear infinite}
 .marquee:hover .marquee-track{animation-play-state:paused}
 .mq{
@@ -404,8 +437,9 @@ body.has-glow .glow{opacity:1}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.15s !important}
   html{scroll-behavior:auto}
-  .reveal{opacity:1;transform:none}
-  .stagger .wi{transform:none;animation:none}
+  .reveal{opacity:1;transform:none;filter:none}
+  .stagger .wi,.split .wi{transform:none;animation:none}
+  .svc .chip{opacity:1;translate:0 0}
   .glow{display:none}
 }
 </style>
@@ -523,9 +557,11 @@ body.has-glow .glow{opacity:1}
 
   <!-- ============ MARQUEE ============ -->
   <div class="marquee" aria-label="Services ticker">
+    <div class="marquee-inner" id="mqInner">
     <div class="marquee-track">
       <div class="mq"><span>Web Development</span><b>&#10022;</b><span>Branding</span><b>&#10022;</b><span>Social Media</span><b>&#10022;</b><span>Graphic Design</span><b>&#10022;</b><span>Content Creation</span><b>&#10022;</b><span>Marketing Strategy</span><b>&#10022;</b><span>Web Design</span><b>&#10022;</b><span>CMS Management</span><b>&#10022;</b><span>Business Strategy</span><b>&#10022;</b><span>Posters &amp; Flyers</span><b>&#10022;</b></div>
       <div class="mq" aria-hidden="true"><span>Web Development</span><b>&#10022;</b><span>Branding</span><b>&#10022;</b><span>Social Media</span><b>&#10022;</b><span>Graphic Design</span><b>&#10022;</b><span>Content Creation</span><b>&#10022;</b><span>Marketing Strategy</span><b>&#10022;</b><span>Web Design</span><b>&#10022;</b><span>CMS Management</span><b>&#10022;</b><span>Business Strategy</span><b>&#10022;</b><span>Posters &amp; Flyers</span><b>&#10022;</b></div>
+    </div>
     </div>
   </div>
 
@@ -575,12 +611,12 @@ body.has-glow .glow{opacity:1}
         <p>No dashboards to babysit. No structure to fight. Just a system that keeps pace with your thinking.</p>
       </div>
       <div class="bento">
-        <article class="feat f1 f-wide reveal">
+        <article class="feat f1 f-wide reveal reveal-l">
           <div class="fi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg></div>
           <h3>Visual organization</h3>
           <p>See your thinking as a living map, not a list. Loops cluster naturally, patterns surface on their own, and nothing important gets buried in a folder.</p>
         </article>
-        <article class="feat f2 f-narrow reveal" data-delay="1">
+        <article class="feat f2 f-narrow reveal reveal-r" data-delay="1">
           <div class="fi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="10" r="2.5"/><path d="M3.5 20c.6-3.4 3-5 5.5-5s4.9 1.6 5.5 5"/><path d="M15.5 15.6c2 .3 3.7 1.6 4.2 4.4"/></svg></div>
           <h3>Collaborative loops</h3>
           <p>Open a loop to your team and build in the same space, in real time.</p>
@@ -591,12 +627,12 @@ body.has-glow .glow{opacity:1}
             <span style="background:rgba(210,90,40,.18);color:var(--rust-deep)">+5</span>
           </div>
         </article>
-        <article class="feat f3 f-narrow reveal">
+        <article class="feat f3 f-narrow reveal reveal-l">
           <div class="fi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z"/></svg></div>
           <h3>Instant capture</h3>
           <p>One tap from anywhere. Your spark lands in the loop before the moment passes. No forms, no friction, no lost ideas.</p>
         </article>
-        <article class="feat f4 f-wide reveal" data-delay="1">
+        <article class="feat f4 f-wide reveal reveal-r" data-delay="1">
           <div class="fi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
           <h3>Progress signals</h3>
           <p>Gentle pulses show which loops are gaining energy and which are cooling down, so momentum is something you can see, not just feel.</p>
@@ -616,7 +652,7 @@ body.has-glow .glow{opacity:1}
         <p>From first spark to full campaign, BlinkLoop's team turns creative momentum into finished work.</p>
       </div>
       <div class="svc-grid">
-        <article class="svc v-rust reveal">
+        <article class="svc v-rust reveal reveal-l">
           <h3><i aria-hidden="true"></i>Build</h3>
           <p>Digital foundations engineered to move as fast as your ideas.</p>
           <div class="chips">
@@ -626,7 +662,7 @@ body.has-glow .glow{opacity:1}
             <span class="chip">Integrations</span>
           </div>
         </article>
-        <article class="svc v-cream reveal" data-delay="1">
+        <article class="svc v-cream reveal reveal-r" data-delay="1">
           <h3><i aria-hidden="true"></i>Guide</h3>
           <p>Clear-headed direction for where your business goes next.</p>
           <div class="chips">
@@ -636,7 +672,7 @@ body.has-glow .glow{opacity:1}
             <span class="chip">Marketing Strategy</span>
           </div>
         </article>
-        <article class="svc v-amber reveal">
+        <article class="svc v-amber reveal reveal-l">
           <h3><i aria-hidden="true"></i>Grow</h3>
           <p>Audiences found, engaged, and kept in the loop.</p>
           <div class="chips">
@@ -645,7 +681,7 @@ body.has-glow .glow{opacity:1}
             <span class="chip">Content Creation</span>
           </div>
         </article>
-        <article class="svc v-rose reveal" data-delay="1">
+        <article class="svc v-rose reveal reveal-r" data-delay="1">
           <h3><i aria-hidden="true"></i>Shape</h3>
           <p>A visual identity people recognize in a blink.</p>
           <div class="chips">
@@ -827,6 +863,75 @@ body.has-glow .glow{opacity:1}
       });
       b.addEventListener('pointerleave', function(){ b.style.transform = ''; });
     });
+  }
+
+  /* split section titles into masked words that rise on reveal */
+  document.querySelectorAll('.sec-head h2, .final h2').forEach(function(h){
+    var words = h.textContent.trim().split(/\s+/);
+    h.textContent = '';
+    h.classList.add('split');
+    words.forEach(function(word, i){
+      var w = document.createElement('span'); w.className = 'w';
+      var wi = document.createElement('span'); wi.className = 'wi';
+      wi.textContent = word;
+      wi.style.animationDelay = (i * .07 + .1) + 's';
+      w.appendChild(wi); h.appendChild(w);
+      if(i < words.length - 1) h.appendChild(document.createTextNode(' '));
+    });
+    var tio = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting){ h.classList.add('play'); tio.disconnect(); } });
+    }, {threshold:.4});
+    tio.observe(h);
+  });
+
+  /* steps connector line draws when in view */
+  var steps = document.querySelector('.steps');
+  if(steps){
+    var sio = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting){ steps.classList.add('in'); sio.disconnect(); } });
+    }, {threshold:.3});
+    sio.observe(steps);
+  }
+
+  /* scrollspy: highlight the section you're in */
+  var spyLinks = {};
+  document.querySelectorAll('.nav-links a:not(.nav-cta)').forEach(function(a){
+    var id = a.getAttribute('href');
+    if(id && id.charAt(0) === '#') spyLinks[id.slice(1)] = a;
+  });
+  var spy = new IntersectionObserver(function(es){
+    es.forEach(function(en){
+      var link = spyLinks[en.target.id];
+      if(!link) return;
+      if(en.isIntersecting){
+        Object.keys(spyLinks).forEach(function(k){ spyLinks[k].classList.remove('active'); });
+        link.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-38% 0px -52% 0px'});
+  ['how','features','services'].forEach(function(id){
+    var s = document.getElementById(id); if(s) spy.observe(s);
+  });
+
+  /* scroll velocity: marquee skew + orbit slow rotation */
+  if(!reduced){
+    var mqInner = document.getElementById('mqInner');
+    var orbitSvg = document.querySelector('.orbit svg');
+    var lastY = window.scrollY, skew = 0, vraf = null;
+    var vStep = function(){
+      skew *= .9;
+      if(mqInner) mqInner.style.transform = 'skewX(' + skew.toFixed(2) + 'deg)';
+      if(Math.abs(skew) > .05){ vraf = requestAnimationFrame(vStep); }
+      else { if(mqInner) mqInner.style.transform = ''; vraf = null; }
+    };
+    window.addEventListener('scroll', function(){
+      var y = window.scrollY;
+      var v = Math.max(-7, Math.min(7, (y - lastY) * .12));
+      lastY = y;
+      skew = skew * .8 + v * .2;
+      if(!vraf) vraf = requestAnimationFrame(vStep);
+      if(orbitSvg) orbitSvg.style.transform = 'rotate(' + (y * .012).toFixed(2) + 'deg)';
+    }, {passive:true});
   }
 })();
 </script>
