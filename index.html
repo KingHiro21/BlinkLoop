@@ -341,6 +341,8 @@ section{padding:120px 0;position:relative}
 .svc.in .chip:nth-child(2){animation-delay:.35s}
 .svc.in .chip:nth-child(3){animation-delay:.45s}
 .svc.in .chip:nth-child(4){animation-delay:.55s}
+.svc.in .chip:nth-child(5){animation-delay:.65s}
+.svc.in .chip:nth-child(6){animation-delay:.75s}
 @keyframes chipIn{to{opacity:1;translate:0 0}}
 .v-rust{--vc:var(--rust-ink)}.v-rose{--vc:var(--rose-ink)}.v-amber{--vc:var(--amber-ink)}.v-cream{--vc:var(--maroon-ink)}
 
@@ -424,6 +426,56 @@ section{padding:120px 0;position:relative}
 .hp p{color:var(--muted);font-size:.86rem}
 .host-cta{display:flex;justify-content:center;margin-top:52px}
 
+
+/* ---------- pricing model ---------- */
+.plan .term{
+  display:inline-block;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+  padding:4px 11px;border-radius:999px;margin-bottom:14px;
+  background:color-mix(in srgb, var(--pc) 13%, transparent);color:var(--pc);
+}
+.statement{
+  text-align:center;margin-top:30px;font-weight:600;color:var(--ink);font-size:.96rem;
+}
+.hvm{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+.hvm-card{
+  border-radius:var(--r-lg);border:1px solid var(--line);background:var(--glass);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:36px 32px;
+}
+.hvm-card .k{
+  font-family:'Unbounded',sans-serif;font-size:.68rem;font-weight:500;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--pc);margin-bottom:12px;
+}
+.hvm-card h3{font-size:1.25rem;margin-bottom:10px}
+.hvm-card > p{color:var(--muted);font-size:.92rem;margin-bottom:20px}
+.hvm-card ul{list-style:none;display:grid;gap:10px;font-size:.9rem}
+.hvm-card li{display:flex;gap:10px;align-items:flex-start}
+.hvm-card li svg{width:15px;height:15px;flex:none;margin-top:3px;color:var(--pc)}
+.exgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:56px}
+.ex{
+  border-radius:var(--r-lg);border:1px solid var(--line);background:var(--glass);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:34px 32px;
+}
+.ex .yr-tag{
+  display:inline-block;font-family:'Unbounded',sans-serif;font-size:.64rem;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;padding:5px 13px;border-radius:999px;margin-bottom:20px;
+  background:color-mix(in srgb, var(--rust-ink) 13%, transparent);color:var(--rust-ink);
+}
+.ex .row{
+  display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  padding:12px 0;border-bottom:1px dashed var(--line);font-size:.92rem;
+}
+.ex .row span:first-child{color:var(--muted)}
+.ex .row b{font-weight:600;white-space:nowrap;text-align:right}
+.ex .row.total{border-bottom:0;padding-top:18px}
+.ex .row.total span:first-child{color:var(--ink);font-weight:600}
+.ex .row.total b{font-family:'Unbounded',sans-serif;font-size:1.02rem}
+.ex-note{margin-top:24px;text-align:center;color:var(--muted);font-size:.9rem;max-width:44rem;margin-left:auto;margin-right:auto}
+.ex-note b{color:var(--ink)}
+.svc-link{font-size:.84rem;font-weight:600;color:var(--rust-ink);margin-top:18px;display:inline-block;transition:translate .3s var(--ease)}
+.svc-link:hover{translate:4px 0}
+
 /* ---------- final CTA ---------- */
 .final{
   border-radius:36px;border:1px solid var(--line);
@@ -459,6 +511,8 @@ footer{border-top:1px solid var(--line);padding:56px 0 42px;color:var(--muted);f
   .plans{grid-template-columns:1fr}
   .host-teaser{grid-template-columns:1fr;padding:44px 30px;gap:36px}
   .hproc{grid-template-columns:repeat(2,1fr)}
+  .hvm{grid-template-columns:1fr}
+  .exgrid{grid-template-columns:1fr}
   .orbit{height:460px;margin-top:10px}
   .steps{grid-template-columns:1fr}
   .steps::before{display:none}
@@ -704,7 +758,7 @@ body.has-glow .glow{opacity:1}
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
       <a href="#services">Services</a>
-      <a href="hosting.html">Hosting</a>
+      <a href="hosting.html">Pricing</a>
       <a href="#start" class="nav-cta">Start your loop</a>
     </nav>
     <div class="nav-actions">
@@ -899,47 +953,52 @@ body.has-glow .glow{opacity:1}
     <div class="wrap">
       <div class="sec-head reveal">
         <div class="sec-eyebrow c-rose">What we do</div>
-        <h2>Loops for every part of your brand</h2>
-        <p>From first spark to full campaign, BlinkLoop's team turns creative momentum into finished work.</p>
+        <h2>Build. Host. Maintain. Grow.</h2>
+        <p>One partner from the first build to long-term growth. Pay once for the website, then keep it online and cared for with an annual plan.</p>
       </div>
       <div class="svc-grid">
         <article class="svc v-rust reveal reveal-l">
           <h3><i aria-hidden="true"></i>Build</h3>
-          <p>Digital foundations engineered to move as fast as your ideas.</p>
+          <p>One-time projects. You pay once, and it's yours.</p>
           <div class="chips">
             <span class="chip">Web Development</span>
             <span class="chip">Web Design</span>
-            <span class="chip">CMS Management</span>
-            <span class="chip">Integrations</span>
+            <span class="chip">Branding</span>
+            <span class="chip">Graphic Design</span>
           </div>
         </article>
-        <article class="svc v-cream reveal reveal-r" data-delay="1">
-          <h3><i aria-hidden="true"></i>Guide</h3>
-          <p>Clear-headed direction for where your business goes next.</p>
+        <article class="svc v-amber reveal reveal-r" data-delay="1">
+          <h3><i aria-hidden="true"></i>Host</h3>
+          <p>Annual managed hosting that keeps your site online.</p>
           <div class="chips">
-            <span class="chip">Business Consultation</span>
-            <span class="chip">Business Strategy</span>
-            <span class="chip">Marketing Analysis</span>
-            <span class="chip">Marketing Strategy</span>
+            <span class="chip">Managed Website Hosting</span>
+            <span class="chip">SSL</span>
+            <span class="chip">DNS</span>
+            <span class="chip">Backups</span>
+            <span class="chip">Monitoring</span>
           </div>
+          <a class="svc-link" href="hosting.html">See hosting plans &rarr;</a>
         </article>
-        <article class="svc v-amber reveal reveal-l">
-          <h3><i aria-hidden="true"></i>Grow</h3>
-          <p>Audiences found, engaged, and kept in the loop.</p>
+        <article class="svc v-cream reveal reveal-l">
+          <h3><i aria-hidden="true"></i>Maintain</h3>
+          <p>Ongoing care that keeps your website updated and healthy.</p>
           <div class="chips">
-            <span class="chip">Social Media Marketing</span>
-            <span class="chip">Social Media Management</span>
-            <span class="chip">Content Creation</span>
+            <span class="chip">Website Maintenance</span>
+            <span class="chip">Content Updates</span>
+            <span class="chip">Security Updates</span>
+            <span class="chip">Performance Optimization</span>
           </div>
         </article>
         <article class="svc v-rose reveal reveal-r" data-delay="1">
-          <h3><i aria-hidden="true"></i>Shape</h3>
-          <p>A visual identity people recognize in a blink.</p>
+          <h3><i aria-hidden="true"></i>Grow</h3>
+          <p>Strategy and marketing that turn a website into a business asset.</p>
           <div class="chips">
-            <span class="chip">Branding</span>
-            <span class="chip">Graphic Design</span>
-            <span class="chip">Posters &amp; Flyers</span>
-            <span class="chip">Marketing Materials</span>
+            <span class="chip">Social Media Marketing</span>
+            <span class="chip">Social Media Management</span>
+            <span class="chip">Marketing Strategy</span>
+            <span class="chip">Marketing Analysis</span>
+            <span class="chip">Business Strategy</span>
+            <span class="chip">Business Consultation</span>
           </div>
         </article>
       </div>
@@ -953,27 +1012,27 @@ body.has-glow .glow{opacity:1}
         <div>
           <span class="teaser-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.7 6.3L21 9l-5 4.4L17.4 20 12 16.6 6.6 20 8 13.4 3 9l6.3-.7L12 2z"/></svg>
-            Recommended for BlinkLoop-built websites
+            One-time build &middot; Annual care
           </span>
-          <h2>Keep your website online. We handle the rest.</h2>
-          <p>Hosting, SSL, backups, monitoring, and upkeep, quietly managed by BlinkLoop in the background. You focus on the business, we keep the site alive and well.</p>
+          <h2>Build once. We keep it running.</h2>
+          <p>You pay one time for BlinkLoop to design and build your website. After launch, an annual hosting plan keeps it online, secure, and cared for. No rebuild fees, no surprises.</p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="hosting.html">View hosting plans <span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="btn btn-primary" href="hosting.html">View pricing &amp; plans <span class="arrow" aria-hidden="true">&rarr;</span></a>
           </div>
         </div>
-        <div class="tier-pills" aria-label="Plan overview">
-          <a class="tp" href="hosting.html">
-            <span><b>Basic</b><i>We keep it running.</i></span>
-            <span class="tp-price">&#8369;6,000<small>/yr</small></span>
+        <div class="tier-pills" aria-label="Pricing overview">
+          <a class="tp" href="hosting.html#build">
+            <span><b>Website Development</b><i>One-time project</i></span>
+            <span class="tp-price">&#8369;15,000+<small> once</small></span>
           </a>
-          <a class="tp hot" href="hosting.html">
-            <span class="tp-tag">Popular</span>
-            <span><b>Business</b><i>Running, and taken care of.</i></span>
+          <a class="tp" href="hosting.html#hosting">
+            <span><b>Managed Hosting</b><i>Billed annually</i></span>
+            <span class="tp-price">&#8369;6,000+<small>/yr</small></span>
+          </a>
+          <a class="tp hot" href="hosting.html#hosting">
+            <span class="tp-tag">Recommended</span>
+            <span><b>Business Hosting</b><i>Hosting + maintenance</i></span>
             <span class="tp-price">&#8369;12,000<small>/yr</small></span>
-          </a>
-          <a class="tp" href="hosting.html">
-            <span><b>Premium</b><i>Full attention, year round.</i></span>
-            <span class="tp-price">&#8369;24,000<small>/yr</small></span>
           </a>
         </div>
       </div>
@@ -990,7 +1049,7 @@ body.has-glow .glow{opacity:1}
         <h2>Your next big idea is one blink away.</h2>
         <p>Stop letting sparks fade in notebooks and forgotten tabs. Start a loop, invite your people, and watch momentum take over.</p>
         <div class="cta-row" style="justify-content:center">
-          <a class="btn btn-primary" href="hosting.html">Start your loop <span class="arrow" aria-hidden="true">→</span></a>
+          <a class="btn btn-primary" href="hosting.html">Start Your Project <span class="arrow" aria-hidden="true">→</span></a>
         </div>
       </div>
     </div>
@@ -1008,7 +1067,7 @@ body.has-glow .glow{opacity:1}
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
       <a href="#services">Services</a>
-      <a href="hosting.html">Hosting</a>
+      <a href="hosting.html">Pricing</a>
     </nav>
     <div class="foot-right">
       <a class="addr" href="https://www.google.com/maps/search/?api=1&query=BLOQ+SOHO+Lofts,+Mandaue,+Cebu" target="_blank" rel="noopener">
