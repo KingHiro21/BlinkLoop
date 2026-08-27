@@ -209,15 +209,20 @@ header.scrolled{
 .idea-card .sub{color:var(--muted);font-size:.74rem;margin-top:3px}
 @keyframes bob{0%,100%{translate:0 0}50%{translate:0 -14px}}
 .orbit-core{
-  position:absolute;left:50%;top:50%;width:130px;height:130px;transform:translate(-50%,-50%);
-  border-radius:36px;
-  background:radial-gradient(circle at 32% 28%, #963226, var(--maroon) 62%, #4d1010);
-  box-shadow:0 0 70px rgba(210,90,40,.4), inset 0 0 30px rgba(0,0,0,.35);
-  display:grid;place-items:center;
-  animation:coreBreath 6s ease-in-out infinite;
+  position:absolute;left:50%;top:50%;width:164px;transform:translate(-50%,-50%);
+  filter:drop-shadow(0 12px 28px rgba(90,35,20,.3));
 }
-.orbit-core img{width:64px;height:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))}
-@keyframes coreBreath{50%{box-shadow:0 0 105px rgba(210,90,40,.62), inset 0 0 30px rgba(0,0,0,.35)}}
+[data-theme="dark"] .orbit-core{filter:drop-shadow(0 0 28px rgba(210,90,40,.45))}
+.orbit-core img{width:100%;height:auto}
+.pupil{
+  position:absolute;left:38.6%;top:62.6%;width:22.7%;aspect-ratio:1;
+  border-radius:50%;background:#0A0A0A;translate:-50% -50%;
+  transition:transform .14s ease-out;will-change:transform;
+}
+.pupil::after{
+  content:"";position:absolute;left:22%;top:16%;width:38%;height:38%;
+  border-radius:50%;background:#FAF7ED;
+}
 
 /* ---------- sections ---------- */
 section{padding:120px 0;position:relative}
@@ -656,8 +661,7 @@ body.has-glow .glow{opacity:1}
   .orbit{height:400px}
   .idea-card{min-width:124px;padding:12px 14px;font-size:.75rem}
   .idea-card b{font-size:.8rem}
-  .orbit-core{width:102px;height:102px;border-radius:28px}
-  .orbit-core img{width:50px}
+  .orbit-core{width:118px}
   .btn{padding:15px 26px;font-size:.92rem}
   .sec-head h2{font-size:1.72rem}
   .host-teaser{padding:38px 22px;gap:34px}
@@ -984,17 +988,22 @@ body.has-glow .glow{opacity:1}
     });
   }
 
-  /* magnetic buttons */
+
+
+  /* the eye follows the cursor */
   if(finePointer && !reduced){
-    document.querySelectorAll('.btn, .nav-cta').forEach(function(b){
-      b.addEventListener('pointermove', function(e){
-        var r = b.getBoundingClientRect();
-        var mx = (e.clientX - (r.left + r.width/2)) * .18;
-        var my = (e.clientY - (r.top + r.height/2)) * .3;
-        b.style.transform = 'translate(' + mx.toFixed(1) + 'px,' + my.toFixed(1) + 'px)';
-      });
-      b.addEventListener('pointerleave', function(){ b.style.transform = ''; });
-    });
+    var pupil = document.getElementById('pupil');
+    if(pupil){
+      var coreEl = pupil.parentElement;
+      window.addEventListener('pointermove', function(e){
+        var pr = coreEl.getBoundingClientRect();
+        var ecx = pr.left + pr.width * .386, ecy = pr.top + pr.height * .626;
+        var edx = e.clientX - ecx, edy = e.clientY - ecy;
+        var edist = Math.sqrt(edx*edx + edy*edy) || 1;
+        var em = Math.min(7, edist * .06);
+        pupil.style.transform = 'translate(' + (edx/edist*em).toFixed(1) + 'px,' + (edy/edist*em).toFixed(1) + 'px)';
+      }, {passive:true});
+    }
   }
 
   /* split section titles into masked words that rise on reveal */
