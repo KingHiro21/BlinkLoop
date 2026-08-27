@@ -476,6 +476,41 @@ section{padding:120px 0;position:relative}
 .svc-link{font-size:.84rem;font-weight:600;color:var(--rust-ink);margin-top:18px;display:inline-block;transition:translate .3s var(--ease)}
 .svc-link:hover{translate:4px 0}
 
+/* ---------- decision flow ---------- */
+.flow{max-width:780px;margin:0 auto}
+.fstep{
+  border:1px solid var(--line);border-radius:var(--r-lg);background:var(--glass);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:28px 32px;
+}
+.fs-k{
+  font-family:'Unbounded',sans-serif;font-size:.64rem;font-weight:600;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--rust-ink);margin-bottom:8px;
+}
+.fstep h3{font-size:1.15rem;margin-bottom:6px}
+.fstep > p{color:var(--muted);font-size:.9rem}
+.fs-price{font-family:'Unbounded',sans-serif;font-size:.92rem;font-weight:600;margin-top:10px}
+.fs-price small{font-family:'Sora',sans-serif;font-weight:400;color:var(--muted)}
+.farrow{display:grid;place-items:center;height:46px;color:var(--rust-ink)}
+.farrow svg{width:20px;height:20px}
+.fchoice{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch;margin-top:18px}
+.fopt{
+  border:1px dashed var(--line);border-radius:16px;padding:18px 16px;text-align:center;
+  display:flex;flex-direction:column;justify-content:center;gap:5px;
+}
+.fopt b{font-family:'Unbounded',sans-serif;font-size:.8rem;font-weight:600}
+.fopt span{color:var(--muted);font-size:.8rem}
+.fopt.hi{border-style:solid;border-color:color-mix(in srgb, var(--rust) 50%, transparent);background:var(--glass-strong)}
+.f-or{display:grid;place-items:center;font-family:'Unbounded',sans-serif;font-size:.66rem;font-weight:600;letter-spacing:.16em;color:var(--muted);padding:0 4px}
+.exgrid.three{grid-template-columns:repeat(3,1fr)}
+.ex-quote{font-size:.98rem;font-weight:600;color:var(--ink);margin-bottom:18px;font-style:italic}
+.ex .row.after{border-bottom:0;padding:8px 0 0;font-size:.84rem}
+@media (max-width:980px){
+  .exgrid.three{grid-template-columns:1fr}
+  .fchoice{grid-template-columns:1fr}
+  .f-or{padding:2px 0}
+}
+
 /* ---------- final CTA ---------- */
 .final{
   border-radius:36px;border:1px solid var(--line);
@@ -838,8 +873,48 @@ body.has-glow .glow{opacity:1}
       </div>
       <p class="plan-note reveal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-        Final website pricing depends on scope and requirements. Every project is quoted before work begins.
+        Final website pricing depends on scope and requirements. Every project is quoted before work begins. Hosting is not included in the website development price; managed hosting is optional and billed annually.
       </p>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT FITS TOGETHER ============ -->
+  <section id="flow" aria-label="How pricing fits together">
+    <div class="wrap">
+      <div class="sec-head reveal" style="margin-left:auto;margin-right:auto;text-align:center;max-width:560px">
+        <div class="sec-eyebrow c-amber" style="justify-content:center">How it fits together</div>
+        <h2>You choose how far we go</h2>
+      </div>
+      <div class="flow">
+        <div class="fstep reveal">
+          <div class="fs-k">Step 1</div>
+          <h3>Build your website</h3>
+          <p>A one-time project. Once it's finished, the website is yours.</p>
+          <div class="fs-price">From &#8369;15,000 <small>one-time</small></div>
+        </div>
+        <div class="farrow reveal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v14M6 13l6 6 6-6"/></svg></div>
+        <div class="fstep reveal">
+          <div class="fs-k">Step 2</div>
+          <h3>Choose how you want to host it</h3>
+          <div class="fchoice">
+            <div class="fopt">
+              <b>Use your own hosting</b>
+              <span>No BlinkLoop hosting fee. We hand over the website per our agreement.</span>
+            </div>
+            <div class="f-or" aria-hidden="true">OR</div>
+            <div class="fopt hi">
+              <b>BlinkLoop Managed Hosting</b>
+              <span>We handle the technical side. Starting at &#8369;6,000/year.</span>
+            </div>
+          </div>
+        </div>
+        <div class="farrow reveal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v14M6 13l6 6 6-6"/></svg></div>
+        <div class="fstep reveal">
+          <div class="fs-k">Step 3</div>
+          <h3>Want us to maintain it?</h3>
+          <p>Optional. Maintenance is included in the Business and Premium hosting plans, so your website stays updated and healthy without you touching it.</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -847,9 +922,9 @@ body.has-glow .glow{opacity:1}
   <section id="hosting" aria-label="Managed hosting plans">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div class="sec-eyebrow c-rust">Managed Hosting &middot; Billed annually</div>
-        <h2>Your website is built. We'll keep it running.</h2>
-        <p>After BlinkLoop builds your website, let BlinkLoop manage the technical side of keeping it online. Hosting is an ongoing annual service, separate from your one-time development fee.</p>
+        <div class="sec-eyebrow c-rust">Managed Hosting &middot; Optional &middot; Billed annually</div>
+        <h2>Want us to keep it running?</h2>
+        <p>Managed hosting is optional. If you already have hosting, you can use your own provider. If you want BlinkLoop to handle the technical side, choose a hosting plan.</p>
       </div>
 
       <div class="why reveal">
@@ -866,7 +941,7 @@ body.has-glow .glow{opacity:1}
         <article class="plan p-basic reveal reveal-l">
           <span class="term">Billed annually</span>
           <div class="tier">Basic Hosting</div>
-          <p class="tagline">We keep it online and monitored.</p>
+          <p class="tagline">For clients who just want their website online.</p>
           <div class="price">&#8369;6,000 <small>/ year</small></div>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Website Hosting</li>
@@ -883,7 +958,7 @@ body.has-glow .glow{opacity:1}
           <div class="plan-badge">Recommended</div>
           <span class="term">Billed annually</span>
           <div class="tier">Business Hosting</div>
-          <p class="tagline">We keep it online and take care of the website.</p>
+          <p class="tagline">For clients who want us to maintain the website too.</p>
           <div class="price">&#8369;12,000 <small>/ year</small></div>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Everything in Basic</li>
@@ -900,7 +975,7 @@ body.has-glow .glow{opacity:1}
         <article class="plan p-prem reveal reveal-r" data-delay="2">
           <span class="term">Billed annually</span>
           <div class="tier">Premium Hosting</div>
-          <p class="tagline">Full attention, at every level, all year round.</p>
+          <p class="tagline">For clients who want BlinkLoop to handle more of the technical side.</p>
           <div class="price">&#8369;24,000 <small>/ year</small></div>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Everything in Business</li>
@@ -916,6 +991,10 @@ body.has-glow .glow{opacity:1}
       </div>
 
       <p class="statement reveal">Hosting plans are billed annually and are separate from the one-time website development fee.</p>
+      <p class="plan-note reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        Already have hosting? No problem. You can use your existing provider instead.
+      </p>
       <p class="plan-note reveal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
         Domain registration and renewal are billed separately.
@@ -967,27 +1046,40 @@ body.has-glow .glow{opacity:1}
   <section id="example" aria-label="Example pricing">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div class="sec-eyebrow c-amber">What you actually pay</div>
-        <h2>A real example, year by year</h2>
-        <p>The development fee is a one-time project cost. After that, you only pay for your hosting plan each year.</p>
+        <div class="sec-eyebrow c-rose">What you actually pay</div>
+        <h2>Three customers, three paths</h2>
+        <p>The build fee is always one-time. What happens after is entirely up to you.</p>
       </div>
-      <div class="exgrid" style="margin-top:0">
+      <div class="exgrid three" style="margin-top:0">
         <div class="ex reveal reveal-l">
-          <span class="yr-tag">Year 1</span>
-          <div class="row"><span>Website Development (Business Website)</span><b>&#8369;30,000 one-time</b></div>
-          <div class="row"><span>Managed Hosting (Basic)</span><b>&#8369;6,000 / year</b></div>
-          <div class="row"><span>Domain</span><b>Billed separately</b></div>
-          <div class="row total"><span>Total Year 1</span><b>&#8369;36,000 + domain</b></div>
+          <span class="yr-tag">Scenario 1</span>
+          <p class="ex-quote">"I'll handle hosting myself."</p>
+          <div class="row"><span>Business Website</span><b>&#8369;30,000 one-time</b></div>
+          <div class="row"><span>BlinkLoop Hosting</span><b>None</b></div>
+          <div class="row"><span>Handover</span><b>Per agreement</b></div>
+          <div class="row total"><span>You pay</span><b>&#8369;30,000, once</b></div>
+          <div class="row after"><span>Every year after</span><b>&#8369;0 to BlinkLoop</b></div>
         </div>
-        <div class="ex reveal reveal-r" data-delay="1">
-          <span class="yr-tag">Year 2 onwards</span>
-          <div class="row"><span>Website Development</span><b>&#8369;0</b></div>
-          <div class="row"><span>Managed Hosting (Basic)</span><b>&#8369;6,000 / year</b></div>
+        <div class="ex reveal" data-delay="1">
+          <span class="yr-tag">Scenario 2</span>
+          <p class="ex-quote">"I don't want to deal with the technical stuff."</p>
+          <div class="row"><span>Business Website</span><b>&#8369;30,000 one-time</b></div>
+          <div class="row"><span>Basic Hosting</span><b>&#8369;6,000 / year</b></div>
           <div class="row"><span>Domain</span><b>Billed separately</b></div>
-          <div class="row total"><span>Total Year 2</span><b>&#8369;6,000 + domain</b></div>
+          <div class="row total"><span>Year 1</span><b>&#8369;36,000 + domain</b></div>
+          <div class="row after"><span>Every year after</span><b>&#8369;6,000/yr + domain</b></div>
+        </div>
+        <div class="ex reveal reveal-r" data-delay="2">
+          <span class="yr-tag">Scenario 3</span>
+          <p class="ex-quote">"I want BlinkLoop to handle everything."</p>
+          <div class="row"><span>Business Website</span><b>&#8369;30,000 one-time</b></div>
+          <div class="row"><span>Business Hosting</span><b>&#8369;12,000 / year</b></div>
+          <div class="row"><span>Maintenance</span><b>Included</b></div>
+          <div class="row total"><span>Year 1</span><b>&#8369;42,000 + domain</b></div>
+          <div class="row after"><span>Every year after</span><b>&#8369;12,000/yr + domain</b></div>
         </div>
       </div>
-      <p class="ex-note reveal"><b>You never pay the development fee again.</b> The website build is a one-time project. Want ongoing updates and hands-on care? Move up to Business or Premium hosting at any time.</p>
+      <p class="ex-note reveal"><b>Whichever path you choose, the website build is a one-time fee.</b> Hosting and maintenance are optional annual plans you can add, upgrade, or leave at any time.</p>
 
       <div class="hproc">
         <article class="hp reveal">
@@ -997,13 +1089,13 @@ body.has-glow .glow{opacity:1}
         </article>
         <article class="hp reveal" data-delay="1">
           <div class="num">02</div>
-          <h4>We Host</h4>
-          <p>Your website runs on BlinkLoop's managed infrastructure. Billed annually.</p>
+          <h4>You Choose Hosting</h4>
+          <p>Your own provider, or BlinkLoop managed hosting billed annually. Optional.</p>
         </article>
         <article class="hp reveal" data-delay="2">
           <div class="num">03</div>
-          <h4>We Maintain</h4>
-          <p>We monitor, secure, back up, and update your website according to your plan.</p>
+          <h4>Optional Maintenance</h4>
+          <p>Included in Business and Premium hosting, so the site stays updated and healthy.</p>
         </article>
         <article class="hp reveal" data-delay="3">
           <div class="num">04</div>
