@@ -337,6 +337,86 @@ section{padding:120px 0;position:relative}
 @keyframes chipIn{to{opacity:1;translate:0 0}}
 .v-rust{--vc:var(--rust-ink)}.v-rose{--vc:var(--rose-ink)}.v-amber{--vc:var(--amber-ink)}.v-cream{--vc:var(--maroon-ink)}
 
+/* ---------- hosting & pricing ---------- */
+.why{
+  display:flex;gap:22px;align-items:flex-start;
+  padding:30px 32px;border-radius:var(--r-lg);
+  border:1px solid var(--line);background:var(--glass);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  margin-bottom:60px;
+}
+.why-icon{
+  width:52px;height:52px;border-radius:16px;flex:none;
+  background:color-mix(in srgb, var(--rust-ink) 13%, transparent);
+  color:var(--rust-ink);display:grid;place-items:center;
+}
+.why-icon svg{width:24px;height:24px}
+.why h3{font-size:1.15rem;margin-bottom:8px}
+.why p{color:var(--muted);font-size:.95rem;max-width:56rem}
+
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:stretch}
+.plan{
+  position:relative;display:flex;flex-direction:column;
+  border-radius:var(--r-lg);border:1px solid var(--line);background:var(--glass);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:38px 30px 30px;
+  transition:translate .45s var(--ease), transform .3s var(--ease), border-color .45s, box-shadow .45s;
+}
+.plan:hover{translate:0 -6px;border-color:color-mix(in srgb, var(--pc) 45%, transparent);box-shadow:0 24px 56px rgba(90,35,20,.14)}
+.plan .tier{
+  font-family:'Unbounded',sans-serif;font-size:.72rem;font-weight:500;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--pc);margin-bottom:10px;
+}
+.plan .tagline{color:var(--muted);font-size:.9rem;min-height:2.6em}
+.plan .price{
+  font-family:'Unbounded',sans-serif;font-size:2rem;font-weight:600;
+  margin:18px 0 4px;letter-spacing:-.01em;
+}
+.plan .price small{font-size:.82rem;font-weight:400;color:var(--muted);font-family:'Sora',sans-serif;letter-spacing:0}
+.plan ul{list-style:none;display:grid;gap:11px;margin:24px 0 30px;font-size:.92rem}
+.plan li{display:flex;gap:10px;align-items:flex-start}
+.plan li svg{width:16px;height:16px;flex:none;margin-top:3px;color:var(--pc)}
+.plan li.plus{
+  display:block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+  color:var(--muted);margin:10px 0 0;
+}
+.plan .btn{margin-top:auto;width:100%;justify-content:center;padding:14px 24px;font-size:.92rem}
+.p-basic{--pc:var(--amber-ink)}
+.p-biz{--pc:var(--rust-ink)}
+.p-prem{--pc:var(--maroon-ink)}
+.p-biz{
+  border-color:color-mix(in srgb, var(--rust) 55%, transparent);
+  background:var(--glass-strong);
+  box-shadow:0 24px 60px rgba(90,35,20,.16);
+}
+[data-theme="dark"] .p-biz{box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.plan-badge{
+  position:absolute;top:-13px;left:50%;translate:-50% 0;
+  background:linear-gradient(120deg,var(--rust-deep),var(--rust));color:#FFF7EC;
+  padding:6px 16px;border-radius:999px;white-space:nowrap;
+  font-family:'Unbounded',sans-serif;font-size:.62rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  box-shadow:0 6px 18px rgba(193,71,32,.35);
+}
+.plan-note{
+  margin-top:26px;font-size:.85rem;color:var(--muted);
+  display:flex;gap:9px;align-items:center;justify-content:center;text-align:center;
+}
+.plan-note svg{width:15px;height:15px;flex:none;opacity:.8}
+.hproc{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:70px}
+.hp{
+  padding:28px 24px;border-radius:var(--r-md);
+  border:1px solid var(--line);background:var(--glass);
+  transition:translate .4s var(--ease), border-color .4s;
+}
+.hp:hover{translate:0 -5px;border-color:color-mix(in srgb, var(--rust) 35%, transparent)}
+.hp .num{
+  font-family:'Unbounded',sans-serif;font-size:.74rem;font-weight:500;
+  color:var(--rust-ink);margin-bottom:12px;letter-spacing:.14em;
+}
+.hp h4{font-family:'Unbounded',sans-serif;font-size:.96rem;font-weight:600;margin-bottom:9px;line-height:1.3}
+.hp p{color:var(--muted);font-size:.86rem}
+.host-cta{display:flex;justify-content:center;margin-top:52px}
+
 /* ---------- final CTA ---------- */
 .final{
   border-radius:36px;border:1px solid var(--line);
@@ -364,8 +444,13 @@ footer{border-top:1px solid var(--line);padding:56px 0 42px;color:var(--muted);f
 .foot-links a:hover{color:var(--ink)}
 
 /* ---------- responsive ---------- */
+@media (min-width:981px){
+  .p-biz{scale:1.04}
+}
 @media (max-width:980px){
   .hero-grid{grid-template-columns:1fr;gap:24px}
+  .plans{grid-template-columns:1fr}
+  .hproc{grid-template-columns:repeat(2,1fr)}
   .orbit{height:460px;margin-top:10px}
   .steps{grid-template-columns:1fr}
   .steps::before{display:none}
@@ -386,6 +471,8 @@ footer{border-top:1px solid var(--line);padding:56px 0 42px;color:var(--muted);f
   .final{padding:72px 24px}
   .foot-right{justify-items:flex-start;text-align:left}
   .hero-meta{gap:20px}
+  .hproc{grid-template-columns:1fr}
+  .why{flex-direction:column;padding:26px 24px}
 }
 
 
@@ -523,6 +610,7 @@ body.has-glow .glow{opacity:1}
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
       <a href="#services">Services</a>
+      <a href="#hosting">Hosting</a>
       <a href="#start" class="nav-cta">Start your loop</a>
     </nav>
     <div class="nav-actions">
@@ -763,6 +851,110 @@ body.has-glow .glow{opacity:1}
     </div>
   </section>
 
+  <!-- ============ MANAGED HOSTING ============ -->
+  <section id="hosting" aria-label="Managed hosting and maintenance">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-eyebrow c-rust">BlinkLoop Managed Hosting</div>
+        <h2>Keep your website online. We handle the rest.</h2>
+        <p>Reliable hosting, security, backups, monitoring, and ongoing maintenance, all managed by BlinkLoop so you don't have to worry about the technical side.</p>
+      </div>
+
+      <div class="why reveal">
+        <div class="why-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div>
+          <h3>Why managed hosting?</h3>
+          <p>Your website shouldn't require you to worry about servers, SSL certificates, backups, security, or uptime. BlinkLoop manages the technical infrastructure so you can focus on your business.</p>
+        </div>
+      </div>
+
+      <div class="plans">
+        <article class="plan p-basic reveal reveal-l">
+          <div class="tier">Basic</div>
+          <p class="tagline">We keep it running.</p>
+          <div class="price">&#8369;6,000 <small>/ year</small></div>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Website Hosting</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>SSL Certificate</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>DNS Management</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Automated Backups</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Uptime Monitoring</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Technical Support</li>
+          </ul>
+          <a class="btn btn-ghost" href="#start">Get Started</a>
+        </article>
+
+        <article class="plan p-biz reveal" data-delay="1">
+          <div class="plan-badge">Recommended</div>
+          <div class="tier">Business</div>
+          <p class="tagline">We keep it running and take care of the website.</p>
+          <div class="price">&#8369;12,000 <small>/ year</small></div>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Everything in Basic</li>
+            <li class="plus" aria-hidden="true">Plus</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Website Maintenance</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Minor Content Updates</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Performance Optimization</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Security Updates</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Priority Support</li>
+          </ul>
+          <a class="btn btn-primary" href="#start">Get Started <span class="arrow" aria-hidden="true">&rarr;</span></a>
+        </article>
+
+        <article class="plan p-prem reveal reveal-r" data-delay="2">
+          <div class="tier">Premium</div>
+          <p class="tagline">Full attention, at every level, all year round.</p>
+          <div class="price">&#8369;24,000 <small>/ year</small></div>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Everything in Business</li>
+            <li class="plus" aria-hidden="true">Plus</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>More Frequent Updates</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Advanced Performance Optimization</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Priority Maintenance</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Analytics &amp; Reporting</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Dedicated Technical Support</li>
+          </ul>
+          <a class="btn btn-ghost" href="#start">Get Started</a>
+        </article>
+      </div>
+
+      <p class="plan-note reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+        Domain registration and renewal are billed separately.
+      </p>
+
+      <div class="hproc">
+        <article class="hp reveal">
+          <div class="num">01</div>
+          <h4>We Build</h4>
+          <p>BlinkLoop designs and develops your website.</p>
+        </article>
+        <article class="hp reveal" data-delay="1">
+          <div class="num">02</div>
+          <h4>We Host</h4>
+          <p>Your website is deployed to BlinkLoop's managed infrastructure.</p>
+        </article>
+        <article class="hp reveal" data-delay="2">
+          <div class="num">03</div>
+          <h4>We Maintain</h4>
+          <p>We monitor, secure, back up, and maintain your website according to your plan.</p>
+        </article>
+        <article class="hp reveal" data-delay="3">
+          <div class="num">04</div>
+          <h4>You Focus on Business</h4>
+          <p>No technical maintenance required from you.</p>
+        </article>
+      </div>
+
+      <div class="host-cta reveal">
+        <a class="btn btn-ghost" href="#start">Talk to BlinkLoop</a>
+      </div>
+    </div>
+  </section>
+
+
   <!-- ============ FINAL CTA ============ -->
   <section id="start" aria-label="Get started">
     <div class="wrap">
@@ -791,6 +983,7 @@ body.has-glow .glow{opacity:1}
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
       <a href="#services">Services</a>
+      <a href="#hosting">Hosting</a>
     </nav>
     <div class="foot-right">
       <a class="addr" href="https://www.google.com/maps/search/?api=1&query=BLOQ+SOHO+Lofts,+Mandaue,+Cebu" target="_blank" rel="noopener">
@@ -913,7 +1106,7 @@ body.has-glow .glow{opacity:1}
 
   /* 3D tilt on cards */
   if(finePointer && !reduced){
-    document.querySelectorAll('.idea-card, .feat, .step, .svc').forEach(function(card){
+    document.querySelectorAll('.idea-card, .feat, .step, .svc, .plan').forEach(function(card){
       var rect = null;
       card.addEventListener('pointerenter', function(){ rect = card.getBoundingClientRect(); });
       card.addEventListener('pointermove', function(e){
@@ -983,7 +1176,7 @@ body.has-glow .glow{opacity:1}
       }
     });
   }, {rootMargin:'-38% 0px -52% 0px'});
-  ['how','features','services'].forEach(function(id){
+  ['how','features','services','hosting'].forEach(function(id){
     var s = document.getElementById(id); if(s) spy.observe(s);
   });
 
