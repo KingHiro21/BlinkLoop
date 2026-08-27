@@ -319,15 +319,41 @@ section{padding:120px 0;position:relative}
 .avatars span:first-child{margin-left:0}
 
 /* ---------- services ---------- */
-.svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+.svc-grid{display:grid;gap:22px}
 .svc{
-  border-radius:var(--r-lg);border:1px solid var(--line);background:var(--glass);
-  padding:34px;transition:translate .45s var(--ease), transform .3s var(--ease), border-color .45s;
+  position:sticky;overflow:hidden;
+  border-radius:var(--r-lg);border:1px solid var(--line);
+  --card-bg:rgba(252,247,238,.97);
+  background:linear-gradient(180deg, color-mix(in srgb, var(--vc) 8%, transparent), transparent 45%), var(--card-bg);
+  padding:44px 48px;
+  display:grid;grid-template-columns:minmax(230px,300px) 1fr;gap:36px;align-items:start;
+  box-shadow:0 18px 44px rgba(90,35,20,.1);
+  transition:transform .3s var(--ease), border-color .45s;
 }
-.svc:hover{translate:0 -6px;border-color:color-mix(in srgb, var(--vc) 42%, transparent)}
-.svc h3{font-size:1.1rem;display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.svc h3 i{width:9px;height:9px;border-radius:50%;background:var(--vc);box-shadow:0 0 12px var(--vc)}
-.svc p{color:var(--muted);font-size:.88rem;margin-bottom:20px}
+[data-theme="dark"] .svc{--card-bg:rgba(24,12,8,.97);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+.svc:nth-child(1){top:92px}
+.svc:nth-child(2){top:106px}
+.svc:nth-child(3){top:120px}
+.svc:nth-child(4){top:134px}
+.svc::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--vc),transparent);opacity:.9}
+.svc:hover{border-color:color-mix(in srgb, var(--vc) 45%, transparent)}
+.svc-num{
+  position:absolute;right:26px;top:8px;z-index:0;
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:6rem;line-height:1;
+  color:transparent;-webkit-text-stroke:1.5px color-mix(in srgb, var(--vc) 30%, transparent);
+  user-select:none;pointer-events:none;
+}
+@supports not (-webkit-text-stroke:1px red){.svc-num{color:color-mix(in srgb, var(--vc) 14%, transparent)}}
+.svc-head{position:relative;z-index:1}
+.glyph2{
+  width:54px;height:54px;border-radius:16px;display:grid;place-items:center;margin-bottom:20px;
+  background:color-mix(in srgb, var(--vc) 13%, transparent);color:var(--vc);
+  box-shadow:0 0 26px color-mix(in srgb, var(--vc) 16%, transparent);
+}
+.glyph2 svg{width:24px;height:24px}
+.svc h3{font-size:1.5rem;margin-bottom:10px}
+.svc-head > p{color:var(--muted);font-size:.95rem}
+.svc-body{position:relative;z-index:1;align-self:center}
 .chips{display:flex;flex-wrap:wrap;gap:9px}
 .chip{
   padding:8px 15px;border-radius:999px;font-size:.8rem;
@@ -517,7 +543,8 @@ footer{border-top:1px solid var(--line);padding:56px 0 42px;color:var(--muted);f
   .steps{grid-template-columns:1fr}
   .steps::before{display:none}
   .f-wide,.f-narrow{grid-column:span 12}
-  .svc-grid{grid-template-columns:1fr}
+  .svc{grid-template-columns:1fr;gap:24px;padding:36px 30px}
+  .svc-num{font-size:4rem;right:20px}
 }
 @media (max-width:760px){
   .nav{height:64px}
@@ -727,6 +754,11 @@ body.has-glow .glow{opacity:1}
   .mq{font-size:.66rem;gap:30px;padding-right:30px}
   .hero-meta b{font-size:1rem}
   footer{padding:44px 0 34px}
+  .svc{padding:30px 22px}
+  .svc:nth-child(1){top:74px}
+  .svc:nth-child(2){top:86px}
+  .svc:nth-child(3){top:98px}
+  .svc:nth-child(4){top:110px}
 }
 
 /* ---------- reduced motion ---------- */
@@ -952,53 +984,80 @@ body.has-glow .glow{opacity:1}
     <div class="wm" id="wm" aria-hidden="true">LOOP &#10022; BLINK &#10022; MOVE</div>
     <div class="wrap">
       <div class="sec-head reveal">
-        <div class="sec-eyebrow c-rose">What we do</div>
+        <div class="sec-eyebrow c-rose">Oh, and we do all this too</div>
         <h2>Build. Host. Maintain. Grow.</h2>
-        <p>One partner from the first build to long-term growth. Pay once for the website. Hosting and maintenance are optional annual plans.</p>
+        <p>A website is just the opening move. Here's everything else BlinkLoop can take off your plate. Pay once for the build; everything after is optional.</p>
       </div>
       <div class="svc-grid">
-        <article class="svc v-rust reveal reveal-l">
-          <h3><i aria-hidden="true"></i>Build</h3>
-          <p>One-time projects. You pay once, and it's yours.</p>
-          <div class="chips">
-            <span class="chip">Web Development</span>
-            <span class="chip">Web Design</span>
-            <span class="chip">Branding</span>
-            <span class="chip">Graphic Design</span>
+        <article class="svc v-rust reveal">
+          <span class="svc-num" aria-hidden="true">01</span>
+          <div class="svc-head">
+            <div class="glyph2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></div>
+            <h3>Build</h3>
+            <p>Websites, brands, and visuals that make people look twice. One-time projects; once it's done, it's yours.</p>
+          </div>
+          <div class="svc-body">
+            <div class="chips">
+              <span class="chip">Web Development</span>
+              <span class="chip">Web Design</span>
+              <span class="chip">Branding</span>
+              <span class="chip">Graphic Design</span>
+            </div>
+            <a class="svc-link" href="hosting.html#build">See build packages &rarr;</a>
           </div>
         </article>
-        <article class="svc v-amber reveal reveal-r" data-delay="1">
-          <h3><i aria-hidden="true"></i>Host</h3>
-          <p>Optional annual hosting that keeps your site online.</p>
-          <div class="chips">
-            <span class="chip">Managed Website Hosting</span>
-            <span class="chip">SSL</span>
-            <span class="chip">DNS</span>
-            <span class="chip">Backups</span>
-            <span class="chip">Monitoring</span>
+        <article class="svc v-amber reveal">
+          <span class="svc-num" aria-hidden="true">02</span>
+          <div class="svc-head">
+            <div class="glyph2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 18a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.2 10 4 4 0 0 0 7 18h10.5z"/></svg></div>
+            <h3>Host</h3>
+            <p>We babysit the servers, SSL, and backups so you never have to. Optional and billed annually.</p>
           </div>
-          <a class="svc-link" href="hosting.html">See hosting plans &rarr;</a>
-        </article>
-        <article class="svc v-cream reveal reveal-l">
-          <h3><i aria-hidden="true"></i>Maintain</h3>
-          <p>Optional ongoing care that keeps your site updated and healthy.</p>
-          <div class="chips">
-            <span class="chip">Website Maintenance</span>
-            <span class="chip">Content Updates</span>
-            <span class="chip">Security Updates</span>
-            <span class="chip">Performance Optimization</span>
+          <div class="svc-body">
+            <div class="chips">
+              <span class="chip">Managed Website Hosting</span>
+              <span class="chip">SSL</span>
+              <span class="chip">DNS</span>
+              <span class="chip">Backups</span>
+              <span class="chip">Monitoring</span>
+            </div>
+            <a class="svc-link" href="hosting.html#hosting">See hosting plans &rarr;</a>
           </div>
         </article>
-        <article class="svc v-rose reveal reveal-r" data-delay="1">
-          <h3><i aria-hidden="true"></i>Grow</h3>
-          <p>Strategy and marketing that turn a website into a business asset.</p>
-          <div class="chips">
-            <span class="chip">Social Media Marketing</span>
-            <span class="chip">Social Media Management</span>
-            <span class="chip">Marketing Strategy</span>
-            <span class="chip">Marketing Analysis</span>
-            <span class="chip">Business Strategy</span>
-            <span class="chip">Business Consultation</span>
+        <article class="svc v-cream reveal">
+          <span class="svc-num" aria-hidden="true">03</span>
+          <div class="svc-head">
+            <div class="glyph2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4.5 4.5 0 0 0-5.9 5.9L3 18l3 3 5.8-5.8a4.5 4.5 0 0 0 5.9-5.9l-2.9 2.9-3-3 2.9-2.9z"/></svg></div>
+            <h3>Maintain</h3>
+            <p>Fresh content, tight security, zero effort from you. Included in Business and Premium hosting.</p>
+          </div>
+          <div class="svc-body">
+            <div class="chips">
+              <span class="chip">Website Maintenance</span>
+              <span class="chip">Content Updates</span>
+              <span class="chip">Security Updates</span>
+              <span class="chip">Performance Optimization</span>
+            </div>
+            <a class="svc-link" href="hosting.html#maintenance">How maintenance works &rarr;</a>
+          </div>
+        </article>
+        <article class="svc v-rose reveal">
+          <span class="svc-num" aria-hidden="true">04</span>
+          <div class="svc-head">
+            <div class="glyph2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+            <h3>Grow</h3>
+            <p>Strategy and social that turn lookers into customers, long after launch day.</p>
+          </div>
+          <div class="svc-body">
+            <div class="chips">
+              <span class="chip">Social Media Marketing</span>
+              <span class="chip">Social Media Management</span>
+              <span class="chip">Marketing Strategy</span>
+              <span class="chip">Marketing Analysis</span>
+              <span class="chip">Business Strategy</span>
+              <span class="chip">Business Consultation</span>
+            </div>
+            <a class="svc-link" href="#start">Let's talk growth &rarr;</a>
           </div>
         </article>
       </div>
