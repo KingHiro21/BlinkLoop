@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta name="theme-color" content="#EDDFC6" />
+<meta name="theme-color" content="#FFFCF7" />
 <title>Loop Builder | BlinkLoop</title>
 <meta name="description" content="Build a website in a blink. Drag blocks, edit live, export clean HTML, hosted by BlinkLoop." />
 <script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
@@ -12,12 +12,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
 :root{
-  --maroon:#751A1A; --rust:#D25A28; --rust-deep:#C14720; --amber:#EDA33F; --rose:#E2836B; --cream:#FAF7ED;
-  --bg:#EDDFC6; --bg-2:#E3D2B2; --ink:#2B140E; --muted:#7E5D4C;
-  --glass:rgba(255,250,240,.55); --glass-strong:rgba(255,250,240,.78);
-  --line:rgba(90,35,22,.16); --r-lg:22px; --r-md:14px; --r-sm:10px;
+  --maroon:#7F2027; --rust:#F45D2A; --rust-deep:#D94E1F; --amber:#EDA33F; --rose:#E2836B; --cream:#FFF7EF;
+  --bg:#FFFCF7; --bg-2:#FFF7EF; --ink:#2B140E; --muted:#7E5D4C;
+  --glass:rgba(251,235,221,.5); --glass-strong:rgba(255,247,239,.78);
+  --line:rgba(127,32,39,.16); --r-lg:22px; --r-md:14px; --r-sm:10px;
   --ease:cubic-bezier(.22,.8,.24,1);
-  --shadow:0 10px 30px rgba(90,35,22,.10);
+  --shadow:0 10px 30px rgba(127,32,39,.10);
 }
 :root[data-theme="dark"]{
   --bg:#140806; --bg-2:#1C0C08; --ink:#FAF4EA; --muted:#C9A395;
@@ -46,7 +46,7 @@ a{color:inherit;text-decoration:none}
   border-bottom:1px solid var(--line);z-index:40;
 }
 .brand{display:flex;align-items:center;gap:9px;font-family:'Unbounded',sans-serif;font-weight:600;font-size:.95rem;white-space:nowrap}
-.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--rust);box-shadow:0 0 10px rgba(210,90,40,.55);animation:pulse 2.4s ease-in-out infinite}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--rust);box-shadow:0 0 10px rgba(244,93,42,.55);animation:pulse 2.4s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.35;transform:scale(.75)}}
 .brand .lp{color:var(--rust)}
 .brand small{font-family:'Sora';font-weight:600;color:var(--muted);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-left:2px}
@@ -70,7 +70,7 @@ a{color:inherit;text-decoration:none}
   padding:9px 18px;border-radius:999px;background:var(--rust);color:#FFF7EC;font-weight:600;font-size:.84rem;
   transition:transform .3s var(--ease), box-shadow .3s, background .3s;display:inline-flex;align-items:center;gap:7px;
 }
-.tb-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(193,71,32,.38);background:#C8511F}
+.tb-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(217,78,31,.38);background:#DD5322}
 .tb-cta svg{width:15px;height:15px}
 
 /* ---------- main ---------- */
@@ -121,8 +121,8 @@ a{color:inherit;text-decoration:none}
 .canvas{
   position:relative;min-width:0;display:flex;flex-direction:column;
   background:
-    radial-gradient(700px 500px at 85% -5%, rgba(117,26,26,.10), transparent 62%),
-    radial-gradient(600px 460px at -8% 30%, rgba(210,90,40,.10), transparent 60%),
+    radial-gradient(700px 500px at 85% -5%, rgba(127,32,39,.10), transparent 62%),
+    radial-gradient(600px 460px at -8% 30%, rgba(244,93,42,.10), transparent 60%),
     var(--bg-2);
 }
 .canvas-inner{flex:1;overflow:auto;padding:26px;display:flex;justify-content:center}
@@ -242,7 +242,7 @@ input[type=range]{width:100%;accent-color:var(--rust)}
 }
 /* v3: brand + access */
 .brand img{display:block}
-.brand .bicon{height:30px;width:auto;filter:drop-shadow(0 2px 8px rgba(117,26,26,.25))}
+.brand .bicon{height:30px;width:auto;filter:drop-shadow(0 2px 8px rgba(127,32,39,.25))}
 .brand .bword{height:21px;width:auto}
 :root[data-theme="dark"] .bword.wl{display:none}
 :root:not([data-theme="dark"]) .bword.wd{display:none}
@@ -303,6 +303,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <button class="tb-btn" data-dev="mobile" title="Mobile preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18h.01"/></svg></button>
     </div>
     <div class="tb-group">
+      <select id="uiLang" class="tb-btn" aria-label="Language" style="appearance:none;background:transparent;border:none;font-weight:600"></select>
       <button class="tb-btn" id="themeBtn" title="Light / dark editor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
       <button class="tb-btn" id="guideBtn" title="Quick guide">? Guide</button>
       <button class="tb-btn" id="jsonBtn" title="Save or load a project file">Save / Load</button>
@@ -320,11 +321,11 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       </div>
       <div class="panel-scroll" id="leftScroll">
         <div id="tab-blocks">
-          <div class="empty-note" style="padding-top:0">Click a block to add it, or drag it onto the page.</div>
+          <div class="empty-note" id="hintBlocks" style="padding-top:0">Click a block to add it, or drag it onto the page.</div>
           <div class="lib" id="lib"></div>
         </div>
         <div id="tab-layers" hidden>
-          <div class="empty-note" style="padding-top:0">Your page, top to bottom. Drag to reorder, click to jump to a block.</div>
+          <div class="empty-note" id="hintLayers" style="padding-top:0">Your page, top to bottom. Drag to reorder, click to jump to a block.</div>
           <div id="layers"></div>
         </div>
       </div>
@@ -356,8 +357,8 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 <!-- template picker -->
 <div class="modal-bg" id="tplModal">
   <div class="modal">
-    <h2>Start your loop</h2>
-    <p class="sub">Pick a starting point. Everything is editable: the colors, the type, the blocks, all of it.</p>
+    <h2 id="tplT">Start your loop</h2>
+    <p class="sub" id="tplS">Pick a starting point. Everything is editable: the colors, the type, the blocks, all of it.</p>
     <div class="tpl-grid" id="tplGrid"></div>
   </div>
 </div>
@@ -366,15 +367,15 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 <div class="modal-bg" id="guideModal">
   <div class="modal">
     <button class="close-x" data-close aria-label="Close">✕</button>
-    <h2>How this works</h2>
-    <p class="sub">Four things and you know the whole tool.</p>
-    <div class="guide-steps">
+    <h2 id="gT">How this works</h2>
+    <p class="sub" id="gS">Four things and you know the whole tool.</p>
+    <div class="guide-steps" id="gSteps">
       <div class="gstep"><span class="n">1</span><div><b class="st">Add blocks</b><p>Click any block in the left panel, drag it onto the page, or use the <b>＋</b> buttons that appear on the page itself.</p></div></div>
       <div class="gstep"><span class="n">2</span><div><b class="st">Click text to edit it</b><p>Headings, paragraphs, buttons: click them right on the page and type. Lists like pricing plans are edited in the right panel.</p></div></div>
       <div class="gstep"><span class="n">3</span><div><b class="st">Make it yours in Design</b><p>The Design tab (top right) changes colors, fonts, and corner roundness for the whole site at once.</p></div></div>
       <div class="gstep"><span class="n">4</span><div><b class="st">Export when ready</b><p>Export gives you the finished website as one clean HTML file. Exporting is part of client access. On a trial you can build, preview, and save your draft, and we take it from there.</p></div></div>
     </div>
-    <p class="sub" style="margin:16px 0 0">Handy keys: <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Delete</kbd> removes the selected block · <kbd>Esc</kbd> deselects.</p>
+    <p class="sub" id="gKeys" style="margin:16px 0 0">Handy keys: <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Delete</kbd> removes the selected block · <kbd>Esc</kbd> deselects.</p>
   </div>
 </div>
 
@@ -382,8 +383,8 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 <div class="modal-bg" id="pickModal">
   <div class="modal">
     <button class="close-x" data-close aria-label="Close">✕</button>
-    <h2>Add a block</h2>
-    <p class="sub">It will be inserted right where you clicked ＋.</p>
+    <h2 id="pickT">Add a block</h2>
+    <p class="sub" id="pickS">It will be inserted right where you clicked ＋.</p>
     <div class="pick-grid" id="pickGrid"></div>
   </div>
 </div>
@@ -392,10 +393,10 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 <div class="modal-bg" id="exportModal">
   <div class="modal">
     <button class="close-x" data-close aria-label="Close">✕</button>
-    <h2>Export your site</h2>
-    <p class="sub">You get one self-contained HTML file, and that file <b>is</b> the website. No plugins, nothing to install.</p>
+    <h2 id="exT">Export your site</h2>
+    <p class="sub" id="exS">You get one self-contained HTML file, and that file <b>is</b> the website. No plugins, nothing to install.</p>
     <div class="row" style="margin-bottom:6px">
-      <label for="exportName" style="font-size:.8rem;font-weight:600;color:var(--muted)">File name</label>
+      <label for="exportName" id="exNameL" style="font-size:.8rem;font-weight:600;color:var(--muted)">File name</label>
       <input class="in" id="exportName" style="flex:1;min-width:160px" value="index.html" />
     </div>
     <div class="row">
@@ -403,7 +404,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <button class="tb-btn" id="copyExport" style="border:1px solid var(--line)">Copy HTML</button>
       <button class="tb-btn" id="openExportPreview" style="border:1px solid var(--line)">Open preview</button>
     </div>
-    <div class="deploy-note">
+    <div class="deploy-note" id="deployNote">
       <b>To put it online:</b> name the file <b>index.html</b> and drop it into your hosting. For Vercel, add it to your repo and push, or drag the file into a new Vercel project. It's live in seconds. Want BlinkLoop to host and maintain it for you? That's exactly what our <b>care plans</b> are for.
     </div>
   </div>
@@ -413,8 +414,8 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 <div class="modal-bg" id="jsonModal">
   <div class="modal">
     <button class="close-x" data-close aria-label="Close">✕</button>
-    <h2>Save or load your project</h2>
-    <p class="sub">Your work autosaves in this browser automatically. A project file is for moving between devices, keeping a backup, or sending your draft to us.</p>
+    <h2 id="pjT">Save or load your project</h2>
+    <p class="sub" id="pjS">Your work autosaves in this browser automatically. A project file is for moving between devices, keeping a backup, or sending your draft to us.</p>
     <div class="row">
       <button class="tb-cta" id="dlJson">Download project (.json)</button>
       <button class="tb-btn" id="upJson" style="border:1px solid var(--line)">Load project…</button>
@@ -458,7 +459,7 @@ const FONTS = {
   classic: { name:'Playfair Display + Source Sans 3', disp:"'Playfair Display',serif", body:"'Source Sans 3',system-ui,sans-serif", url:'family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700' }
 };
 const PALETTES = {
-  ember: { name:'Ember',  bg:'#EDDFC6', ink:'#2B140E', accent:'#D25A28', accent2:'#EDA33F' },
+  ember: { name:'Ember',  bg:'#FFFCF7', ink:'#3A1B1E', accent:'#F45D2A', accent2:'#7F2027' },
   noir:  { name:'Noir',   bg:'#15100B', ink:'#F5EFE4', accent:'#EDA33F', accent2:'#E2836B' },
   tide:  { name:'Tide',   bg:'#F2F6F7', ink:'#10232B', accent:'#0E7C86', accent2:'#F4A259' },
   moss:  { name:'Moss',   bg:'#F4F2EA', ink:'#232B1E', accent:'#4A7C59', accent2:'#C97B2D' },
@@ -858,13 +859,13 @@ function pageBodyHTML(edit){
   return state.blocks.map(b =>
     edit ? `<div class="blk" data-id="${b.id}">${renderBlockHTML(b,true)}
       <div class="blk-tools" contenteditable="false">
-        <span class="blk-name">${BLOCKS[b.type].icon} ${BLOCKS[b.type].name}</span>
-        <button data-action="up" data-id="${b.id}" title="Move up">↑</button>
-        <button data-action="down" data-id="${b.id}" title="Move down">↓</button>
-        <button data-action="dupe" data-id="${b.id}" title="Duplicate">⧉</button>
-        <button data-action="del" data-id="${b.id}" title="Delete">✕</button>
+        <span class="blk-name">${BLOCKS[b.type].icon} ${t(BLOCKS[b.type].name)}</span>
+        <button data-action="up" data-id="${b.id}" title="${t('Move up')}">↑</button>
+        <button data-action="down" data-id="${b.id}" title="${t('Move down')}">↓</button>
+        <button data-action="dupe" data-id="${b.id}" title="${t('Duplicate')}">⧉</button>
+        <button data-action="del" data-id="${b.id}" title="${t('Delete')}">✕</button>
       </div>
-      <button class="blk-add" data-action="addat" data-id="${b.id}" contenteditable="false" title="Insert a block here">＋</button></div>`
+      <button class="blk-add" data-action="addat" data-id="${b.id}" contenteditable="false" title="${t('Insert a block here')}">＋</button></div>`
     : renderBlockHTML(b,false)
   ).join('\n');
 }
@@ -911,10 +912,12 @@ body.dropping::after{content:"Drop to add block";position:fixed;bottom:18px;left
 `;
 
 function canvasDoc(){
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  const plang = state.meta.lang || 'en';
+  const pdir = RTL[plang] ? ' dir="rtl"' : '';
+  return `<!DOCTYPE html><html lang="${plang}"${pdir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="${fontLink(state.theme)}">
 <style>${siteCSS(state.theme)}</style><style>${OVERLAY_CSS}</style></head>
-<body>${state.blocks.length ? pageBodyHTML(true) : '<div class="empty-canvas">Your page is empty.<br>Click a block in the left panel, or press the button below.</div>'}<button class="blk-add-end" data-action="addend">＋ Add block</button></body></html>`;
+<body>${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button></body></html>`;
 }
 
 let savedScroll = 0;
@@ -1023,9 +1026,10 @@ function addBlock(type, idx){
   snapshot();
   const b = { id: uid(), type, props: clone(BLOCKS[type].defaults) };
   state.blocks.splice(idx ?? state.blocks.length, 0, b);
+  if (type === 'pricing') swapCurrencySymbols();
   selectedId = b.id;
   renderCanvas(); renderLayers(); renderInspector(); autosave();
-  toast(`${BLOCKS[type].name} added`);
+  toast(t('{b} added').replace('{b}', t(BLOCKS[type].name)));
 }
 function moveBlockTo(id, idx){
   const from = state.blocks.findIndex(b=>b.id===id); if(from<0) return;
@@ -1053,9 +1057,9 @@ function select(id){
 
 /* =============== LEFT PANEL =============== */
 function renderLibrary(){
-  $('#lib').innerHTML = BLOCK_ORDER.map(t=>{
-    const d = BLOCKS[t];
-    return `<button class="lib-item" draggable="true" data-type="${t}"><span class="ic">${d.icon}</span><span class="nm">${d.name}</span><span class="ds">${d.desc}</span></button>`;
+  $('#lib').innerHTML = BLOCK_ORDER.map(ty=>{
+    const d = BLOCKS[ty];
+    return `<button class="lib-item" draggable="true" data-type="${ty}"><span class="ic">${d.icon}</span><span class="nm">${t(d.name)}</span><span class="ds">${t(d.desc)}</span></button>`;
   }).join('');
   $$('.lib-item').forEach(el=>{
     el.addEventListener('dragstart', e=>{ e.dataTransfer.setData('lb/new', el.dataset.type); e.dataTransfer.effectAllowed='copy'; });
@@ -1064,9 +1068,9 @@ function renderLibrary(){
 }
 function renderLayers(){
   const wrap = $('#layers');
-  if (!state.blocks.length){ wrap.innerHTML = '<div class="empty-note">No blocks yet. Add some from the Blocks tab.</div>'; return; }
+  if (!state.blocks.length){ wrap.innerHTML = `<div class="empty-note">${t('No blocks yet. Add some from the Blocks tab.')}</div>`; return; }
   wrap.innerHTML = state.blocks.map(b=>`<div class="layer ${b.id===selectedId?'on':''}" draggable="true" data-id="${b.id}">
-    <span class="ic">${BLOCKS[b.type].icon}</span><span class="nm">${BLOCKS[b.type].name}</span><span class="grip">⋮⋮</span></div>`).join('');
+    <span class="ic">${BLOCKS[b.type].icon}</span><span class="nm">${t(BLOCKS[b.type].name)}</span><span class="grip">⋮⋮</span></div>`).join('');
   $$('.layer', wrap).forEach(el=>{
     el.addEventListener('click', ()=>{ select(el.dataset.id);
       const doc=frame.contentDocument, t=doc && doc.querySelector(`.blk[data-id="${el.dataset.id}"]`);
@@ -1093,10 +1097,10 @@ function renderLayers(){
 function renderInspector(){
   const wrap = $('#rtab-block');
   const b = state.blocks.find(x=>x.id===selectedId);
-  if (!b){ wrap.innerHTML = '<div class="no-sel">Select a block on the canvas to edit its content, or <b>drag a block in</b> from the left panel. Text on the canvas is directly editable: click a heading and type.</div>'; return; }
+  if (!b){ wrap.innerHTML = `<div class="no-sel">${t('_noSel')}</div>`; return; }
   const def = BLOCKS[b.type];
-  let html = `<div class="insp-blockname"><span class="ic">${def.icon}</span><span class="nm">${def.name}</span>
-    <button class="mini" title="Duplicate" data-ia="dupe">⧉</button><button class="mini danger" title="Delete" data-ia="del">✕</button></div>`;
+  let html = `<div class="insp-blockname"><span class="ic">${def.icon}</span><span class="nm">${t(def.name)}</span>
+    <button class="mini" title="${t('Duplicate')}" data-ia="dupe">⧉</button><button class="mini danger" title="${t('Delete')}" data-ia="del">✕</button></div>`;
   html += def.fields.map(f=>fieldHTML(f, b.props[f.k], `p.${f.k}`)).join('');
   wrap.innerHTML = html;
   wireFields(wrap, b);
@@ -1105,21 +1109,21 @@ function renderInspector(){
 
 function fieldHTML(f, val, path){
   const id = 'f_'+path.replace(/[^\w]/g,'_');
-  if (f.t==='text') return `<div class="field"><label for="${id}">${f.l}</label><input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" /></div>`;
-  if (f.t==='textarea') return `<div class="field"><label for="${id}">${f.l}</label><textarea id="${id}" data-path="${path}">${esc(val??'')}</textarea></div>`;
-  if (f.t==='seg') return `<div class="field"><label>${f.l}</label><div class="seg" data-path="${path}">${f.opts.map(([v,l])=>`<button data-v="${v}" class="${String(val)===v?'on':''}">${l}</button>`).join('')}</div></div>`;
-  if (f.t==='toggle') return `<div class="field"><div class="toggle"><label style="margin:0">${f.l}</label><button class="tg ${val?'on':''}" data-path="${path}" role="switch" aria-checked="${!!val}"></button></div></div>`;
+  if (f.t==='text') return `<div class="field"><label for="${id}">${t(f.l)}</label><input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" /></div>`;
+  if (f.t==='textarea') return `<div class="field"><label for="${id}">${t(f.l)}</label><textarea id="${id}" data-path="${path}">${esc(val??'')}</textarea></div>`;
+  if (f.t==='seg') return `<div class="field"><label>${t(f.l)}</label><div class="seg" data-path="${path}">${f.opts.map(([v,l])=>`<button data-v="${v}" class="${String(val)===v?'on':''}">${t(l)}</button>`).join('')}</div></div>`;
+  if (f.t==='toggle') return `<div class="field"><div class="toggle"><label style="margin:0">${t(f.l)}</label><button class="tg ${val?'on':''}" data-path="${path}" role="switch" aria-checked="${!!val}"></button></div></div>`;
   if (f.t==='items'){
     const items = val||[];
-    return `<div class="field"><label>${f.l}</label>
+    return `<div class="field"><label>${t(f.l)}</label>
       ${items.map((it,i)=>`<div class="item-card">
         <div class="item-head"><span class="t">${esc(it[f.titleKey]||('Item '+(i+1)))}</span>
-          <button class="mini" data-im="up" data-p="${path}" data-i="${i}" title="Move up">↑</button>
-          <button class="mini" data-im="down" data-p="${path}" data-i="${i}" title="Move down">↓</button>
-          <button class="mini danger" data-im="del" data-p="${path}" data-i="${i}" title="Remove">✕</button></div>
+          <button class="mini" data-im="up" data-p="${path}" data-i="${i}" title="${t('Move up')}">↑</button>
+          <button class="mini" data-im="down" data-p="${path}" data-i="${i}" title="${t('Move down')}">↓</button>
+          <button class="mini danger" data-im="del" data-p="${path}" data-i="${i}" title="${t('Remove')}">✕</button></div>
         ${f.item.map(sf=>fieldHTML(sf, it[sf.k], `${path}.${i}.${sf.k}`)).join('')}
       </div>`).join('')}
-      <button class="add-item" data-add="${path}" data-f="${f.k}">+ Add item</button></div>`;
+      <button class="add-item" data-add="${path}" data-f="${f.k}">${t('+ Add item')}</button></div>`;
   }
   return '';
 }
@@ -1200,24 +1204,26 @@ function syncInspectorField(key, value){
 
 /* =============== DESIGN TAB =============== */
 function renderDesign(){
-  const t = state.theme;
+  const th = state.theme;
   $('#rtab-design').innerHTML = `
-    <h4>Palette</h4>
+    <h4>${t('Palette')}</h4>
     <div class="swatches" style="margin-bottom:14px">${Object.entries(PALETTES).map(([k,p])=>`
-      <button class="swatch ${t.palette===k?'on':''}" data-pal="${k}" title="${p.name}" style="background:linear-gradient(135deg, ${p.bg} 48%, ${p.accent} 48% 74%, ${p.accent2} 74%)"></button>`).join('')}
+      <button class="swatch ${th.palette===k?'on':''}" data-pal="${k}" title="${p.name}" style="background:linear-gradient(135deg, ${p.bg} 48%, ${p.accent} 48% 74%, ${p.accent2} 74%)"></button>`).join('')}
     </div>
-    <div class="field"><label>Accent</label><div class="colorwrap"><input type="color" data-tk="accent" value="${t.accent}"><input class="in hex" data-tk="accent" value="${t.accent}"></div></div>
-    <div class="field"><label>Second accent</label><div class="colorwrap"><input type="color" data-tk="accent2" value="${t.accent2}"><input class="in hex" data-tk="accent2" value="${t.accent2}"></div></div>
+    <div class="field"><label>${t('Accent')}</label><div class="colorwrap"><input type="color" data-tk="accent" value="${th.accent}"><input class="in hex" data-tk="accent" value="${th.accent}"></div></div>
+    <div class="field"><label>${t('Second accent')}</label><div class="colorwrap"><input type="color" data-tk="accent2" value="${th.accent2}"><input class="in hex" data-tk="accent2" value="${th.accent2}"></div></div>
     <div class="field-row">
-      <div class="field"><label>Background</label><div class="colorwrap"><input type="color" data-tk="bg" value="${t.bg}"></div></div>
-      <div class="field"><label>Text</label><div class="colorwrap"><input type="color" data-tk="ink" value="${t.ink}"></div></div>
+      <div class="field"><label>${t('Background')}</label><div class="colorwrap"><input type="color" data-tk="bg" value="${th.bg}"></div></div>
+      <div class="field"><label>${t('Text')}</label><div class="colorwrap"><input type="color" data-tk="ink" value="${th.ink}"></div></div>
     </div>
-    <h4>Type</h4>
-    <div class="field"><select data-tk="font">${Object.entries(FONTS).map(([k,f])=>`<option value="${k}" ${t.font===k?'selected':''}>${f.name}</option>`).join('')}</select></div>
-    <h4>Corners</h4>
-    <div class="field"><input type="range" min="0" max="34" value="${t.radius}" data-tk="radius"><label style="margin-top:4px">Radius: <span id="radv">${t.radius}</span>px</label></div>
-    <h4>Page meta</h4>
-    <div class="field"><label>SEO description</label><textarea data-meta="desc" placeholder="One sentence describing this site for search engines">${esc(state.meta.desc||'')}</textarea></div>
+    <h4>${t('Type')}</h4>
+    <div class="field"><select data-tk="font">${Object.entries(FONTS).map(([k,f])=>`<option value="${k}" ${th.font===k?'selected':''}>${f.name}</option>`).join('')}</select></div>
+    <h4>${t('Corners')}</h4>
+    <div class="field"><input type="range" min="0" max="34" value="${th.radius}" data-tk="radius"><label style="margin-top:4px">${t('Radius')}: <span id="radv">${th.radius}</span>px</label></div>
+    <h4>${t('Page meta')}</h4>
+    <div class="field"><label>${t('Page language')}</label><select data-meta="lang">${Object.entries(LANGS).map(([k,n])=>`<option value="${k}" ${(state.meta.lang||'en')===k?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="field"><label>${t('Currency')}</label><select data-meta="currency">${Object.entries(CURRENCIES).map(([k,sym])=>`<option value="${k}" ${(state.meta.currency||'PHP')===k?'selected':''}>${sym} ${k}</option>`).join('')}</select></div>
+    <div class="field"><label>${t('SEO description')}</label><textarea data-meta="desc" placeholder="${escAttr(t('One sentence describing this site for search engines'))}">${esc(state.meta.desc||'')}</textarea></div>
   `;
   const d = $('#rtab-design');
   $$('.swatch',d).forEach(sw=>sw.addEventListener('click',()=>{
@@ -1234,7 +1240,7 @@ function renderDesign(){
       if (el.dataset.tk==='radius'){ v=+v; $('#radv').textContent=v; }
       else if (el.classList.contains('hex') || el.type==='color'){
         v = v.trim(); if(!v.startsWith('#')) v = '#'+v;
-        if(!/^#[0-9a-fA-F]{6}$/.test(v)){ if(el.classList.contains('hex')) toast('Colors need a 6-digit hex like #D25A28'); return; }
+        if(!/^#[0-9a-fA-F]{6}$/.test(v)){ if(el.classList.contains('hex')) toast(t('Colors need a 6-digit hex like #D25A28')); return; }
       }
       state.theme[el.dataset.tk]=v; state.theme.palette='custom';
       // keep hex + picker twins in sync
@@ -1243,6 +1249,338 @@ function renderDesign(){
     });
   });
   $('[data-meta="desc"]',d).addEventListener('change',e=>{ state.meta.desc=e.target.value; autosave(); });
+  $('[data-meta="lang"]',d).addEventListener('change',e=>{
+    snapshot();
+    state.meta.lang = e.target.value;
+    state.meta.currency = LANG_CURRENCY[state.meta.lang] || state.meta.currency || 'PHP';
+    swapCurrencySymbols();
+    renderCanvas(); renderDesign(); autosave();
+  });
+  $('[data-meta="currency"]',d).addEventListener('change',e=>{
+    snapshot();
+    state.meta.currency = e.target.value;
+    swapCurrencySymbols();
+    renderCanvas(); renderDesign(); renderInspector(); autosave();
+  });
+}
+</script>
+<script>
+"use strict";
+/* =============== I18N + CURRENCY =============== */
+const LANGS = { en:'English', ja:'日本語', fr:'Français', zh:'中文', es:'Español', it:'Italiano', ar:'العربية' };
+const RTL = { ar:true };
+const CURRENCIES = { PHP:'₱', USD:'$', EUR:'€', JPY:'¥', CNY:'¥', GBP:'£', SAR:'﷼', AED:'د.إ' };
+const LANG_CURRENCY = { en:'PHP', ja:'JPY', fr:'EUR', zh:'CNY', es:'EUR', it:'EUR', ar:'SAR' };
+let uiLang = 'en';
+try{ const l = localStorage.getItem('lb-lang'); if (l && LANGS[l]) uiLang = l; }catch(e){}
+
+/* English long-form passages (short keys). All other strings use their English text as the key. */
+const EN_LONG = {
+_tplS:'Pick a starting point. Everything is editable: the colors, the type, the blocks, all of it.',
+_gS:'Four things and you know the whole tool.',
+_g1t:'Add blocks', _g1b:'Click any block in the left panel, drag it onto the page, or use the <b>＋</b> buttons that appear on the page itself.',
+_g2t:'Click text to edit it', _g2b:'Headings, paragraphs, buttons: click them right on the page and type. Lists like pricing plans are edited in the right panel.',
+_g3t:'Make it yours in Design', _g3b:'The Design tab (top right) changes colors, fonts, and corner roundness for the whole site at once.',
+_g4t:'Export when ready', _g4b:'Export gives you the finished website as one clean HTML file. Exporting is part of client access. On a trial you can build, preview, and save your draft, and we take it from there.',
+_keys:'Handy keys: <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Delete</kbd> removes the selected block · <kbd>Esc</kbd> deselects.',
+_pickS:'It will be inserted right where you clicked ＋.',
+_exS:'You get one self-contained HTML file, and that file <b>is</b> the website. No plugins, nothing to install.',
+_deploy:'<b>To put it online:</b> name the file <b>index.html</b> and drop it into your hosting. For Vercel, add it to your repo and push, or drag the file into a new Vercel project. It\u2019s live in seconds. Want BlinkLoop to host and maintain it for you? That\u2019s exactly what our <b>care plans</b> are for.',
+_pjS:'Your work autosaves in this browser automatically. A project file is for moving between devices, keeping a backup, or sending your draft to us.',
+_noSel:'Select a block on the canvas to edit its content, or <b>drag a block in</b> from the left panel. Text on the canvas is directly editable: click a heading and type.',
+_empty:'Your page is empty.<br>Click a block in the left panel, or press the button below.',
+_accTrialS:'You\u2019re on the free trial: you can build the whole page, preview it, and save your draft. Exporting the finished website comes with any active BlinkLoop build or hosting plan.',
+_accS:'Have a client code? Enter it below. It comes with any active BlinkLoop build or hosting plan.',
+_accActiveS:'Unlocked for <b>{c}</b> until <b>{d}</b> (end of day, PH time). Thanks for building with BlinkLoop.',
+_perk1:'Export your site as a clean, ready-to-host HTML file',
+_perk2:'We host it, keep it online, and help with updates',
+_perk3:'Your trial draft carries over, nothing is lost',
+_errInvalid:'That code didn\u2019t match. Check it and try again, or message us.',
+_errExpired:'That code has expired. Message us to renew your access.',
+_errNet:'Couldn\u2019t reach the server. Check your connection and try again.',
+_resetConfirm:'Start over? Your current page will be cleared. (Ctrl+Z can still bring it back until you close the tab.)'
+};
+
+const TR = {
+ja:{
+_tplS:'出発点を選んでください。色、フォント、ブロック、すべて編集できます。',
+_gS:'この4つでツール全体がわかります。',
+_g1t:'ブロックを追加', _g1b:'左パネルのブロックをクリックするか、ページにドラッグ、またはページ上に表示される<b>＋</b>ボタンを使います。',
+_g2t:'テキストをクリックして編集', _g2b:'見出し、段落、ボタン: ページ上で直接クリックして入力できます。料金プランなどのリストは右パネルで編集します。',
+_g3t:'デザインで自分らしく', _g3b:'デザインタブ（右上）で、サイト全体の色、フォント、角の丸みを一度に変更できます。',
+_g4t:'完成したらエクスポート', _g4b:'エクスポートで完成したウェブサイトを1つのHTMLファイルとして受け取れます。エクスポートはクライアント特典です。トライアルでは作成、プレビュー、下書き保存ができます。',
+_keys:'ショートカット: <kbd>Ctrl</kbd>+<kbd>Z</kbd> 元に戻す · <kbd>Ctrl</kbd>+<kbd>Y</kbd> やり直す · <kbd>Delete</kbd> 選択ブロックを削除 · <kbd>Esc</kbd> 選択解除',
+_pickS:'＋をクリックした位置に挿入されます。',
+_exS:'自己完結型のHTMLファイルが1つ生成され、そのファイルがウェブサイト<b>そのもの</b>です。プラグインもインストールも不要。',
+_deploy:'<b>公開するには:</b> ファイル名を<b>index.html</b>にしてホスティングに配置します。Vercelならリポジトリに追加してプッシュ、または新規プロジェクトにドラッグ。数秒で公開されます。BlinkLoopにホスティングと保守を任せたい場合は、<b>ケアプラン</b>をご利用ください。',
+_pjS:'作業はこのブラウザに自動保存されます。プロジェクトファイルは、端末間の移動、バックアップ、下書きの送付に使えます。',
+_noSel:'キャンバス上のブロックをクリックして内容を編集するか、左パネルから<b>ブロックをドラッグ</b>してください。ページ上のテキストは直接編集できます。',
+_empty:'ページは空です。<br>左パネルのブロックをクリックするか、下のボタンを押してください。',
+_accTrialS:'無料トライアル中です。ページの作成、プレビュー、下書き保存ができます。完成サイトのエクスポートは、BlinkLoopの制作またはホスティング契約に含まれます。',
+_accS:'クライアントコードをお持ちですか？下に入力してください。制作またはホスティング契約に付属しています。',
+_accActiveS:'<b>{c}</b>として<b>{d}</b>まで有効（フィリピン時間の終日）。BlinkLoopをご利用いただきありがとうございます。',
+_perk1:'ホスティング可能なクリーンなHTMLファイルとしてエクスポート',
+_perk2:'ホスティング、稼働維持、更新サポートを提供',
+_perk3:'トライアルの下書きはそのまま引き継がれます',
+_errInvalid:'コードが一致しません。確認してもう一度お試しいただくか、ご連絡ください。',
+_errExpired:'このコードは期限切れです。更新はご連絡ください。',
+_errNet:'サーバーに接続できません。接続を確認してもう一度お試しください。',
+_resetConfirm:'最初からやり直しますか？現在のページは消去されます。（タブを閉じるまではCtrl+Zで戻せます）',
+'Start your loop':'ループを始める','How this works':'使い方','Add a block':'ブロックを追加','Export your site':'サイトをエクスポート','File name':'ファイル名','Download HTML':'HTMLをダウンロード','Copy HTML':'HTMLをコピー','Open preview':'プレビューを開く','Save or load your project':'プロジェクトの保存と読み込み','Download project (.json)':'プロジェクトをダウンロード (.json)','Load project…':'プロジェクトを読み込む…','Start over':'最初からやり直す',
+'Blocks':'ブロック','Layers':'レイヤー','Block':'ブロック','Design':'デザイン','Preview':'プレビュー','Export site':'サイトをエクスポート','Save / Load':'保存 / 読込','? Guide':'? ガイド','Trial':'トライアル','Client ✓':'クライアント ✓','Saved':'保存済み','Saving…':'保存中…','Not saved':'未保存',
+'Click a block to add it, or drag it onto the page.':'ブロックをクリックで追加、またはページへドラッグ。','Your page, top to bottom. Drag to reorder, click to jump to a block.':'ページの構成（上から下）。ドラッグで並べ替え、クリックで移動。','Click a block on the page to edit it here.':'ページ上のブロックをクリックするとここで編集できます。','No blocks yet. Add some from the Blocks tab.':'まだブロックがありません。ブロックタブから追加してください。',
+'+ Add item':'+ 項目を追加','＋ Add block':'＋ ブロックを追加','Insert a block here':'ここにブロックを挿入','Move up':'上へ','Move down':'下へ','Duplicate':'複製','Delete':'削除','Remove':'削除',
+'Palette':'パレット','Accent':'アクセント','Second accent':'第2アクセント','Background':'背景','Text':'テキスト','Type':'フォント','Corners':'角丸','Radius':'半径','Page meta':'ページ情報','SEO description':'SEO説明文','One sentence describing this site for search engines':'検索エンジン向けにサイトを一文で説明','Page language':'ページの言語','Currency':'通貨',
+'Desktop view':'デスクトップ表示','Tablet view, exactly how it responds':'タブレット表示（実際のレスポンシブ）','Phone view, exactly how it responds':'スマホ表示（実際のレスポンシブ）',
+'Navbar':'ナビバー','Sticky top navigation':'固定トップナビ','Hero':'ヒーロー','Big opening statement':'大きな冒頭メッセージ','Features':'特徴','Grid of what you offer':'提供内容のグリッド','Image + Text':'画像 + テキスト','Side-by-side story section':'左右並びのストーリー','Stats':'実績数値','Numbers that prove it':'証明する数字','Pricing':'料金','Plans and packages':'プランとパッケージ','Testimonials':'お客様の声','Words from real clients':'実際の声','Gallery':'ギャラリー','Work, menu, or photos':'作品・メニュー・写真','FAQ':'よくある質問','Answer objections early':'疑問に先回りして回答','CTA Band':'CTAバンド','The big ask':'大きな呼びかけ','Contact':'お問い合わせ','Form + details':'フォームと連絡先','Footer':'フッター','Sign-off + links':'締めとリンク',
+'Blank':'空白','Empty canvas. You know what you’re doing.':'空のキャンバス。上級者向け。','Studio / Agency':'スタジオ / 制作会社','Portfolio-forward with pricing and a strong CTA.':'ポートフォリオ中心、料金と強いCTA付き。','Local business':'ローカルビジネス','Menu/services, social proof, easy contact.':'メニュー/サービス、実績、簡単な連絡先。','Product launch':'プロダクトローンチ','Centered hero, stats, FAQ. Built to convert.':'中央ヒーロー、実績、FAQ。成約重視。',
+'Brand name':'ブランド名','Brand accent word':'ブランドのアクセント語','Menu links':'メニューリンク','Label':'ラベル','Link (e.g. #pricing)':'リンク（例: #pricing）','Button label':'ボタンラベル','Button link':'ボタンリンク','Eyebrow':'アイブロウ（小見出し）','Headline (wrap a word in *stars* to color it)':'見出し（*星*で囲むと色付き）','Subheadline':'サブ見出し','Primary button':'メインボタン','Primary link':'メインリンク','Secondary button (blank = hidden)':'サブボタン（空欄で非表示）','Secondary link':'サブリンク','Layout':'レイアウト','Split':'左右分割','Centered':'中央寄せ','Image URL (blank = brand placeholder)':'画像URL（空欄でプレースホルダー）','Title':'タイトル','Subtitle':'サブタイトル','Columns':'列数','Cards':'カード','Icon (emoji)':'アイコン（絵文字）','Body text':'本文','Button (blank = hidden)':'ボタン（空欄で非表示）','Image URL':'画像URL','Image on the left':'画像を左に','Value':'数値','Plans':'プラン','Plan name':'プラン名','Price':'価格','Period / note':'期間 / 備考','Features (one per line)':'特徴（1行に1つ）','Button':'ボタン','Highlight this plan':'このプランを強調','Quotes':'引用','Quote':'引用文','Name':'名前','Role / company':'役職 / 会社','Items':'項目','Caption':'キャプション','Questions':'質問','Question':'質問','Answer':'回答','Email':'メール','Phone (blank = hidden)':'電話（空欄で非表示）','Location (blank = hidden)':'所在地（空欄で非表示)','Form endpoint URL (e.g. Formspree). Blank = form emails you via mailto.':'フォーム送信先URL（例: Formspree）。空欄ならmailtoで送信。','Brand':'ブランド','Tagline':'タグライン','Links':'リンク','Fine print':'注記','Image URL (blank = placeholder)':'画像URL（空欄でプレースホルダー）',
+'Exporting is for clients':'エクスポートはクライアント専用','Client access':'クライアントアクセス','Client access active':'クライアントアクセス有効','Sign out on this browser':'このブラウザからサインアウト','Unlock':'ロック解除','See plans & pricing':'プランと料金を見る','Talk to us':'お問い合わせ','Checking…':'確認中…',
+'Your page is empty. Add a block first':'ページが空です。まずブロックを追加してください','Downloaded! That file is your website':'ダウンロード完了！それがあなたのウェブサイトです','HTML copied to clipboard':'HTMLをコピーしました','Copy blocked by the browser. Use Download instead':'ブラウザによりコピーがブロックされました。ダウンロードをご利用ください','Pop-up blocked. Allow pop-ups to preview':'ポップアップがブロックされました。許可してください','Project file downloaded':'プロジェクトファイルをダウンロードしました','That file isn’t a Loop Builder project':'Loop Builderのプロジェクトファイルではありません','Project loaded':'プロジェクトを読み込みました','Welcome, {n}! Exporting is unlocked':'ようこそ、{n}さん！エクスポートが解除されました','Signed out. Back on trial':'サインアウトしました。トライアルに戻ります','Your client access has ended. Message us to renew.':'クライアントアクセスの期限が切れました。更新はご連絡ください。','Saved':'保存済み','Loop started! Click any text on the page to edit it':'開始！ページ上のテキストをクリックして編集','Block removed. Ctrl+Z to undo':'ブロックを削除しました。Ctrl+Zで元に戻せます','{b} added':'{b}を追加しました','Colors need a 6-digit hex like #D25A28':'色は#D25A28のような6桁の16進数で指定してください'
+},
+fr:{
+_tplS:'Choisissez un point de départ. Tout est modifiable : les couleurs, la typo, les blocs, tout.',
+_gS:'Quatre choses et vous maîtrisez l\u2019outil.',
+_g1t:'Ajoutez des blocs', _g1b:'Cliquez sur un bloc dans le panneau de gauche, glissez-le sur la page, ou utilisez les boutons <b>＋</b> qui apparaissent sur la page.',
+_g2t:'Cliquez sur le texte pour le modifier', _g2b:'Titres, paragraphes, boutons : cliquez directement sur la page et tapez. Les listes comme les tarifs se modifient dans le panneau de droite.',
+_g3t:'Personnalisez dans Design', _g3b:'L\u2019onglet Design (en haut à droite) change les couleurs, les polices et les arrondis de tout le site en une fois.',
+_g4t:'Exportez quand c\u2019est prêt', _g4b:'L\u2019export vous donne le site terminé en un seul fichier HTML propre. L\u2019export fait partie de l\u2019accès client. En essai, vous pouvez créer, prévisualiser et enregistrer votre brouillon.',
+_keys:'Raccourcis : <kbd>Ctrl</kbd>+<kbd>Z</kbd> annuler · <kbd>Ctrl</kbd>+<kbd>Y</kbd> rétablir · <kbd>Suppr</kbd> supprime le bloc sélectionné · <kbd>Échap</kbd> désélectionne.',
+_pickS:'Il sera inséré à l\u2019endroit exact où vous avez cliqué ＋.',
+_exS:'Vous obtenez un seul fichier HTML autonome, et ce fichier <b>est</b> le site. Aucun plugin, rien à installer.',
+_deploy:'<b>Pour le mettre en ligne :</b> nommez le fichier <b>index.html</b> et déposez-le chez votre hébergeur. Sur Vercel, ajoutez-le à votre dépôt et poussez, ou glissez le fichier dans un nouveau projet Vercel. En ligne en quelques secondes. Vous voulez que BlinkLoop l\u2019héberge et le maintienne ? C\u2019est exactement le rôle de nos <b>formules d\u2019entretien</b>.',
+_pjS:'Votre travail est sauvegardé automatiquement dans ce navigateur. Un fichier projet sert à changer d\u2019appareil, faire une sauvegarde ou nous envoyer votre brouillon.',
+_noSel:'Sélectionnez un bloc sur la page pour modifier son contenu, ou <b>glissez un bloc</b> depuis le panneau de gauche. Le texte se modifie directement : cliquez sur un titre et tapez.',
+_empty:'Votre page est vide.<br>Cliquez sur un bloc dans le panneau de gauche, ou utilisez le bouton ci-dessous.',
+_accTrialS:'Vous êtes en essai gratuit : vous pouvez créer toute la page, la prévisualiser et enregistrer votre brouillon. L\u2019export du site terminé est inclus dans toute formule BlinkLoop active (création ou hébergement).',
+_accS:'Vous avez un code client ? Saisissez-le ci-dessous. Il est inclus dans toute formule BlinkLoop active (création ou hébergement).',
+_accActiveS:'Déverrouillé pour <b>{c}</b> jusqu\u2019au <b>{d}</b> (fin de journée, heure des Philippines). Merci de créer avec BlinkLoop.',
+_perk1:'Exportez votre site en un fichier HTML propre, prêt à héberger',
+_perk2:'Nous l\u2019hébergeons, le maintenons en ligne et aidons aux mises à jour',
+_perk3:'Votre brouillon d\u2019essai est conservé, rien n\u2019est perdu',
+_errInvalid:'Ce code ne correspond pas. Vérifiez-le et réessayez, ou contactez-nous.',
+_errExpired:'Ce code a expiré. Contactez-nous pour renouveler votre accès.',
+_errNet:'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.',
+_resetConfirm:'Tout recommencer ? Votre page actuelle sera effacée. (Ctrl+Z peut encore la restaurer tant que l\u2019onglet est ouvert.)',
+'Start your loop':'Lancez votre loop','How this works':'Comment ça marche','Add a block':'Ajouter un bloc','Export your site':'Exporter votre site','File name':'Nom du fichier','Download HTML':'Télécharger le HTML','Copy HTML':'Copier le HTML','Open preview':'Ouvrir l\u2019aperçu','Save or load your project':'Enregistrer ou charger votre projet','Download project (.json)':'Télécharger le projet (.json)','Load project…':'Charger un projet…','Start over':'Recommencer',
+'Blocks':'Blocs','Layers':'Calques','Block':'Bloc','Design':'Design','Preview':'Aperçu','Export site':'Exporter le site','Save / Load':'Enregistrer / Charger','? Guide':'? Guide','Trial':'Essai','Client ✓':'Client ✓','Saved':'Enregistré','Saving…':'Enregistrement…','Not saved':'Non enregistré',
+'Click a block to add it, or drag it onto the page.':'Cliquez sur un bloc pour l\u2019ajouter, ou glissez-le sur la page.','Your page, top to bottom. Drag to reorder, click to jump to a block.':'Votre page, de haut en bas. Glissez pour réordonner, cliquez pour y aller.','Click a block on the page to edit it here.':'Cliquez sur un bloc de la page pour le modifier ici.','No blocks yet. Add some from the Blocks tab.':'Aucun bloc pour l\u2019instant. Ajoutez-en depuis l\u2019onglet Blocs.',
+'+ Add item':'+ Ajouter un élément','＋ Add block':'＋ Ajouter un bloc','Insert a block here':'Insérer un bloc ici','Move up':'Monter','Move down':'Descendre','Duplicate':'Dupliquer','Delete':'Supprimer','Remove':'Retirer',
+'Palette':'Palette','Accent':'Accent','Second accent':'Second accent','Background':'Fond','Text':'Texte','Type':'Typo','Corners':'Angles','Radius':'Rayon','Page meta':'Métadonnées','SEO description':'Description SEO','One sentence describing this site for search engines':'Une phrase décrivant ce site pour les moteurs de recherche','Page language':'Langue de la page','Currency':'Devise',
+'Desktop view':'Vue bureau','Tablet view, exactly how it responds':'Vue tablette, rendu réel','Phone view, exactly how it responds':'Vue mobile, rendu réel',
+'Navbar':'Barre de nav','Sticky top navigation':'Navigation fixe en haut','Hero':'Héro','Big opening statement':'Grande accroche d\u2019ouverture','Features':'Atouts','Grid of what you offer':'Grille de votre offre','Image + Text':'Image + Texte','Side-by-side story section':'Section récit côte à côte','Stats':'Chiffres','Numbers that prove it':'Des chiffres qui le prouvent','Pricing':'Tarifs','Plans and packages':'Formules et forfaits','Testimonials':'Témoignages','Words from real clients':'Paroles de vrais clients','Gallery':'Galerie','Work, menu, or photos':'Réalisations, menu ou photos','FAQ':'FAQ','Answer objections early':'Répondez aux objections tôt','CTA Band':'Bandeau CTA','The big ask':'La grande demande','Contact':'Contact','Form + details':'Formulaire + coordonnées','Footer':'Pied de page','Sign-off + links':'Signature + liens',
+'Blank':'Vierge','Empty canvas. You know what you’re doing.':'Page vierge. Vous savez ce que vous faites.','Studio / Agency':'Studio / Agence','Portfolio-forward with pricing and a strong CTA.':'Axé portfolio avec tarifs et CTA fort.','Local business':'Commerce local','Menu/services, social proof, easy contact.':'Menu/services, preuve sociale, contact facile.','Product launch':'Lancement produit','Centered hero, stats, FAQ. Built to convert.':'Héro centré, chiffres, FAQ. Conçu pour convertir.',
+'Brand name':'Nom de marque','Brand accent word':'Mot accentué de la marque','Menu links':'Liens du menu','Label':'Libellé','Link (e.g. #pricing)':'Lien (ex. #pricing)','Button label':'Libellé du bouton','Button link':'Lien du bouton','Eyebrow':'Surtitre','Headline (wrap a word in *stars* to color it)':'Titre (entourez un mot d\u2019*étoiles* pour le colorer)','Subheadline':'Sous-titre','Primary button':'Bouton principal','Primary link':'Lien principal','Secondary button (blank = hidden)':'Bouton secondaire (vide = masqué)','Secondary link':'Lien secondaire','Layout':'Disposition','Split':'Deux colonnes','Centered':'Centré','Image URL (blank = brand placeholder)':'URL d\u2019image (vide = visuel par défaut)','Title':'Titre','Subtitle':'Sous-titre','Columns':'Colonnes','Cards':'Cartes','Icon (emoji)':'Icône (emoji)','Body text':'Texte','Button (blank = hidden)':'Bouton (vide = masqué)','Image URL':'URL d\u2019image','Image on the left':'Image à gauche','Value':'Valeur','Plans':'Formules','Plan name':'Nom de la formule','Price':'Prix','Period / note':'Période / note','Features (one per line)':'Caractéristiques (une par ligne)','Button':'Bouton','Highlight this plan':'Mettre cette formule en avant','Quotes':'Citations','Quote':'Citation','Name':'Nom','Role / company':'Rôle / entreprise','Items':'Éléments','Caption':'Légende','Questions':'Questions','Question':'Question','Answer':'Réponse','Email':'E-mail','Phone (blank = hidden)':'Téléphone (vide = masqué)','Location (blank = hidden)':'Adresse (vide = masqué)','Form endpoint URL (e.g. Formspree). Blank = form emails you via mailto.':'URL du formulaire (ex. Formspree). Vide = envoi par mailto.','Brand':'Marque','Tagline':'Slogan','Links':'Liens','Fine print':'Mentions','Image URL (blank = placeholder)':'URL d\u2019image (vide = visuel par défaut)',
+'Exporting is for clients':'L\u2019export est réservé aux clients','Client access':'Accès client','Client access active':'Accès client actif','Sign out on this browser':'Se déconnecter sur ce navigateur','Unlock':'Déverrouiller','See plans & pricing':'Voir les formules et tarifs','Talk to us':'Parlez-nous','Checking…':'Vérification…',
+'Your page is empty. Add a block first':'Votre page est vide. Ajoutez d\u2019abord un bloc','Downloaded! That file is your website':'Téléchargé ! Ce fichier est votre site','HTML copied to clipboard':'HTML copié dans le presse-papiers','Copy blocked by the browser. Use Download instead':'Copie bloquée par le navigateur. Utilisez Télécharger','Pop-up blocked. Allow pop-ups to preview':'Pop-up bloquée. Autorisez les pop-ups pour l\u2019aperçu','Project file downloaded':'Fichier projet téléchargé','That file isn’t a Loop Builder project':'Ce fichier n\u2019est pas un projet Loop Builder','Project loaded':'Projet chargé','Welcome, {n}! Exporting is unlocked':'Bienvenue, {n} ! L\u2019export est déverrouillé','Signed out. Back on trial':'Déconnecté. Retour à l\u2019essai','Your client access has ended. Message us to renew.':'Votre accès client a expiré. Contactez-nous pour renouveler.','Loop started! Click any text on the page to edit it':'C\u2019est parti ! Cliquez sur un texte de la page pour le modifier','Block removed. Ctrl+Z to undo':'Bloc supprimé. Ctrl+Z pour annuler','{b} added':'{b} ajouté','Colors need a 6-digit hex like #D25A28':'Les couleurs demandent un hexadécimal à 6 chiffres, ex. #D25A28'
+}
+};
+</script>
+<script>
+"use strict";
+Object.assign(TR, {
+zh:{
+_tplS:'选择一个起点。一切都可以编辑：颜色、字体、模块，全部都行。',
+_gS:'掌握这四点，你就会用整个工具了。',
+_g1t:'添加模块', _g1b:'点击左侧面板中的模块，拖到页面上，或使用页面上出现的<b>＋</b>按钮。',
+_g2t:'点击文字即可编辑', _g2b:'标题、段落、按钮：直接在页面上点击并输入。价格方案等列表在右侧面板编辑。',
+_g3t:'在“设计”中打造风格', _g3b:'“设计”选项卡（右上角）可一次性更改整个网站的颜色、字体和圆角。',
+_g4t:'完成后导出', _g4b:'导出会生成一个干净的HTML文件，就是完整的网站。导出是客户专属功能。试用期间可以搭建、预览并保存草稿。',
+_keys:'快捷键：<kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销 · <kbd>Ctrl</kbd>+<kbd>Y</kbd> 重做 · <kbd>Delete</kbd> 删除所选模块 · <kbd>Esc</kbd> 取消选择。',
+_pickS:'它会插入到你点击 ＋ 的位置。',
+_exS:'你会得到一个独立的HTML文件，这个文件<b>就是</b>网站本身。无插件，无需安装。',
+_deploy:'<b>上线方法：</b>将文件命名为<b>index.html</b>并放入你的托管服务。使用Vercel时，加入仓库并推送，或将文件拖入新的Vercel项目，几秒即可上线。想让BlinkLoop为你托管和维护？这正是我们<b>维护套餐</b>的用途。',
+_pjS:'你的工作会自动保存在此浏览器中。项目文件用于跨设备迁移、备份或把草稿发给我们。',
+_noSel:'点击画布上的模块来编辑内容，或从左侧面板<b>拖入模块</b>。页面上的文字可直接编辑：点击标题即可输入。',
+_empty:'页面还是空的。<br>点击左侧面板中的模块，或按下方按钮。',
+_accTrialS:'你正在免费试用：可以搭建整个页面、预览并保存草稿。导出完整网站包含在任何有效的BlinkLoop建站或托管套餐中。',
+_accS:'有客户代码吗？在下方输入。任何有效的BlinkLoop建站或托管套餐都会附带。',
+_accActiveS:'已为<b>{c}</b>解锁，有效期至<b>{d}</b>（菲律宾时间当天结束）。感谢使用BlinkLoop。',
+_perk1:'将网站导出为干净、可直接托管的HTML文件',
+_perk2:'我们负责托管、保持在线并协助更新',
+_perk3:'试用草稿会保留，不会丢失任何内容',
+_errInvalid:'代码不匹配。请检查后重试，或联系我们。',
+_errExpired:'该代码已过期。请联系我们续期。',
+_errNet:'无法连接服务器。请检查网络后重试。',
+_resetConfirm:'重新开始？当前页面将被清空。（关闭标签页前仍可用Ctrl+Z恢复）',
+'Start your loop':'开始你的Loop','How this works':'使用方法','Add a block':'添加模块','Export your site':'导出网站','File name':'文件名','Download HTML':'下载HTML','Copy HTML':'复制HTML','Open preview':'打开预览','Save or load your project':'保存或载入项目','Download project (.json)':'下载项目 (.json)','Load project…':'载入项目…','Start over':'重新开始',
+'Blocks':'模块','Layers':'图层','Block':'模块','Design':'设计','Preview':'预览','Export site':'导出网站','Save / Load':'保存 / 载入','? Guide':'? 指南','Trial':'试用','Client ✓':'客户 ✓','Saved':'已保存','Saving…':'保存中…','Not saved':'未保存',
+'Click a block to add it, or drag it onto the page.':'点击模块添加，或拖到页面上。','Your page, top to bottom. Drag to reorder, click to jump to a block.':'页面结构（从上到下）。拖动排序，点击跳转。','Click a block on the page to edit it here.':'点击页面上的模块即可在此编辑。','No blocks yet. Add some from the Blocks tab.':'还没有模块。请从“模块”选项卡添加。',
+'+ Add item':'+ 添加项目','＋ Add block':'＋ 添加模块','Insert a block here':'在此插入模块','Move up':'上移','Move down':'下移','Duplicate':'复制','Delete':'删除','Remove':'移除',
+'Palette':'配色','Accent':'主色','Second accent':'辅色','Background':'背景','Text':'文字','Type':'字体','Corners':'圆角','Radius':'半径','Page meta':'页面信息','SEO description':'SEO描述','One sentence describing this site for search engines':'用一句话向搜索引擎描述此网站','Page language':'页面语言','Currency':'货币',
+'Desktop view':'桌面视图','Tablet view, exactly how it responds':'平板视图（真实响应效果）','Phone view, exactly how it responds':'手机视图（真实响应效果）',
+'Navbar':'导航栏','Sticky top navigation':'固定顶部导航','Hero':'首屏','Big opening statement':'开场主标语','Features':'亮点','Grid of what you offer':'服务内容网格','Image + Text':'图文','Side-by-side story section':'左右图文板块','Stats':'数据','Numbers that prove it':'用数字证明','Pricing':'价格','Plans and packages':'方案与套餐','Testimonials':'客户评价','Words from real clients':'真实客户的话','Gallery':'相册','Work, menu, or photos':'作品、菜单或照片','FAQ':'常见问题','Answer objections early':'提前解答疑虑','CTA Band':'CTA横幅','The big ask':'关键号召','Contact':'联系','Form + details':'表单与联系方式','Footer':'页脚','Sign-off + links':'收尾与链接',
+'Blank':'空白','Empty canvas. You know what you’re doing.':'空白画布，适合熟手。','Studio / Agency':'工作室 / 机构','Portfolio-forward with pricing and a strong CTA.':'作品集为主，含价格与强CTA。','Local business':'本地商家','Menu/services, social proof, easy contact.':'菜单/服务、口碑、便捷联系。','Product launch':'产品发布','Centered hero, stats, FAQ. Built to convert.':'居中首屏、数据、FAQ，为转化而生。',
+'Brand name':'品牌名','Brand accent word':'品牌强调词','Menu links':'菜单链接','Label':'标签','Link (e.g. #pricing)':'链接（如 #pricing）','Button label':'按钮文字','Button link':'按钮链接','Eyebrow':'眉标','Headline (wrap a word in *stars* to color it)':'标题（用*星号*包住词语可上色）','Subheadline':'副标题','Primary button':'主按钮','Primary link':'主链接','Secondary button (blank = hidden)':'副按钮（留空隐藏）','Secondary link':'副链接','Layout':'布局','Split':'左右','Centered':'居中','Image URL (blank = brand placeholder)':'图片URL（留空用占位图）','Title':'标题','Subtitle':'副标题','Columns':'列数','Cards':'卡片','Icon (emoji)':'图标（表情）','Body text':'正文','Button (blank = hidden)':'按钮（留空隐藏）','Image URL':'图片URL','Image on the left':'图片在左','Value':'数值','Plans':'方案','Plan name':'方案名','Price':'价格','Period / note':'周期 / 备注','Features (one per line)':'内容（每行一条）','Button':'按钮','Highlight this plan':'突出此方案','Quotes':'评价','Quote':'评语','Name':'姓名','Role / company':'职位 / 公司','Items':'项目','Caption':'说明','Questions':'问题','Question':'问题','Answer':'回答','Email':'邮箱','Phone (blank = hidden)':'电话（留空隐藏）','Location (blank = hidden)':'地址（留空隐藏）','Form endpoint URL (e.g. Formspree). Blank = form emails you via mailto.':'表单提交URL（如Formspree）。留空则用mailto发送。','Brand':'品牌','Tagline':'标语','Links':'链接','Fine print':'附注','Image URL (blank = placeholder)':'图片URL（留空用占位图）',
+'Exporting is for clients':'导出为客户专属','Client access':'客户权限','Client access active':'客户权限已激活','Sign out on this browser':'在此浏览器退出','Unlock':'解锁','See plans & pricing':'查看方案与价格','Talk to us':'联系我们','Checking…':'验证中…',
+'Your page is empty. Add a block first':'页面为空。请先添加模块','Downloaded! That file is your website':'已下载！该文件就是你的网站','HTML copied to clipboard':'HTML已复制到剪贴板','Copy blocked by the browser. Use Download instead':'浏览器阻止了复制。请改用下载','Pop-up blocked. Allow pop-ups to preview':'弹窗被拦截。请允许弹窗以预览','Project file downloaded':'项目文件已下载','That file isn’t a Loop Builder project':'该文件不是Loop Builder项目','Project loaded':'项目已载入','Welcome, {n}! Exporting is unlocked':'欢迎，{n}！导出已解锁','Signed out. Back on trial':'已退出。回到试用模式','Your client access has ended. Message us to renew.':'客户权限已到期。请联系我们续期。','Loop started! Click any text on the page to edit it':'开始！点击页面上的任意文字即可编辑','Block removed. Ctrl+Z to undo':'已删除模块。Ctrl+Z可撤销','{b} added':'已添加{b}','Colors need a 6-digit hex like #D25A28':'颜色需要6位十六进制，例如 #D25A28'
+},
+es:{
+_tplS:'Elige un punto de partida. Todo es editable: los colores, la tipografía, los bloques, todo.',
+_gS:'Cuatro cosas y dominas toda la herramienta.',
+_g1t:'Añade bloques', _g1b:'Haz clic en un bloque del panel izquierdo, arrástralo a la página o usa los botones <b>＋</b> que aparecen en la propia página.',
+_g2t:'Haz clic en el texto para editarlo', _g2b:'Títulos, párrafos, botones: haz clic directamente en la página y escribe. Las listas como los precios se editan en el panel derecho.',
+_g3t:'Hazlo tuyo en Diseño', _g3b:'La pestaña Diseño (arriba a la derecha) cambia colores, tipografías y bordes de todo el sitio a la vez.',
+_g4t:'Exporta cuando esté listo', _g4b:'Exportar te da el sitio terminado en un solo archivo HTML limpio. Exportar es parte del acceso de cliente. En la prueba puedes crear, previsualizar y guardar tu borrador.',
+_keys:'Atajos: <kbd>Ctrl</kbd>+<kbd>Z</kbd> deshacer · <kbd>Ctrl</kbd>+<kbd>Y</kbd> rehacer · <kbd>Supr</kbd> elimina el bloque seleccionado · <kbd>Esc</kbd> deselecciona.',
+_pickS:'Se insertará justo donde hiciste clic en ＋.',
+_exS:'Obtienes un único archivo HTML autónomo, y ese archivo <b>es</b> el sitio web. Sin plugins, nada que instalar.',
+_deploy:'<b>Para publicarlo:</b> nombra el archivo <b>index.html</b> y súbelo a tu hosting. En Vercel, añádelo a tu repositorio y haz push, o arrastra el archivo a un proyecto nuevo de Vercel. En segundos está en línea. ¿Quieres que BlinkLoop lo aloje y lo mantenga? Para eso están nuestros <b>planes de mantenimiento</b>.',
+_pjS:'Tu trabajo se guarda automáticamente en este navegador. Un archivo de proyecto sirve para cambiar de dispositivo, tener copia de seguridad o enviarnos tu borrador.',
+_noSel:'Selecciona un bloque en el lienzo para editar su contenido, o <b>arrastra un bloque</b> desde el panel izquierdo. El texto se edita directamente: haz clic en un título y escribe.',
+_empty:'Tu página está vacía.<br>Haz clic en un bloque del panel izquierdo o pulsa el botón de abajo.',
+_accTrialS:'Estás en la prueba gratuita: puedes crear toda la página, previsualizarla y guardar tu borrador. Exportar el sitio terminado viene con cualquier plan activo de BlinkLoop (creación u hosting).',
+_accS:'¿Tienes un código de cliente? Escríbelo abajo. Viene con cualquier plan activo de BlinkLoop (creación u hosting).',
+_accActiveS:'Desbloqueado para <b>{c}</b> hasta el <b>{d}</b> (fin del día, hora de Filipinas). Gracias por crear con BlinkLoop.',
+_perk1:'Exporta tu sitio como un archivo HTML limpio y listo para alojar',
+_perk2:'Lo alojamos, lo mantenemos en línea y ayudamos con actualizaciones',
+_perk3:'Tu borrador de prueba se conserva, no se pierde nada',
+_errInvalid:'Ese código no coincide. Revísalo e inténtalo de nuevo, o escríbenos.',
+_errExpired:'Ese código ha caducado. Escríbenos para renovar tu acceso.',
+_errNet:'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+_resetConfirm:'¿Empezar de nuevo? Tu página actual se borrará. (Ctrl+Z aún puede recuperarla hasta que cierres la pestaña.)',
+'Start your loop':'Empieza tu loop','How this works':'Cómo funciona','Add a block':'Añadir un bloque','Export your site':'Exportar tu sitio','File name':'Nombre del archivo','Download HTML':'Descargar HTML','Copy HTML':'Copiar HTML','Open preview':'Abrir vista previa','Save or load your project':'Guardar o cargar tu proyecto','Download project (.json)':'Descargar proyecto (.json)','Load project…':'Cargar proyecto…','Start over':'Empezar de nuevo',
+'Blocks':'Bloques','Layers':'Capas','Block':'Bloque','Design':'Diseño','Preview':'Vista previa','Export site':'Exportar sitio','Save / Load':'Guardar / Cargar','? Guide':'? Guía','Trial':'Prueba','Client ✓':'Cliente ✓','Saved':'Guardado','Saving…':'Guardando…','Not saved':'No guardado',
+'Click a block to add it, or drag it onto the page.':'Haz clic en un bloque para añadirlo o arrástralo a la página.','Your page, top to bottom. Drag to reorder, click to jump to a block.':'Tu página, de arriba abajo. Arrastra para reordenar, haz clic para ir a un bloque.','Click a block on the page to edit it here.':'Haz clic en un bloque de la página para editarlo aquí.','No blocks yet. Add some from the Blocks tab.':'Aún no hay bloques. Añade desde la pestaña Bloques.',
+'+ Add item':'+ Añadir elemento','＋ Add block':'＋ Añadir bloque','Insert a block here':'Insertar un bloque aquí','Move up':'Subir','Move down':'Bajar','Duplicate':'Duplicar','Delete':'Eliminar','Remove':'Quitar',
+'Palette':'Paleta','Accent':'Acento','Second accent':'Segundo acento','Background':'Fondo','Text':'Texto','Type':'Tipografía','Corners':'Esquinas','Radius':'Radio','Page meta':'Metadatos','SEO description':'Descripción SEO','One sentence describing this site for search engines':'Una frase que describa este sitio para los buscadores','Page language':'Idioma de la página','Currency':'Moneda',
+'Desktop view':'Vista escritorio','Tablet view, exactly how it responds':'Vista tableta, respuesta real','Phone view, exactly how it responds':'Vista móvil, respuesta real',
+'Navbar':'Barra de nav','Sticky top navigation':'Navegación fija superior','Hero':'Portada','Big opening statement':'Gran mensaje de apertura','Features':'Ventajas','Grid of what you offer':'Cuadrícula de tu oferta','Image + Text':'Imagen + Texto','Side-by-side story section':'Sección lado a lado','Stats':'Cifras','Numbers that prove it':'Números que lo demuestran','Pricing':'Precios','Plans and packages':'Planes y paquetes','Testimonials':'Testimonios','Words from real clients':'Palabras de clientes reales','Gallery':'Galería','Work, menu, or photos':'Trabajos, menú o fotos','FAQ':'Preguntas','Answer objections early':'Responde objeciones pronto','CTA Band':'Franja CTA','The big ask':'La gran llamada','Contact':'Contacto','Form + details':'Formulario + datos','Footer':'Pie de página','Sign-off + links':'Cierre + enlaces',
+'Blank':'En blanco','Empty canvas. You know what you’re doing.':'Lienzo vacío. Sabes lo que haces.','Studio / Agency':'Estudio / Agencia','Portfolio-forward with pricing and a strong CTA.':'Enfocado a portafolio con precios y un CTA fuerte.','Local business':'Negocio local','Menu/services, social proof, easy contact.':'Menú/servicios, prueba social, contacto fácil.','Product launch':'Lanzamiento','Centered hero, stats, FAQ. Built to convert.':'Portada centrada, cifras, FAQ. Hecho para convertir.',
+'Brand name':'Nombre de marca','Brand accent word':'Palabra destacada de la marca','Menu links':'Enlaces del menú','Label':'Etiqueta','Link (e.g. #pricing)':'Enlace (ej. #pricing)','Button label':'Texto del botón','Button link':'Enlace del botón','Eyebrow':'Antetítulo','Headline (wrap a word in *stars* to color it)':'Titular (rodea una palabra con *asteriscos* para colorearla)','Subheadline':'Subtítulo','Primary button':'Botón principal','Primary link':'Enlace principal','Secondary button (blank = hidden)':'Botón secundario (vacío = oculto)','Secondary link':'Enlace secundario','Layout':'Disposición','Split':'Dos columnas','Centered':'Centrado','Image URL (blank = brand placeholder)':'URL de imagen (vacío = marcador)','Title':'Título','Subtitle':'Subtítulo','Columns':'Columnas','Cards':'Tarjetas','Icon (emoji)':'Icono (emoji)','Body text':'Texto','Button (blank = hidden)':'Botón (vacío = oculto)','Image URL':'URL de imagen','Image on the left':'Imagen a la izquierda','Value':'Valor','Plans':'Planes','Plan name':'Nombre del plan','Price':'Precio','Period / note':'Periodo / nota','Features (one per line)':'Características (una por línea)','Button':'Botón','Highlight this plan':'Destacar este plan','Quotes':'Citas','Quote':'Cita','Name':'Nombre','Role / company':'Cargo / empresa','Items':'Elementos','Caption':'Pie de foto','Questions':'Preguntas','Question':'Pregunta','Answer':'Respuesta','Email':'Correo','Phone (blank = hidden)':'Teléfono (vacío = oculto)','Location (blank = hidden)':'Ubicación (vacío = oculto)','Form endpoint URL (e.g. Formspree). Blank = form emails you via mailto.':'URL del formulario (ej. Formspree). Vacío = envío por mailto.','Brand':'Marca','Tagline':'Eslogan','Links':'Enlaces','Fine print':'Letra pequeña','Image URL (blank = placeholder)':'URL de imagen (vacío = marcador)',
+'Exporting is for clients':'Exportar es para clientes','Client access':'Acceso de cliente','Client access active':'Acceso de cliente activo','Sign out on this browser':'Cerrar sesión en este navegador','Unlock':'Desbloquear','See plans & pricing':'Ver planes y precios','Talk to us':'Habla con nosotros','Checking…':'Comprobando…',
+'Your page is empty. Add a block first':'Tu página está vacía. Añade un bloque primero','Downloaded! That file is your website':'¡Descargado! Ese archivo es tu sitio web','HTML copied to clipboard':'HTML copiado al portapapeles','Copy blocked by the browser. Use Download instead':'El navegador bloqueó la copia. Usa Descargar','Pop-up blocked. Allow pop-ups to preview':'Ventana bloqueada. Permite ventanas emergentes para previsualizar','Project file downloaded':'Archivo de proyecto descargado','That file isn’t a Loop Builder project':'Ese archivo no es un proyecto de Loop Builder','Project loaded':'Proyecto cargado','Welcome, {n}! Exporting is unlocked':'¡Bienvenido, {n}! Exportar está desbloqueado','Signed out. Back on trial':'Sesión cerrada. De vuelta a la prueba','Your client access has ended. Message us to renew.':'Tu acceso de cliente ha terminado. Escríbenos para renovar.','Loop started! Click any text on the page to edit it':'¡Empezamos! Haz clic en cualquier texto de la página para editarlo','Block removed. Ctrl+Z to undo':'Bloque eliminado. Ctrl+Z para deshacer','{b} added':'{b} añadido','Colors need a 6-digit hex like #D25A28':'Los colores necesitan un hex de 6 dígitos como #D25A28'
+},
+it:{
+_tplS:'Scegli un punto di partenza. Tutto è modificabile: i colori, i caratteri, i blocchi, tutto.',
+_gS:'Quattro cose e conosci tutto lo strumento.',
+_g1t:'Aggiungi blocchi', _g1b:'Clicca un blocco nel pannello a sinistra, trascinalo sulla pagina, o usa i pulsanti <b>＋</b> che appaiono sulla pagina stessa.',
+_g2t:'Clicca il testo per modificarlo', _g2b:'Titoli, paragrafi, pulsanti: clicca direttamente sulla pagina e scrivi. Le liste come i prezzi si modificano nel pannello a destra.',
+_g3t:'Rendilo tuo in Design', _g3b:'La scheda Design (in alto a destra) cambia colori, caratteri e arrotondamenti di tutto il sito in una volta.',
+_g4t:'Esporta quando è pronto', _g4b:'L\u2019esportazione ti dà il sito finito in un unico file HTML pulito. Esportare fa parte dell\u2019accesso cliente. In prova puoi creare, vedere l\u2019anteprima e salvare la bozza.',
+_keys:'Scorciatoie: <kbd>Ctrl</kbd>+<kbd>Z</kbd> annulla · <kbd>Ctrl</kbd>+<kbd>Y</kbd> ripristina · <kbd>Canc</kbd> elimina il blocco selezionato · <kbd>Esc</kbd> deseleziona.',
+_pickS:'Sarà inserito esattamente dove hai cliccato ＋.',
+_exS:'Ottieni un unico file HTML autonomo, e quel file <b>è</b> il sito. Nessun plugin, niente da installare.',
+_deploy:'<b>Per metterlo online:</b> chiama il file <b>index.html</b> e caricalo sul tuo hosting. Su Vercel, aggiungilo al repository e fai push, oppure trascina il file in un nuovo progetto Vercel. Online in pochi secondi. Vuoi che BlinkLoop lo ospiti e lo mantenga? È esattamente lo scopo dei nostri <b>piani di assistenza</b>.',
+_pjS:'Il tuo lavoro si salva automaticamente in questo browser. Un file di progetto serve per cambiare dispositivo, fare un backup o inviarci la tua bozza.',
+_noSel:'Seleziona un blocco sulla pagina per modificarne il contenuto, o <b>trascina un blocco</b> dal pannello a sinistra. Il testo si modifica direttamente: clicca un titolo e scrivi.',
+_empty:'La tua pagina è vuota.<br>Clicca un blocco nel pannello a sinistra o premi il pulsante qui sotto.',
+_accTrialS:'Sei nella prova gratuita: puoi creare l\u2019intera pagina, vederne l\u2019anteprima e salvare la bozza. Esportare il sito finito è incluso in qualsiasi piano BlinkLoop attivo (creazione o hosting).',
+_accS:'Hai un codice cliente? Inseriscilo qui sotto. È incluso in qualsiasi piano BlinkLoop attivo (creazione o hosting).',
+_accActiveS:'Sbloccato per <b>{c}</b> fino al <b>{d}</b> (fine giornata, ora delle Filippine). Grazie per creare con BlinkLoop.',
+_perk1:'Esporta il tuo sito come file HTML pulito e pronto per l\u2019hosting',
+_perk2:'Lo ospitiamo, lo teniamo online e aiutiamo con gli aggiornamenti',
+_perk3:'La bozza della prova viene conservata, non si perde nulla',
+_errInvalid:'Quel codice non corrisponde. Controllalo e riprova, oppure scrivici.',
+_errExpired:'Quel codice è scaduto. Scrivici per rinnovare l\u2019accesso.',
+_errNet:'Impossibile raggiungere il server. Controlla la connessione e riprova.',
+_resetConfirm:'Ricominciare? La pagina attuale sarà cancellata. (Ctrl+Z può ancora recuperarla finché non chiudi la scheda.)',
+'Start your loop':'Inizia il tuo loop','How this works':'Come funziona','Add a block':'Aggiungi un blocco','Export your site':'Esporta il tuo sito','File name':'Nome del file','Download HTML':'Scarica HTML','Copy HTML':'Copia HTML','Open preview':'Apri anteprima','Save or load your project':'Salva o carica il tuo progetto','Download project (.json)':'Scarica progetto (.json)','Load project…':'Carica progetto…','Start over':'Ricomincia',
+'Blocks':'Blocchi','Layers':'Livelli','Block':'Blocco','Design':'Design','Preview':'Anteprima','Export site':'Esporta sito','Save / Load':'Salva / Carica','? Guide':'? Guida','Trial':'Prova','Client ✓':'Cliente ✓','Saved':'Salvato','Saving…':'Salvataggio…','Not saved':'Non salvato',
+'Click a block to add it, or drag it onto the page.':'Clicca un blocco per aggiungerlo o trascinalo sulla pagina.','Your page, top to bottom. Drag to reorder, click to jump to a block.':'La tua pagina, dall\u2019alto in basso. Trascina per riordinare, clicca per raggiungere un blocco.','Click a block on the page to edit it here.':'Clicca un blocco della pagina per modificarlo qui.','No blocks yet. Add some from the Blocks tab.':'Ancora nessun blocco. Aggiungine dalla scheda Blocchi.',
+'+ Add item':'+ Aggiungi elemento','＋ Add block':'＋ Aggiungi blocco','Insert a block here':'Inserisci un blocco qui','Move up':'Sposta su','Move down':'Sposta giù','Duplicate':'Duplica','Delete':'Elimina','Remove':'Rimuovi',
+'Palette':'Palette','Accent':'Accento','Second accent':'Secondo accento','Background':'Sfondo','Text':'Testo','Type':'Caratteri','Corners':'Angoli','Radius':'Raggio','Page meta':'Metadati','SEO description':'Descrizione SEO','One sentence describing this site for search engines':'Una frase che descriva questo sito per i motori di ricerca','Page language':'Lingua della pagina','Currency':'Valuta',
+'Desktop view':'Vista desktop','Tablet view, exactly how it responds':'Vista tablet, resa reale','Phone view, exactly how it responds':'Vista telefono, resa reale',
+'Navbar':'Barra di nav','Sticky top navigation':'Navigazione fissa in alto','Hero':'Hero','Big opening statement':'Grande messaggio d\u2019apertura','Features':'Punti di forza','Grid of what you offer':'Griglia della tua offerta','Image + Text':'Immagine + Testo','Side-by-side story section':'Sezione affiancata','Stats':'Numeri','Numbers that prove it':'Numeri che lo dimostrano','Pricing':'Prezzi','Plans and packages':'Piani e pacchetti','Testimonials':'Testimonianze','Words from real clients':'Parole di clienti veri','Gallery':'Galleria','Work, menu, or photos':'Lavori, menù o foto','FAQ':'FAQ','Answer objections early':'Rispondi presto alle obiezioni','CTA Band':'Fascia CTA','The big ask':'La grande richiesta','Contact':'Contatti','Form + details':'Modulo + recapiti','Footer':'Footer','Sign-off + links':'Chiusura + link',
+'Blank':'Vuoto','Empty canvas. You know what you’re doing.':'Tela vuota. Sai quello che fai.','Studio / Agency':'Studio / Agenzia','Portfolio-forward with pricing and a strong CTA.':'Portfolio in primo piano con prezzi e CTA forte.','Local business':'Attività locale','Menu/services, social proof, easy contact.':'Menù/servizi, riprova sociale, contatto facile.','Product launch':'Lancio prodotto','Centered hero, stats, FAQ. Built to convert.':'Hero centrato, numeri, FAQ. Fatto per convertire.',
+'Brand name':'Nome del brand','Brand accent word':'Parola in evidenza del brand','Menu links':'Link del menu','Label':'Etichetta','Link (e.g. #pricing)':'Link (es. #pricing)','Button label':'Testo del pulsante','Button link':'Link del pulsante','Eyebrow':'Occhiello','Headline (wrap a word in *stars* to color it)':'Titolo (racchiudi una parola tra *asterischi* per colorarla)','Subheadline':'Sottotitolo','Primary button':'Pulsante principale','Primary link':'Link principale','Secondary button (blank = hidden)':'Pulsante secondario (vuoto = nascosto)','Secondary link':'Link secondario','Layout':'Layout','Split':'Due colonne','Centered':'Centrato','Image URL (blank = brand placeholder)':'URL immagine (vuoto = segnaposto)','Title':'Titolo','Subtitle':'Sottotitolo','Columns':'Colonne','Cards':'Schede','Icon (emoji)':'Icona (emoji)','Body text':'Testo','Button (blank = hidden)':'Pulsante (vuoto = nascosto)','Image URL':'URL immagine','Image on the left':'Immagine a sinistra','Value':'Valore','Plans':'Piani','Plan name':'Nome del piano','Price':'Prezzo','Period / note':'Periodo / nota','Features (one per line)':'Caratteristiche (una per riga)','Button':'Pulsante','Highlight this plan':'Metti in evidenza questo piano','Quotes':'Citazioni','Quote':'Citazione','Name':'Nome','Role / company':'Ruolo / azienda','Items':'Elementi','Caption':'Didascalia','Questions':'Domande','Question':'Domanda','Answer':'Risposta','Email':'Email','Phone (blank = hidden)':'Telefono (vuoto = nascosto)','Location (blank = hidden)':'Località (vuoto = nascosto)','Form endpoint URL (e.g. Formspree). Blank = form emails you via mailto.':'URL del modulo (es. Formspree). Vuoto = invio via mailto.','Brand':'Brand','Tagline':'Slogan','Links':'Link','Fine print':'Note legali','Image URL (blank = placeholder)':'URL immagine (vuoto = segnaposto)',
+'Exporting is for clients':'L\u2019esportazione è per i clienti','Client access':'Accesso cliente','Client access active':'Accesso cliente attivo','Sign out on this browser':'Esci su questo browser','Unlock':'Sblocca','See plans & pricing':'Vedi piani e prezzi','Talk to us':'Parla con noi','Checking…':'Verifica…',
+'Your page is empty. Add a block first':'La pagina è vuota. Aggiungi prima un blocco','Downloaded! That file is your website':'Scaricato! Quel file è il tuo sito','HTML copied to clipboard':'HTML copiato negli appunti','Copy blocked by the browser. Use Download instead':'Copia bloccata dal browser. Usa Scarica','Pop-up blocked. Allow pop-ups to preview':'Pop-up bloccato. Consenti i pop-up per l\u2019anteprima','Project file downloaded':'File di progetto scaricato','That file isn’t a Loop Builder project':'Quel file non è un progetto Loop Builder','Project loaded':'Progetto caricato','Welcome, {n}! Exporting is unlocked':'Benvenuto, {n}! L\u2019esportazione è sbloccata','Signed out. Back on trial':'Disconnesso. Di nuovo in prova','Your client access has ended. Message us to renew.':'Il tuo accesso cliente è terminato. Scrivici per rinnovare.','Loop started! Click any text on the page to edit it':'Si parte! Clicca un testo qualsiasi della pagina per modificarlo','Block removed. Ctrl+Z to undo':'Blocco eliminato. Ctrl+Z per annullare','{b} added':'{b} aggiunto','Colors need a 6-digit hex like #D25A28':'I colori richiedono un esadecimale a 6 cifre come #D25A28'
+},
+ar:{
+_tplS:'اختر نقطة بداية. كل شيء قابل للتعديل: الألوان والخطوط والمكوّنات، كل شيء.',
+_gS:'أربعة أشياء وستتقن الأداة كلها.',
+_g1t:'أضف المكوّنات', _g1b:'انقر على أي مكوّن في اللوحة الجانبية، أو اسحبه إلى الصفحة، أو استخدم أزرار <b>＋</b> التي تظهر على الصفحة نفسها.',
+_g2t:'انقر على النص لتعديله', _g2b:'العناوين والفقرات والأزرار: انقر عليها مباشرة في الصفحة واكتب. القوائم مثل خطط الأسعار تُعدَّل من اللوحة الجانبية الأخرى.',
+_g3t:'اجعلها بأسلوبك من «التصميم»', _g3b:'تبويب التصميم (أعلى الجهة المقابلة) يغيّر الألوان والخطوط واستدارة الزوايا للموقع كله دفعة واحدة.',
+_g4t:'صدّر عندما تنتهي', _g4b:'التصدير يمنحك الموقع الجاهز في ملف HTML واحد نظيف. التصدير جزء من وصول العملاء. في التجربة يمكنك البناء والمعاينة وحفظ المسودة.',
+_keys:'اختصارات: <kbd>Ctrl</kbd>+<kbd>Z</kbd> تراجع · <kbd>Ctrl</kbd>+<kbd>Y</kbd> إعادة · <kbd>Delete</kbd> يحذف المكوّن المحدد · <kbd>Esc</kbd> إلغاء التحديد.',
+_pickS:'سيُدرَج تمامًا حيث نقرت على ＋.',
+_exS:'تحصل على ملف HTML واحد مستقل، وهذا الملف <b>هو</b> الموقع نفسه. لا إضافات ولا تثبيت.',
+_deploy:'<b>للنشر:</b> سمِّ الملف <b>index.html</b> وضعه في الاستضافة. على Vercel أضِفه إلى المستودع وادفع التغييرات، أو اسحب الملف إلى مشروع Vercel جديد. سيكون متاحًا خلال ثوانٍ. تريد أن تستضيفه BlinkLoop وتتولى صيانته؟ هذا بالضبط دور <b>خطط الرعاية</b> لدينا.',
+_pjS:'عملك يُحفَظ تلقائيًا في هذا المتصفح. ملف المشروع للانتقال بين الأجهزة أو للنسخ الاحتياطي أو لإرسال مسودتك إلينا.',
+_noSel:'حدد مكوّنًا على الصفحة لتعديل محتواه، أو <b>اسحب مكوّنًا</b> من اللوحة الجانبية. النص على الصفحة قابل للتعديل مباشرة: انقر على عنوان واكتب.',
+_empty:'صفحتك فارغة.<br>انقر على مكوّن في اللوحة الجانبية، أو اضغط الزر أدناه.',
+_accTrialS:'أنت في التجربة المجانية: يمكنك بناء الصفحة كاملة ومعاينتها وحفظ المسودة. تصدير الموقع الجاهز يأتي مع أي خطة BlinkLoop فعّالة (بناء أو استضافة).',
+_accS:'لديك رمز عميل؟ أدخله أدناه. يأتي مع أي خطة BlinkLoop فعّالة (بناء أو استضافة).',
+_accActiveS:'مفعّل لـ <b>{c}</b> حتى <b>{d}</b> (نهاية اليوم بتوقيت الفلبين). شكرًا لبنائك مع BlinkLoop.',
+_perk1:'صدّر موقعك كملف HTML نظيف جاهز للاستضافة',
+_perk2:'نستضيفه ونبقيه متاحًا ونساعدك في التحديثات',
+_perk3:'مسودة التجربة تبقى محفوظة، لا يضيع شيء',
+_errInvalid:'الرمز غير مطابق. تحقق منه وحاول مجددًا، أو راسلنا.',
+_errExpired:'انتهت صلاحية هذا الرمز. راسلنا لتجديد وصولك.',
+_errNet:'تعذّر الوصول إلى الخادم. تحقق من الاتصال وحاول مجددًا.',
+_resetConfirm:'البدء من جديد؟ ستُمحى صفحتك الحالية. (يمكن استعادتها بـ Ctrl+Z ما دام التبويب مفتوحًا.)',
+'Start your loop':'ابدأ الآن','How this works':'كيف تعمل الأداة','Add a block':'إضافة مكوّن','Export your site':'تصدير موقعك','File name':'اسم الملف','Download HTML':'تنزيل HTML','Copy HTML':'نسخ HTML','Open preview':'فتح المعاينة','Save or load your project':'حفظ المشروع أو تحميله','Download project (.json)':'تنزيل المشروع (.json)','Load project…':'تحميل مشروع…','Start over':'البدء من جديد',
+'Blocks':'المكوّنات','Layers':'الطبقات','Block':'المكوّن','Design':'التصميم','Preview':'معاينة','Export site':'تصدير الموقع','Save / Load':'حفظ / تحميل','? Guide':'؟ دليل','Trial':'تجربة','Client ✓':'عميل ✓','Saved':'محفوظ','Saving…':'جارٍ الحفظ…','Not saved':'غير محفوظ',
+'Click a block to add it, or drag it onto the page.':'انقر على مكوّن لإضافته، أو اسحبه إلى الصفحة.','Your page, top to bottom. Drag to reorder, click to jump to a block.':'صفحتك من الأعلى إلى الأسفل. اسحب لإعادة الترتيب، وانقر للانتقال.','Click a block on the page to edit it here.':'انقر على مكوّن في الصفحة لتعديله هنا.','No blocks yet. Add some from the Blocks tab.':'لا توجد مكوّنات بعد. أضِف من تبويب المكوّنات.',
+'+ Add item':'+ إضافة عنصر','＋ Add block':'＋ إضافة مكوّن','Insert a block here':'إدراج مكوّن هنا','Move up':'للأعلى','Move down':'للأسفل','Duplicate':'تكرار','Delete':'حذف','Remove':'إزالة',
+'Palette':'الألوان','Accent':'اللون الأساسي','Second accent':'اللون الثانوي','Background':'الخلفية','Text':'النص','Type':'الخط','Corners':'الزوايا','Radius':'نصف القطر','Page meta':'بيانات الصفحة','SEO description':'وصف SEO','One sentence describing this site for search engines':'جملة واحدة تصف الموقع لمحركات البحث','Page language':'لغة الصفحة','Currency':'العملة',
+'Desktop view':'عرض سطح المكتب','Tablet view, exactly how it responds':'عرض الجهاز اللوحي كما سيظهر فعلًا','Phone view, exactly how it responds':'عرض الهاتف كما سيظهر فعلًا',
+'Navbar':'شريط التنقل','Sticky top navigation':'تنقّل علوي ثابت','Hero':'الواجهة','Big opening statement':'رسالة افتتاحية كبيرة','Features':'المزايا','Grid of what you offer':'شبكة لما تقدّمه','Image + Text':'صورة + نص','Side-by-side story section':'قسم متجاور للسرد','Stats':'الأرقام','Numbers that prove it':'أرقام تثبت ذلك','Pricing':'الأسعار','Plans and packages':'الخطط والباقات','Testimonials':'آراء العملاء','Words from real clients':'كلمات من عملاء حقيقيين','Gallery':'المعرض','Work, menu, or photos':'أعمال أو قائمة أو صور','FAQ':'الأسئلة الشائعة','Answer objections early':'أجب عن الاعتراضات مبكرًا','CTA Band':'شريط الدعوة','The big ask':'الدعوة الكبرى','Contact':'تواصل','Form + details':'نموذج + بيانات التواصل','Footer':'التذييل','Sign-off + links':'الخاتمة والروابط',
+'Blank':'فارغ','Empty canvas. You know what you’re doing.':'صفحة فارغة. أنت تعرف ما تفعل.','Studio / Agency':'استوديو / وكالة','Portfolio-forward with pricing and a strong CTA.':'يركّز على الأعمال مع الأسعار ودعوة قوية.','Local business':'نشاط محلي','Menu/services, social proof, easy contact.':'قائمة/خدمات، دليل اجتماعي، تواصل سهل.','Product launch':'إطلاق منتج','Centered hero, stats, FAQ. Built to convert.':'واجهة مركزية وأرقام وأسئلة شائعة. مصمم للتحويل.',
+'Brand name':'اسم العلامة','Brand accent word':'كلمة العلامة المميزة','Menu links':'روابط القائمة','Label':'التسمية','Link (e.g. #pricing)':'الرابط (مثل #pricing)','Button label':'نص الزر','Button link':'رابط الزر','Eyebrow':'سطر تمهيدي','Headline (wrap a word in *stars* to color it)':'العنوان (أحِط كلمة بـ*نجمتين* لتلوينها)','Subheadline':'عنوان فرعي','Primary button':'الزر الرئيسي','Primary link':'الرابط الرئيسي','Secondary button (blank = hidden)':'زر ثانوي (فارغ = مخفي)','Secondary link':'رابط ثانوي','Layout':'التخطيط','Split':'عمودان','Centered':'مركزي','Image URL (blank = brand placeholder)':'رابط الصورة (فارغ = صورة مؤقتة)','Title':'العنوان','Subtitle':'العنوان الفرعي','Columns':'الأعمدة','Cards':'البطاقات','Icon (emoji)':'أيقونة (إيموجي)','Body text':'النص','Button (blank = hidden)':'زر (فارغ = مخفي)','Image URL':'رابط الصورة','Image on the left':'الصورة في الجهة الأخرى','Value':'القيمة','Plans':'الخطط','Plan name':'اسم الخطة','Price':'السعر','Period / note':'المدة / ملاحظة','Features (one per line)':'المزايا (واحدة في كل سطر)','Button':'الزر','Highlight this plan':'إبراز هذه الخطة','Quotes':'الاقتباسات','Quote':'الاقتباس','Name':'الاسم','Role / company':'الصفة / الشركة','Items':'العناصر','Caption':'وصف الصورة','Questions':'الأسئلة','Question':'السؤال','Answer':'الإجابة','Email':'البريد','Phone (blank = hidden)':'الهاتف (فارغ = مخفي)','Location (blank = hidden)':'الموقع (فارغ = مخفي)','Form endpoint URL (e.g. Formspree). Blank = form emails you via mailto.':'رابط استقبال النموذج (مثل Formspree). فارغ = الإرسال عبر mailto.','Brand':'العلامة','Tagline':'الشعار','Links':'الروابط','Fine print':'ملاحظة صغيرة','Image URL (blank = placeholder)':'رابط الصورة (فارغ = صورة مؤقتة)',
+'Exporting is for clients':'التصدير خاص بالعملاء','Client access':'وصول العملاء','Client access active':'وصول العميل مفعّل','Sign out on this browser':'تسجيل الخروج من هذا المتصفح','Unlock':'فتح','See plans & pricing':'عرض الخطط والأسعار','Talk to us':'تواصل معنا','Checking…':'جارٍ التحقق…',
+'Your page is empty. Add a block first':'صفحتك فارغة. أضف مكوّنًا أولًا','Downloaded! That file is your website':'تم التنزيل! هذا الملف هو موقعك','HTML copied to clipboard':'تم نسخ HTML','Copy blocked by the browser. Use Download instead':'منع المتصفح النسخ. استخدم التنزيل','Pop-up blocked. Allow pop-ups to preview':'تم حظر النافذة المنبثقة. اسمح بها للمعاينة','Project file downloaded':'تم تنزيل ملف المشروع','That file isn’t a Loop Builder project':'هذا الملف ليس مشروع Loop Builder','Project loaded':'تم تحميل المشروع','Welcome, {n}! Exporting is unlocked':'أهلًا {n}! تم فتح التصدير','Signed out. Back on trial':'تم تسجيل الخروج. عدت إلى التجربة','Your client access has ended. Message us to renew.':'انتهى وصول العميل الخاص بك. راسلنا للتجديد.','Loop started! Click any text on the page to edit it':'انطلقنا! انقر على أي نص في الصفحة لتعديله','Block removed. Ctrl+Z to undo':'تم حذف المكوّن. Ctrl+Z للتراجع','{b} added':'تمت إضافة {b}','Colors need a 6-digit hex like #D25A28':'الألوان تحتاج ست خانات سداسية مثل #D25A28'
+}
+});
+
+function t(k){
+  const d = TR[uiLang];
+  return (d && d[k]) || EN_LONG[k] || k;
+}
+
+function applyLang(){
+  document.documentElement.lang = uiLang;
+  document.documentElement.dir = RTL[uiLang] ? 'rtl' : 'ltr';
+  // topbar + tabs + chrome
+  const set = (sel, key, html=false) => { const el=$(sel); if(!el) return; if(html) el.innerHTML=t(key); else el.textContent=t(key); };
+  set('[data-tab="blocks"]','Blocks'); set('[data-tab="layers"]','Layers');
+  set('[data-rtab="block"]','Block'); set('[data-rtab="design"]','Design');
+  set('#guideBtn','? Guide'); set('#jsonBtn','Save / Load');
+  $('#previewBtn').innerHTML = $('#previewBtn').querySelector('svg').outerHTML + t('Preview');
+  set('#hintBlocks','Click a block to add it, or drag it onto the page.');
+  set('#hintLayers','Your page, top to bottom. Drag to reorder, click to jump to a block.');
+  // modals
+  set('#tplT','Start your loop'); set('#tplS','_tplS');
+  set('#gT','How this works'); set('#gS','_gS');
+  $('#gSteps').innerHTML = [1,2,3,4].map(i=>`<div class="gstep"><span class="n">${i}</span><div><b class="st">${t('_g'+i+'t')}</b><p>${t('_g'+i+'b')}</p></div></div>`).join('');
+  set('#gKeys','_keys',true);
+  set('#pickT','Add a block'); set('#pickS','_pickS');
+  set('#exT','Export your site'); set('#exS','_exS',true);
+  set('#exNameL','File name'); set('#doExport','Download HTML'); set('#copyExport','Copy HTML'); set('#openExportPreview','Open preview');
+  set('#deployNote','_deploy',true);
+  set('#pjT','Save or load your project'); set('#pjS','_pjS');
+  set('#dlJson','Download project (.json)'); set('#upJson','Load project…'); set('#resetBtn','Start over');
+  const st = $('#saveState .t'); if (st && st.textContent) st.textContent = t('Saved');
+  updateAccessUI();
+  renderLibrary(); renderLayers(); renderInspector(); renderDesign(); renderCanvas();
+}
+
+/* language picker */
+(function initLangPicker(){
+  const sel = $('#uiLang');
+  sel.innerHTML = Object.entries(LANGS).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
+  sel.value = uiLang;
+  sel.addEventListener('change', ()=>{
+    uiLang = sel.value;
+    try{ localStorage.setItem('lb-lang', uiLang); }catch(e){}
+    applyLang();
+  });
+})();
+
+/* currency: swap the symbol on pricing blocks + future defaults */
+function currencySymbol(){ return CURRENCIES[state.meta.currency || 'PHP']; }
+function swapCurrencySymbols(){
+  const syms = Object.values(CURRENCIES).sort((a,b)=>b.length-a.length);
+  const to = currencySymbol();
+  state.blocks.filter(b=>b.type==='pricing').forEach(b=>{
+    b.props.items.forEach(it=>{
+      for (const s of syms){
+        if (it.price && it.price.startsWith(s)){ it.price = to + it.price.slice(s.length); return; }
+      }
+    });
+  });
 }
 </script>
 <script>
@@ -1281,7 +1619,7 @@ async function checkAccess(){
       if (d.ok){ clientMode = true; clientInfo = {client:d.client, expires:d.expires}; }
       else {
         try{ localStorage.removeItem('lb-access'); }catch(e){}
-        if (d.reason === 'expired') toast('Your client access has ended. Message us to renew.');
+        if (d.reason === 'expired') toast(t('Your client access has ended. Message us to renew.'));
       }
     }catch(e){ /* server unreachable: stay in trial quietly, keep the stored code for next load */ }
   }
@@ -1289,37 +1627,35 @@ async function checkAccess(){
 }
 function updateAccessUI(){
   const chip = $('#accessChip');
-  chip.textContent = clientMode ? 'Client \u2713' : 'Trial';
+  chip.textContent = clientMode ? t('Client \u2713') : t('Trial');
   chip.className = 'chip ' + (clientMode ? 'client' : 'trial');
-  $('#exportBtn').innerHTML = (clientMode ? '' : '\ud83d\udd12 ') + 'Export site';
+  $('#exportBtn').innerHTML = (clientMode ? '' : '\ud83d\udd12 ') + t('Export site');
 }
 function renderAccessModal(fromExport){
   $('#accessBody').innerHTML = clientMode
-    ? `<h2>Client access active</h2>
-       <p class="sub">Unlocked for <b>${esc(clientInfo.client)}</b> until <b>${esc(prettyDate(clientInfo.expires))}</b> (end of day, PH time). Thanks for building with BlinkLoop.</p>
-       <button class="signout" id="accessOut">Sign out on this browser</button>`
-    : `<h2>${fromExport ? 'Exporting is for clients' : 'Client access'}</h2>
-       <p class="sub">${fromExport
-          ? 'You\u2019re on the free trial: you can build the whole page, preview it, and save your draft. Exporting the finished website comes with any active BlinkLoop build or hosting plan.'
-          : 'Have a client code? Enter it below. It comes with any active BlinkLoop build or hosting plan.'}</p>
+    ? `<h2>${t('Client access active')}</h2>
+       <p class="sub">${t('_accActiveS').replace('{c}', esc(clientInfo.client)).replace('{d}', esc(prettyDate(clientInfo.expires)))}</p>
+       <button class="signout" id="accessOut">${t('Sign out on this browser')}</button>`
+    : `<h2>${fromExport ? t('Exporting is for clients') : t('Client access')}</h2>
+       <p class="sub">${fromExport ? t('_accTrialS') : t('_accS')}</p>
        <input class="in access-in" id="accessCode" placeholder="LOOP-YOURNAME-DATE-CODE" autocomplete="off" />
        <div class="access-err" id="accessErr"></div>
        <div class="row">
-         <button class="tb-cta" id="accessGo">Unlock</button>
-         <a class="tb-btn" style="border:1px solid var(--line)" href="/hosting">See plans & pricing</a>
-         <a class="tb-btn" style="border:1px solid var(--line)" href="/#start">Talk to us</a>
+         <button class="tb-cta" id="accessGo">${t('Unlock')}</button>
+         <a class="tb-btn" style="border:1px solid var(--line)" href="/hosting">${t('See plans & pricing')}</a>
+         <a class="tb-btn" style="border:1px solid var(--line)" href="/#start">${t('Talk to us')}</a>
        </div>
        <ul class="access-perks">
-         <li>Export your site as a clean, ready-to-host HTML file</li>
-         <li>We host it, keep it online, and help with updates</li>
-         <li>Your trial draft carries over, nothing is lost</li>
+         <li>${t('_perk1')}</li>
+         <li>${t('_perk2')}</li>
+         <li>${t('_perk3')}</li>
        </ul>`;
   const go = $('#accessGo');
   if (go){
     const tryCode = async ()=>{
       const v = ($('#accessCode').value||'').trim().toUpperCase();
       if (!v) return;
-      go.disabled = true; go.textContent = 'Checking\u2026';
+      go.disabled = true; go.textContent = t('Checking\u2026');
       $('#accessErr').textContent = '';
       try{
         const d = await verifyCode(v);
@@ -1327,16 +1663,16 @@ function renderAccessModal(fromExport){
           try{ localStorage.setItem('lb-access', v); }catch(e){}
           clientMode = true; clientInfo = {client:d.client, expires:d.expires};
           updateAccessUI(); closeModals();
-          toast('Welcome, ' + d.client + '! Exporting is unlocked');
+          toast(t('Welcome, {n}! Exporting is unlocked').replace('{n}', d.client));
         } else if (d.reason === 'expired'){
-          $('#accessErr').textContent = 'That code has expired. Message us to renew your access.';
+          $('#accessErr').textContent = t('_errExpired');
         } else {
-          $('#accessErr').textContent = 'That code didn\u2019t match. Check it and try again, or message us.';
+          $('#accessErr').textContent = t('_errInvalid');
         }
       }catch(e){
-        $('#accessErr').textContent = 'Couldn\u2019t reach the server. Check your connection and try again.';
+        $('#accessErr').textContent = t('_errNet');
       }finally{
-        go.disabled = false; go.textContent = 'Unlock';
+        go.disabled = false; go.textContent = t('Unlock');
       }
     };
     go.addEventListener('click', tryCode);
@@ -1346,7 +1682,7 @@ function renderAccessModal(fromExport){
   if (out) out.addEventListener('click', ()=>{
     try{ localStorage.removeItem('lb-access'); }catch(e){}
     clientMode=false; clientInfo=null; updateAccessUI(); renderAccessModal(false);
-    toast('Signed out. Back on trial');
+    toast(t('Signed out. Back on trial'));
   });
 }
 $('#accessChip').addEventListener('click', ()=>{ renderAccessModal(false); openModal('accessModal'); });
@@ -1358,8 +1694,10 @@ function exportHTML(){
   const t = state.theme;
   const navJS = state.blocks.some(b=>b.type==='navbar')
     ? `<script>document.querySelectorAll('.nav nav a').forEach(function(a){a.addEventListener('click',function(){var n=a.closest('nav');if(n)n.classList.remove('open')})});<\/script>` : '';
+  const plang = state.meta.lang || 'en';
+  const pdir = RTL[plang] ? ' dir="rtl"' : '';
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${plang}"${pdir}>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1394,7 +1732,7 @@ function openModal(id){ $('#'+id).classList.add('show'); }
 function closeModals(){ $$('.modal-bg').forEach(m=>m.classList.remove('show')); }
 
 $('#exportBtn').addEventListener('click', ()=>{
-  if(!state.blocks.length) return toast('Your page is empty. Add a block first');
+  if(!state.blocks.length) return toast(t('Your page is empty. Add a block first'));
   if(!clientMode){ renderAccessModal(true); openModal('accessModal'); return; }
   openModal('exportModal');
 });
@@ -1403,16 +1741,16 @@ $('#doExport').addEventListener('click', ()=>{
   let name = $('#exportName').value.trim() || 'index.html';
   if(!/\.html?$/i.test(name)) name += '.html';
   download(name, exportHTML());
-  toast('Downloaded! That file is your website');
+  toast(t('Downloaded! That file is your website'));
 });
 $('#copyExport').addEventListener('click', async ()=>{
   if(!clientMode){ closeModals(); renderAccessModal(true); openModal('accessModal'); return; }
-  try{ await navigator.clipboard.writeText(exportHTML()); toast('HTML copied to clipboard'); }
-  catch(e){ toast('Copy blocked by the browser. Use Download instead'); }
+  try{ await navigator.clipboard.writeText(exportHTML()); toast(t('HTML copied to clipboard')); }
+  catch(e){ toast(t('Copy blocked by the browser. Use Download instead')); }
 });
 $('#openExportPreview').addEventListener('click', ()=> previewSite());
 $('#previewBtn').addEventListener('click', ()=>{
-  if(!state.blocks.length) return toast('Your page is empty. Add a block first');
+  if(!state.blocks.length) return toast(t('Your page is empty. Add a block first'));
   previewSite();
 });
 function previewSite(){
@@ -1420,7 +1758,7 @@ function previewSite(){
   if(!clientMode) html = html.replace('</body>', TRIAL_RIBBON + '</body>');
   const url = URL.createObjectURL(new Blob([html],{type:'text/html'}));
   const w = window.open(url,'_blank');
-  if(!w) toast('Pop-up blocked. Allow pop-ups to preview');
+  if(!w) toast(t('Pop-up blocked. Allow pop-ups to preview'));
   setTimeout(()=>URL.revokeObjectURL(url), 30000);
 }
 
@@ -1429,17 +1767,17 @@ const LS_KEY = 'loopbuilder-page';
 let saveT;
 function autosave(){
   const st = $('#saveState');
-  st.classList.remove('saved'); st.querySelector('.t').textContent = 'Saving…';
+  st.classList.remove('saved'); st.querySelector('.t').textContent = t('Saving…');
   clearTimeout(saveT);
   saveT = setTimeout(()=>{
-    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); st.classList.add('saved'); st.querySelector('.t').textContent='Saved'; }
-    catch(e){ st.querySelector('.t').textContent='Not saved'; }
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); st.classList.add('saved'); st.querySelector('.t').textContent=t('Saved'); }
+    catch(e){ st.querySelector('.t').textContent=t('Not saved'); }
   }, 400);
 }
 $('#jsonBtn').addEventListener('click', ()=> openModal('jsonModal'));
 $('#dlJson').addEventListener('click', ()=>{
   download(slug(state.meta.title)+'.loop.json', JSON.stringify(state,null,2), 'application/json');
-  toast('Project file downloaded');
+  toast(t('Project file downloaded'));
 });
 $('#upJson').addEventListener('click', ()=> $('#jsonFile').click());
 $('#jsonFile').addEventListener('change', e=>{
@@ -1451,13 +1789,13 @@ $('#jsonFile').addEventListener('change', e=>{
       if(!data.blocks || !data.theme || !data.meta) throw 0;
       snapshot(); state = data; selectedId=null; afterStateSwap();
       closeModals();
-      toast('Project loaded');
-    }catch(err){ toast('That file isn\u2019t a Loop Builder project'); }
+      toast(t('Project loaded'));
+    }catch(err){ toast(t('That file isn\u2019t a Loop Builder project')); }
   };
   r.readAsText(f); e.target.value='';
 });
 $('#resetBtn').addEventListener('click', ()=>{
-  if(!confirm('Start over? Your current page will be cleared. (Ctrl+Z can still bring it back until you close the tab.)')) return;
+  if(!confirm(t('_resetConfirm'))) return;
   snapshot(); state = freshState(); selectedId=null; afterStateSwap();
   closeModals();
   openTemplates();
@@ -1467,9 +1805,9 @@ $('#resetBtn').addEventListener('click', ()=>{
 let insertAt = null;
 function openPicker(idx){
   insertAt = idx;
-  $('#pickGrid').innerHTML = BLOCK_ORDER.map(t=>{
-    const d = BLOCKS[t];
-    return `<button class="tpl" data-pick="${t}"><span class="em">${d.icon}</span><span class="nm">${d.name}</span><span class="ds">${d.desc}</span></button>`;
+  $('#pickGrid').innerHTML = BLOCK_ORDER.map(ty=>{
+    const d = BLOCKS[ty];
+    return `<button class="tpl" data-pick="${ty}"><span class="em">${d.icon}</span><span class="nm">${t(d.name)}</span><span class="ds">${t(d.desc)}</span></button>`;
   }).join('');
   $$('#pickGrid [data-pick]').forEach(b=>b.addEventListener('click',()=>{
     closeModals();
@@ -1480,7 +1818,7 @@ function openPicker(idx){
 
 /* =============== TEMPLATES =============== */
 function freshState(){
-  return { meta:{title:'My website',desc:''}, theme:{...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
+  return { meta:{title:'My website',desc:'',lang:'en',currency:'PHP'}, theme:{...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
 }
 function tplBlocks(types, overrides={}){
   return types.map(t=>{
@@ -1516,7 +1854,7 @@ const TEMPLATES = [
       return s; } }
 ];
 function openTemplates(){
-  $('#tplGrid').innerHTML = TEMPLATES.map(t=>`<button class="tpl" data-tpl="${t.id}"><span class="em">${t.em}</span><span class="nm">${t.name}</span><span class="ds">${t.desc}</span></button>`).join('');
+  $('#tplGrid').innerHTML = TEMPLATES.map(tp=>`<button class="tpl" data-tpl="${tp.id}"><span class="em">${tp.em}</span><span class="nm">${t(tp.name)}</span><span class="ds">${t(tp.desc)}</span></button>`).join('');
   $$('#tplGrid .tpl').forEach(b=>b.addEventListener('click',()=>{
     state = TEMPLATES.find(t=>t.id===b.dataset.tpl).make();
     selectedId=null; history=[]; future=[];
@@ -1524,7 +1862,7 @@ function openTemplates(){
     closeModals();
     let seen=false; try{ seen = localStorage.getItem('lb-guided')==='1'; }catch(e){}
     if(!seen){ openModal('guideModal'); try{ localStorage.setItem('lb-guided','1'); }catch(e){} }
-    else toast('Loop started! Click any text on the page to edit it');
+    else toast(t('Loop started! Click any text on the page to edit it'));
   }));
   openModal('tplModal');
 }
@@ -1538,7 +1876,7 @@ $$('.tb-btn[data-dev]').forEach(b=>b.addEventListener('click',()=>{
   device=b.dataset.dev;
   $$('.tb-btn[data-dev]').forEach(x=>x.classList.toggle('on',x===b));
   $('#frameWrap').className='frame-wrap'+(device==='desktop'?'':' '+device);
-  toast(device==='desktop'?'Desktop view':device==='tablet'?'Tablet view, exactly how it responds':'Phone view, exactly how it responds');
+  toast(device==='desktop'?t('Desktop view'):device==='tablet'?t('Tablet view, exactly how it responds'):t('Phone view, exactly how it responds'));
 }));
 $('#themeBtn').addEventListener('click',()=>{
   const cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
@@ -1570,7 +1908,7 @@ document.addEventListener('keydown', e=>{
   if(mod && e.key.toLowerCase()==='z' && !e.shiftKey && !typing){ e.preventDefault(); undo(); }
   else if(mod && (e.key.toLowerCase()==='y' || (e.key.toLowerCase()==='z'&&e.shiftKey)) && !typing){ e.preventDefault(); redo(); }
   else if(mod && e.key.toLowerCase()==='s'){ e.preventDefault(); try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(_){} toast('Saved'); }
-  else if((e.key==='Delete'||e.key==='Backspace') && selectedId && !typing){ blockAction('del', selectedId); toast('Block removed. Ctrl+Z to undo'); }
+  else if((e.key==='Delete'||e.key==='Backspace') && selectedId && !typing){ blockAction('del', selectedId); toast(t('Block removed. Ctrl+Z to undo')); }
   else if(e.key==='Escape'){
     const open = $$('.modal-bg.show').filter(m=>!(m.id==='tplModal' && (!state||!state.blocks.length)));
     if(open.length){ open.forEach(m=>m.classList.remove('show')); }
@@ -1592,10 +1930,10 @@ function toast(msg){
   if (saved && saved.blocks && saved.theme && saved.meta){
     state = saved;
     $('#pageTitle').value = state.meta.title;
-    renderCanvas(false); renderLayers(); renderInspector(); renderDesign();
+    applyLang();
   } else {
     state = freshState();
-    renderCanvas(false); renderLayers(); renderInspector(); renderDesign();
+    applyLang();
     openTemplates();
   }
   updateHistoryBtns();
