@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Client Codes | BlinkLoop</title>
+<script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --rust:#D25A28; --rust-deep:#C14720; --bg:#EDDFC6; --ink:#2B140E; --muted:#7E5D4C;
+  --glass:rgba(255,250,240,.55); --glass-strong:rgba(255,250,240,.8);
+  --line:rgba(90,35,22,.16); --r:18px; --ease:cubic-bezier(.22,.8,.24,1);
+}
+:root[data-theme="dark"]{
+  --bg:#140806; --ink:#FAF4EA; --muted:#C9A395;
+  --glass:rgba(250,244,234,.06); --glass-strong:rgba(250,244,234,.1); --line:rgba(250,244,234,.13);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  min-height:100svh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:
+    radial-gradient(700px 500px at 85% -5%, rgba(117,26,26,.12), transparent 62%),
+    radial-gradient(600px 460px at -8% 40%, rgba(210,90,40,.12), transparent 60%),
+    var(--bg);
+  color:var(--ink); font-family:'Sora',system-ui,sans-serif; font-size:15px; line-height:1.55;
+}
+.card{
+  width:100%;max-width:480px;background:var(--glass-strong);backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:26px;padding:32px;box-shadow:0 20px 60px rgba(43,20,14,.15);
+}
+h1{font-family:'Unbounded';font-size:1.2rem;margin-bottom:6px}
+h1 span{color:var(--rust)}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:22px}
+label{display:block;font-size:.74rem;font-weight:600;color:var(--muted);margin:14px 0 6px;letter-spacing:.03em;text-transform:uppercase}
+input,select{
+  width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;
+  padding:11px 14px;font:inherit;color:inherit;
+}
+input:focus,select:focus{outline:none;border-color:var(--rust)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{
+  width:100%;margin-top:22px;padding:13px;border:none;border-radius:999px;cursor:pointer;
+  background:var(--rust);color:#FFF7EC;font:inherit;font-weight:600;font-size:.95rem;
+  transition:transform .3s var(--ease), box-shadow .3s;
+}
+button:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(193,71,32,.4)}
+button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
+.result{
+  margin-top:22px;padding:18px;border:1px solid var(--rust);border-radius:16px;background:var(--glass);
+  display:none;text-align:center;
+}
+.result.show{display:block}
+.result .code{
+  font-family:'Unbounded';font-weight:600;font-size:1rem;letter-spacing:.04em;word-break:break-all;
+  color:var(--rust);cursor:pointer;padding:8px;border-radius:10px;transition:background .2s;
+}
+.result .code:hover{background:var(--glass-strong)}
+.result .meta{font-size:.78rem;color:var(--muted);margin-top:8px}
+.result .copied{font-size:.75rem;color:#2c7a4b;font-weight:600;min-height:1.1em;margin-top:6px}
+.err{color:#c0392b;font-size:.82rem;margin-top:14px;min-height:1.2em}
+.note{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Blink<span>Loop</span> · Client Codes</h1>
+  <p class="sub">Generate an access code after a customer pays. The code stops working by itself when the date passes.</p>
+
+  <label for="key">Admin key</label>
+  <input id="key" type="password" autocomplete="current-password" placeholder="Your admin key" />
+
+  <label for="client">Client name (letters and numbers, shows inside the code)</label>
+  <input id="client" placeholder="e.g. MARIA or ACME2" maxlength="12" />
+
+  <div class="row">
+    <div>
+      <label for="preset">Access period</label>
+      <select id="preset">
+        <option value="30">1 month</option>
+        <option value="92">3 months</option>
+        <option value="183">6 months</option>
+        <option value="365" selected>1 year</option>
+        <option value="custom">Custom date</option>
+      </select>
+    </div>
+    <div>
+      <label for="expires">Expires (end of day, PH time)</label>
+      <input id="expires" type="date" />
+    </div>
+  </div>
+
+  <button id="go">Generate code</button>
+  <div class="err" id="err"></div>
+
+  <div class="result" id="result">
+    <div class="code" id="codeOut" title="Click to copy"></div>
+    <div class="copied" id="copied"></div>
+    <div class="meta" id="metaOut"></div>
+  </div>
+
+  <p class="note">Keep this page bookmarked, not linked from the site. The key is checked on the server, so this page holds no secrets. To revoke a code before its date, rotate LOOP_SECRET in Vercel (this invalidates every code, so regenerate the active ones).</p>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+
+function manilaDate(offsetDays){
+  const now = new Date(Date.now() + offsetDays*86400000);
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(now); // YYYY-MM-DD
+}
+function applyPreset(){
+  const v = $('#preset').value;
+  if (v !== 'custom') $('#expires').value = manilaDate(parseInt(v,10));
+}
+$('#preset').addEventListener('change', applyPreset);
+$('#expires').addEventListener('input', ()=>{ $('#preset').value='custom'; });
+applyPreset();
+
+$('#go').addEventListener('click', async ()=>{
+  const err = $('#err'); err.textContent=''; $('#result').classList.remove('show');
+  const adminKey = $('#key').value.trim();
+  const client = $('#client').value.trim();
+  const expires = $('#expires').value;
+  if (!adminKey) return err.textContent='Enter the admin key.';
+  if (!client) return err.textContent='Enter a client name.';
+  if (!expires) return err.textContent='Pick an expiry date.';
+  const btn = $('#go'); btn.disabled = true; btn.textContent = 'Generating\u2026';
+  try{
+    const r = await fetch('/api/generate',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ adminKey, client, expires })
+    });
+    const d = await r.json();
+    if (r.status===401) throw new Error('That admin key is wrong.');
+    if (!d.ok){
+      const msgs = {'bad-client':'Client name needs 2 to 12 letters or numbers.','bad-date':'That date is not valid.','server-config':'Server is missing LOOP_SECRET or LOOP_ADMIN_KEY in Vercel.'};
+      throw new Error(msgs[d.reason] || 'Something went wrong. Try again.');
+    }
+    $('#codeOut').textContent = d.code;
+    $('#metaOut').textContent = `${d.client} \u00b7 works until end of ${d.expires} (PH time)`;
+    $('#copied').textContent = '';
+    $('#result').classList.add('show');
+  }catch(e){
+    err.textContent = e.message || 'Could not reach the server.';
+  }finally{
+    btn.disabled=false; btn.textContent='Generate code';
+  }
+});
+$('#codeOut').addEventListener('click', async ()=>{
+  try{ await navigator.clipboard.writeText($('#codeOut').textContent); $('#copied').textContent='Copied to clipboard'; }
+  catch(e){ $('#copied').textContent='Select and copy manually'; }
+});
+</script>
+</body>
+</html>
