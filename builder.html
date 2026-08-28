@@ -279,6 +279,10 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 .modal .close-x:hover{background:var(--glass-strong);color:var(--ink)}
 .modal{position:relative}
 .pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.up-row{margin-top:6px}
+.up-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px dashed var(--line);background:var(--glass);color:var(--muted);font:inherit;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s}
+.up-btn:hover{border-color:var(--rust);color:var(--rust)}
+.up-btn:disabled{opacity:.6;cursor:wait}
 </style>
 </head>
 <body>
@@ -681,7 +685,7 @@ const BLOCKS = {
       {k:'primary',l:'Primary button',t:'text'},{k:'primaryHref',l:'Primary link',t:'text'},
       {k:'secondary',l:'Secondary button (blank = hidden)',t:'text'},{k:'secondaryHref',l:'Secondary link',t:'text'},
       {k:'layout',l:'Layout',t:'seg',opts:[['split','Split'],['center','Centered']]},
-      {k:'img',l:'Image URL (blank = brand placeholder)',t:'text'}
+      {k:'img',l:'Image URL (blank = brand placeholder)',t:'text',up:1}
     ],
     render:p=>{
       const title = esc(p.title).replace(/\*(.+?)\*/g,'<em>$1</em>');
@@ -718,7 +722,7 @@ const BLOCKS = {
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Body text',t:'textarea'},
       {k:'cta',l:'Button (blank = hidden)',t:'text'},{k:'ctaHref',l:'Button link',t:'text'},
-      {k:'img',l:'Image URL',t:'text'},{k:'flip',l:'Image on the left',t:'toggle'}
+      {k:'img',l:'Image URL',t:'text',up:1},{k:'flip',l:'Image on the left',t:'toggle'}
     ],
     render:p=>{
       const txt=`<div>${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2><p class="tx"${ed('text')}>${esc(p.text)}</p>${p.cta?`<a class="btn btn-ghost" href="${escAttr(p.ctaHref)}"${ed('cta')}>${esc(p.cta)}</a>`:''}</div>`;
@@ -777,7 +781,7 @@ const BLOCKS = {
     defaults:{ title:'Recent work', cols:'3', items:[{img:'',caption:'Project one'},{img:'',caption:'Project two'},{img:'',caption:'Project three'}] },
     fields:[
       {k:'title',l:'Title',t:'text'},{k:'cols',l:'Columns',t:'seg',opts:[['2','2'],['3','3'],['4','4']]},
-      {k:'items',l:'Items',t:'items',item:[{k:'img',l:'Image URL (blank = placeholder)',t:'text'},{k:'caption',l:'Caption',t:'text'}],titleKey:'caption'}
+      {k:'items',l:'Items',t:'items',item:[{k:'img',l:'Image URL (blank = placeholder)',t:'text',up:1},{k:'caption',l:'Caption',t:'text'}],titleKey:'caption'}
     ],
     render:p=>`<section><div class="wrap">
       <div class="sec-head"><h2${ed('title')}>${esc(p.title)}</h2></div>
@@ -1109,7 +1113,10 @@ function renderInspector(){
 
 function fieldHTML(f, val, path){
   const id = 'f_'+path.replace(/[^\w]/g,'_');
-  if (f.t==='text') return `<div class="field"><label for="${id}">${t(f.l)}</label><input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" /></div>`;
+  if (f.t==='text'){
+    const upBtn = f.up ? `<div class="up-row"><button class="up-btn" type="button" data-up="${path}">\u2b06 ${t('Upload image')}</button><input type="file" class="up-file" accept="image/jpeg,image/png,image/webp" data-path="${path}" hidden /></div>` : '';
+    return `<div class="field"><label for="${id}">${t(f.l)}</label><input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" />${upBtn}</div>`;
+  }
   if (f.t==='textarea') return `<div class="field"><label for="${id}">${t(f.l)}</label><textarea id="${id}" data-path="${path}">${esc(val??'')}</textarea></div>`;
   if (f.t==='seg') return `<div class="field"><label>${t(f.l)}</label><div class="seg" data-path="${path}">${f.opts.map(([v,l])=>`<button data-v="${v}" class="${String(val)===v?'on':''}">${t(l)}</button>`).join('')}</div></div>`;
   if (f.t==='toggle') return `<div class="field"><div class="toggle"><label style="margin:0">${t(f.l)}</label><button class="tg ${val?'on':''}" data-path="${path}" role="switch" aria-checked="${!!val}"></button></div></div>`;
@@ -1127,6 +1134,19 @@ function fieldHTML(f, val, path){
   }
   return '';
 }
+
+/* image upload buttons (delegated once) */
+$('#rtab-block').addEventListener('click', e=>{
+  const btn = e.target.closest('.up-btn'); if(!btn) return;
+  const file = $('#rtab-block').querySelector(`.up-file[data-path="${btn.dataset.up}"]`);
+  if (file) file.click();
+});
+$('#rtab-block').addEventListener('change', async e=>{
+  const inp = e.target.closest('.up-file'); if(!inp || !inp.files || !inp.files[0]) return;
+  const file = inp.files[0]; const path = inp.dataset.path;
+  inp.value = '';
+  await handleImageUpload(file, path);
+});
 
 function setByPath(b, path, value){
   // path like p.items.0.title
@@ -1303,6 +1323,12 @@ _resetConfirm:'Start over? Your current page will be cleared. (Ctrl+Z can still 
 
 const TR = {
 ja:{
+"Upload image":"画像をアップロード",
+"Uploading…":"アップロード中…",
+"Image added":"画像を追加しました",
+"Upload failed. Try again, or paste a URL instead.":"アップロードに失敗しました。再試行するか、URLを貼り付けてください。",
+"That image is too large (max 10 MB)":"画像が大きすぎます（最大10MB）",
+"Draft too large to autosave. Download a project file to keep it safe.":"下書きが大きすぎて自動保存できません。プロジェクトファイルをダウンロードして保管してください。",
 _tplS:'出発点を選んでください。色、フォント、ブロック、すべて編集できます。',
 _gS:'この4つでツール全体がわかります。',
 _g1t:'ブロックを追加', _g1b:'左パネルのブロックをクリックするか、ページにドラッグ、またはページ上に表示される<b>＋</b>ボタンを使います。',
@@ -1339,6 +1365,12 @@ _resetConfirm:'最初からやり直しますか？現在のページは消去�
 'Your page is empty. Add a block first':'ページが空です。まずブロックを追加してください','Downloaded! That file is your website':'ダウンロード完了！それがあなたのウェブサイトです','HTML copied to clipboard':'HTMLをコピーしました','Copy blocked by the browser. Use Download instead':'ブラウザによりコピーがブロックされました。ダウンロードをご利用ください','Pop-up blocked. Allow pop-ups to preview':'ポップアップがブロックされました。許可してください','Project file downloaded':'プロジェクトファイルをダウンロードしました','That file isn’t a Loop Builder project':'Loop Builderのプロジェクトファイルではありません','Project loaded':'プロジェクトを読み込みました','Welcome, {n}! Exporting is unlocked':'ようこそ、{n}さん！エクスポートが解除されました','Signed out. Back on trial':'サインアウトしました。トライアルに戻ります','Your client access has ended. Message us to renew.':'クライアントアクセスの期限が切れました。更新はご連絡ください。','Saved':'保存済み','Loop started! Click any text on the page to edit it':'開始！ページ上のテキストをクリックして編集','Block removed. Ctrl+Z to undo':'ブロックを削除しました。Ctrl+Zで元に戻せます','{b} added':'{b}を追加しました','Colors need a 6-digit hex like #D25A28':'色は#D25A28のような6桁の16進数で指定してください'
 },
 fr:{
+"Upload image":"Téléverser une image",
+"Uploading…":"Téléversement…",
+"Image added":"Image ajoutée",
+"Upload failed. Try again, or paste a URL instead.":"Échec du téléversement. Réessayez ou collez une URL.",
+"That image is too large (max 10 MB)":"Cette image est trop lourde (10 Mo max)",
+"Draft too large to autosave. Download a project file to keep it safe.":"Brouillon trop volumineux pour la sauvegarde auto. Téléchargez un fichier projet pour le conserver.",
 _tplS:'Choisissez un point de départ. Tout est modifiable : les couleurs, la typo, les blocs, tout.',
 _gS:'Quatre choses et vous maîtrisez l\u2019outil.',
 _g1t:'Ajoutez des blocs', _g1b:'Cliquez sur un bloc dans le panneau de gauche, glissez-le sur la page, ou utilisez les boutons <b>＋</b> qui apparaissent sur la page.',
@@ -1380,6 +1412,12 @@ _resetConfirm:'Tout recommencer ? Votre page actuelle sera effacée. (Ctrl+Z peu
 "use strict";
 Object.assign(TR, {
 zh:{
+"Upload image":"上传图片",
+"Uploading…":"上传中…",
+"Image added":"已添加图片",
+"Upload failed. Try again, or paste a URL instead.":"上传失败。请重试，或改为粘贴图片URL。",
+"That image is too large (max 10 MB)":"图片太大（最大10 MB）",
+"Draft too large to autosave. Download a project file to keep it safe.":"草稿太大无法自动保存。请下载项目文件以妥善保存。",
 _tplS:'选择一个起点。一切都可以编辑：颜色、字体、模块，全部都行。',
 _gS:'掌握这四点，你就会用整个工具了。',
 _g1t:'添加模块', _g1b:'点击左侧面板中的模块，拖到页面上，或使用页面上出现的<b>＋</b>按钮。',
@@ -1416,6 +1454,12 @@ _resetConfirm:'重新开始？当前页面将被清空。（关闭标签页前�
 'Your page is empty. Add a block first':'页面为空。请先添加模块','Downloaded! That file is your website':'已下载！该文件就是你的网站','HTML copied to clipboard':'HTML已复制到剪贴板','Copy blocked by the browser. Use Download instead':'浏览器阻止了复制。请改用下载','Pop-up blocked. Allow pop-ups to preview':'弹窗被拦截。请允许弹窗以预览','Project file downloaded':'项目文件已下载','That file isn’t a Loop Builder project':'该文件不是Loop Builder项目','Project loaded':'项目已载入','Welcome, {n}! Exporting is unlocked':'欢迎，{n}！导出已解锁','Signed out. Back on trial':'已退出。回到试用模式','Your client access has ended. Message us to renew.':'客户权限已到期。请联系我们续期。','Loop started! Click any text on the page to edit it':'开始！点击页面上的任意文字即可编辑','Block removed. Ctrl+Z to undo':'已删除模块。Ctrl+Z可撤销','{b} added':'已添加{b}','Colors need a 6-digit hex like #D25A28':'颜色需要6位十六进制，例如 #D25A28'
 },
 es:{
+"Upload image":"Subir imagen",
+"Uploading…":"Subiendo…",
+"Image added":"Imagen añadida",
+"Upload failed. Try again, or paste a URL instead.":"Error al subir. Inténtalo de nuevo o pega una URL.",
+"That image is too large (max 10 MB)":"Esa imagen es demasiado grande (máx. 10 MB)",
+"Draft too large to autosave. Download a project file to keep it safe.":"El borrador es demasiado grande para autoguardarse. Descarga un archivo de proyecto para conservarlo.",
 _tplS:'Elige un punto de partida. Todo es editable: los colores, la tipografía, los bloques, todo.',
 _gS:'Cuatro cosas y dominas toda la herramienta.',
 _g1t:'Añade bloques', _g1b:'Haz clic en un bloque del panel izquierdo, arrástralo a la página o usa los botones <b>＋</b> que aparecen en la propia página.',
@@ -1452,6 +1496,12 @@ _resetConfirm:'¿Empezar de nuevo? Tu página actual se borrará. (Ctrl+Z aún p
 'Your page is empty. Add a block first':'Tu página está vacía. Añade un bloque primero','Downloaded! That file is your website':'¡Descargado! Ese archivo es tu sitio web','HTML copied to clipboard':'HTML copiado al portapapeles','Copy blocked by the browser. Use Download instead':'El navegador bloqueó la copia. Usa Descargar','Pop-up blocked. Allow pop-ups to preview':'Ventana bloqueada. Permite ventanas emergentes para previsualizar','Project file downloaded':'Archivo de proyecto descargado','That file isn’t a Loop Builder project':'Ese archivo no es un proyecto de Loop Builder','Project loaded':'Proyecto cargado','Welcome, {n}! Exporting is unlocked':'¡Bienvenido, {n}! Exportar está desbloqueado','Signed out. Back on trial':'Sesión cerrada. De vuelta a la prueba','Your client access has ended. Message us to renew.':'Tu acceso de cliente ha terminado. Escríbenos para renovar.','Loop started! Click any text on the page to edit it':'¡Empezamos! Haz clic en cualquier texto de la página para editarlo','Block removed. Ctrl+Z to undo':'Bloque eliminado. Ctrl+Z para deshacer','{b} added':'{b} añadido','Colors need a 6-digit hex like #D25A28':'Los colores necesitan un hex de 6 dígitos como #D25A28'
 },
 it:{
+"Upload image":"Carica immagine",
+"Uploading…":"Caricamento…",
+"Image added":"Immagine aggiunta",
+"Upload failed. Try again, or paste a URL instead.":"Caricamento non riuscito. Riprova o incolla un URL.",
+"That image is too large (max 10 MB)":"Immagine troppo grande (max 10 MB)",
+"Draft too large to autosave. Download a project file to keep it safe.":"Bozza troppo grande per il salvataggio automatico. Scarica un file di progetto per conservarla.",
 _tplS:'Scegli un punto di partenza. Tutto è modificabile: i colori, i caratteri, i blocchi, tutto.',
 _gS:'Quattro cose e conosci tutto lo strumento.',
 _g1t:'Aggiungi blocchi', _g1b:'Clicca un blocco nel pannello a sinistra, trascinalo sulla pagina, o usa i pulsanti <b>＋</b> che appaiono sulla pagina stessa.',
@@ -1488,6 +1538,12 @@ _resetConfirm:'Ricominciare? La pagina attuale sarà cancellata. (Ctrl+Z può an
 'Your page is empty. Add a block first':'La pagina è vuota. Aggiungi prima un blocco','Downloaded! That file is your website':'Scaricato! Quel file è il tuo sito','HTML copied to clipboard':'HTML copiato negli appunti','Copy blocked by the browser. Use Download instead':'Copia bloccata dal browser. Usa Scarica','Pop-up blocked. Allow pop-ups to preview':'Pop-up bloccato. Consenti i pop-up per l\u2019anteprima','Project file downloaded':'File di progetto scaricato','That file isn’t a Loop Builder project':'Quel file non è un progetto Loop Builder','Project loaded':'Progetto caricato','Welcome, {n}! Exporting is unlocked':'Benvenuto, {n}! L\u2019esportazione è sbloccata','Signed out. Back on trial':'Disconnesso. Di nuovo in prova','Your client access has ended. Message us to renew.':'Il tuo accesso cliente è terminato. Scrivici per rinnovare.','Loop started! Click any text on the page to edit it':'Si parte! Clicca un testo qualsiasi della pagina per modificarlo','Block removed. Ctrl+Z to undo':'Blocco eliminato. Ctrl+Z per annullare','{b} added':'{b} aggiunto','Colors need a 6-digit hex like #D25A28':'I colori richiedono un esadecimale a 6 cifre come #D25A28'
 },
 ar:{
+"Upload image":"رفع صورة",
+"Uploading…":"جارٍ الرفع…",
+"Image added":"تمت إضافة الصورة",
+"Upload failed. Try again, or paste a URL instead.":"فشل الرفع. حاول مجددًا أو الصق رابطًا بدلًا من ذلك.",
+"That image is too large (max 10 MB)":"الصورة كبيرة جدًا (الحد 10 ميغابايت)",
+"Draft too large to autosave. Download a project file to keep it safe.":"المسودة كبيرة جدًا للحفظ التلقائي. نزّل ملف المشروع للاحتفاظ بها.",
 _tplS:'اختر نقطة بداية. كل شيء قابل للتعديل: الألوان والخطوط والمكوّنات، كل شيء.',
 _gS:'أربعة أشياء وستتقن الأداة كلها.',
 _g1t:'أضف المكوّنات', _g1b:'انقر على أي مكوّن في اللوحة الجانبية، أو اسحبه إلى الصفحة، أو استخدم أزرار <b>＋</b> التي تظهر على الصفحة نفسها.',
@@ -1568,6 +1624,65 @@ function applyLang(){
     applyLang();
   });
 })();
+
+/* =============== IMAGE UPLOADS =============== */
+/* Clients (valid code): compressed upload to /api/upload -> Vercel Blob URL.
+   Trial: compressed image embeds into the page as a data URI. */
+async function optimizeImage(file){
+  if (file.size > 10*1024*1024) throw new Error('too-large');
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+    const MAX = 1600;
+    const scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth*scale)), h = Math.max(1, Math.round(img.naturalHeight*scale));
+    const c = document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    const keepPng = file.type==='image/png' && file.size < 400*1024 && scale===1;
+    const type = keepPng ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise(res=>c.toBlob(res, type, .82));
+    return { blob: blob || file, type: blob ? type : file.type };
+  } finally { URL.revokeObjectURL(url); }
+}
+function blobToBase64(blob){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(String(r.result).split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+async function handleImageUpload(file, path){
+  const btn = $(`#rtab-block .up-btn[data-up="${path}"]`);
+  const orig = btn ? btn.textContent : '';
+  if (btn){ btn.disabled = true; btn.textContent = t('Uploading…'); }
+  try{
+    const { blob, type } = await optimizeImage(file);
+    const b64 = await blobToBase64(blob);
+    let finalUrl = null;
+    if (clientMode){
+      let code = null; try{ code = localStorage.getItem('lb-access'); }catch(e){}
+      try{
+        const r = await fetch('/api/upload', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ code, name:file.name, type, data:b64 })
+        });
+        const d = await r.json();
+        if (d.ok) finalUrl = d.url;
+      }catch(e){ /* fall through to inline */ }
+    }
+    if (!finalUrl) finalUrl = `data:${type};base64,${b64}`;
+    snapshot();
+    const blk = state.blocks.find(x=>x.id===selectedId);
+    if (blk) setByPath(blk, path, finalUrl);
+    renderCanvas(); renderInspector(); autosave();
+    toast(t('Image added'));
+  }catch(e){
+    toast(e && e.message==='too-large' ? t('That image is too large (max 10 MB)') : t('Upload failed. Try again, or paste a URL instead.'));
+  }finally{
+    if (btn){ btn.disabled = false; btn.textContent = orig; }
+  }
+}
 
 /* currency: swap the symbol on pricing blocks + future defaults */
 function currencySymbol(){ return CURRENCIES[state.meta.currency || 'PHP']; }
@@ -1770,8 +1885,16 @@ function autosave(){
   st.classList.remove('saved'); st.querySelector('.t').textContent = t('Saving…');
   clearTimeout(saveT);
   saveT = setTimeout(()=>{
-    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); st.classList.add('saved'); st.querySelector('.t').textContent=t('Saved'); }
-    catch(e){ st.querySelector('.t').textContent=t('Not saved'); }
+    try{
+      const json = JSON.stringify(state);
+      if (json.length > 4500000) throw new Error('big');
+      localStorage.setItem(LS_KEY, json);
+      st.classList.add('saved'); st.querySelector('.t').textContent=t('Saved');
+    }
+    catch(e){
+      st.querySelector('.t').textContent=t('Not saved');
+      if (!autosave._warned){ autosave._warned = true; toast(t('Draft too large to autosave. Download a project file to keep it safe.')); }
+    }
   }, 400);
 }
 $('#jsonBtn').addEventListener('click', ()=> openModal('jsonModal'));
