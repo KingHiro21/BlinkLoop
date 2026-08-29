@@ -283,6 +283,18 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 .up-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px dashed var(--line);background:var(--glass);color:var(--muted);font:inherit;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s}
 .up-btn:hover{border-color:var(--rust);color:var(--rust)}
 .up-btn:disabled{opacity:.6;cursor:wait}
+.plug{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:var(--glass)}
+.plug.on{border-color:color-mix(in srgb, var(--rust) 45%, var(--line))}
+.seo-score{padding:6px 2px 14px}
+.seo-score .num{font-family:'Unbounded';font-size:2rem;font-weight:700}
+.seo-score .num span{font-size:1rem;color:var(--muted);font-weight:500}
+.seo-score .bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.seo-score .bar i{display:block;height:100%;border-radius:99px;transition:width .4s}
+.seo-list{margin-bottom:14px}
+.seo-item{display:flex;gap:8px;align-items:baseline;padding:5px 2px;font-size:.8rem;color:var(--muted)}
+.seo-item.ok{color:var(--ink)}
+.seo-item .m{width:14px;color:#c0392b;font-weight:700}
+.seo-item.ok .m{color:#2c7a4b}
 </style>
 </head>
 <body>
@@ -349,10 +361,14 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <div class="panel-tabs">
         <button class="ptab on" data-rtab="block">Block</button>
         <button class="ptab" data-rtab="design">Design</button>
+        <button class="ptab" data-rtab="plugins">Plugins</button>
+        <button class="ptab" data-rtab="seo">SEO</button>
       </div>
       <div class="panel-scroll">
         <div id="rtab-block"><div class="no-sel">Click a block on the page to edit it here.</div></div>
         <div id="rtab-design" hidden></div>
+        <div id="rtab-plugins" hidden></div>
+        <div id="rtab-seo" hidden></div>
       </div>
     </aside>
   </div>
@@ -460,10 +476,16 @@ const FONTS = {
   blink:   { name:'Unbounded + Sora', disp:"'Unbounded',sans-serif", body:"'Sora',system-ui,sans-serif", url:'family=Unbounded:wght@400;500;600;700&family=Sora:wght@400;500;600;700' },
   editorial:{ name:'Fraunces + Inter', disp:"'Fraunces',serif", body:"'Inter',system-ui,sans-serif", url:'family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700' },
   grotesk: { name:'Space Grotesk + IBM Plex Sans', disp:"'Space Grotesk',sans-serif", body:"'IBM Plex Sans',system-ui,sans-serif", url:'family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600' },
-  classic: { name:'Playfair Display + Source Sans 3', disp:"'Playfair Display',serif", body:"'Source Sans 3',system-ui,sans-serif", url:'family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700' }
+  classic: { name:'Playfair Display + Source Sans 3', disp:"'Playfair Display',serif", body:"'Source Sans 3',system-ui,sans-serif", url:'family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700' },
+  bold:    { name:'Archivo Black + Archivo', disp:"'Archivo Black',sans-serif", body:"'Archivo',system-ui,sans-serif", url:'family=Archivo+Black&family=Archivo:wght@400;500;600;700' },
+  friendly:{ name:'Baloo 2 + Nunito', disp:"'Baloo 2',sans-serif", body:"'Nunito',system-ui,sans-serif", url:'family=Baloo+2:wght@500;600;700&family=Nunito:wght@400;600;700' }
 };
 const PALETTES = {
   ember: { name:'Ember',  bg:'#FFFCF7', ink:'#3A1B1E', accent:'#F45D2A', accent2:'#7F2027' },
+  sunset:{ name:'Sunset', bg:'#FFF6F0', ink:'#33202A', accent:'#FF5E5B', accent2:'#FFB627' },
+  forest:{ name:'Forest', bg:'#F7FAF5', ink:'#1E2B22', accent:'#2E7D5B', accent2:'#8C6A3F' },
+  ocean: { name:'Ocean',  bg:'#F4F9FC', ink:'#122436', accent:'#0E7CD1', accent2:'#12B5A5' },
+  mono:  { name:'Mono',   bg:'#FAFAF8', ink:'#141414', accent:'#141414', accent2:'#6E6E6E' },
   noir:  { name:'Noir',   bg:'#15100B', ink:'#F5EFE4', accent:'#EDA33F', accent2:'#E2836B' },
   tide:  { name:'Tide',   bg:'#F2F6F7', ink:'#10232B', accent:'#0E7C86', accent2:'#F4A259' },
   moss:  { name:'Moss',   bg:'#F4F2EA', ink:'#232B1E', accent:'#4A7C59', accent2:'#C97B2D' },
@@ -487,6 +509,7 @@ function siteCSS(t){
   return `
 :root{
   --bg:${t.bg}; --ink:${t.ink}; --accent:${t.accent}; --accent2:${t.accent2}; --r:${t.radius}px;
+  --secpad:${({compact:'60px',normal:'84px',roomy:'116px'})[t.density||'normal']};
   --muted:color-mix(in srgb, var(--ink) 58%, var(--bg));
   --line:color-mix(in srgb, var(--ink) 16%, transparent);
   --card:color-mix(in srgb, var(--ink) 5%, var(--bg));
@@ -501,7 +524,7 @@ a{color:inherit;text-decoration:none}
 h1,h2,h3{font-family:${f.disp};line-height:1.14;font-weight:600;letter-spacing:-.01em}
 ::selection{background:var(--accent);color:var(--on-accent)}
 .wrap{max-width:1140px;margin:0 auto;padding:0 26px}
-section{padding:84px 0}
+section{padding:var(--secpad) 0}
 .eyebrow{display:inline-block;padding:7px 15px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:.76rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;font-weight:600}
 .sec-head{max-width:640px;margin-bottom:46px}
 .sec-head h2{font-size:clamp(1.7rem,3.4vw,2.5rem);margin:16px 0 12px}
@@ -629,7 +652,7 @@ section{padding:84px 0}
 .foot .fine{color:var(--muted);font-size:.78rem;border-top:1px solid var(--line);padding-top:22px}
 
 @media (max-width:860px){
-  section{padding:60px 0}
+  section{padding:calc(var(--secpad)*.74) 0}
   .hero{padding:84px 0 64px}
   .hero-grid,.split-grid,.contact-grid{grid-template-columns:1fr;gap:36px}
   .feat-grid.c3,.feat-grid.c4{grid-template-columns:repeat(2,1fr)}
@@ -646,6 +669,24 @@ section{padding:84px 0}
   *,*::before,*::after{animation:none!important;transition:none!important}
   html{scroll-behavior:auto}
 }
+
+.vt-tint{background:color-mix(in srgb, var(--accent) 7%, var(--bg))}
+.vt-dark{background:color-mix(in srgb, var(--ink) 96%, black);color:var(--bg)}
+.vt-dark :is(h2,h3,.stat .v,.price){color:var(--bg)}
+.vt-dark :is(p,.sec-head p,.stat .l,.faq-item p,.quote p,.plan .period,.plan li){color:color-mix(in srgb, var(--bg) 76%, var(--ink))}
+.vt-dark .eyebrow{background:color-mix(in srgb, var(--bg) 12%, transparent);color:var(--bg)}
+.vt-dark :is(.feat,.plan,.quote,.faq-item,.stat){background:color-mix(in srgb, var(--bg) 7%, transparent);border-color:color-mix(in srgb, var(--bg) 16%, transparent)}
+.vt-dark .plan.hot{border-color:var(--accent)}
+.vidwrap{position:relative;aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;background:var(--card);border:1px solid var(--line);max-width:880px;margin:0 auto}
+.vidwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vid-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--muted);font-size:.95rem}
+.vid-ph .ic{font-size:2.2rem}
+.soc-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.soc{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border:1px solid var(--line);border-radius:999px;font-weight:600;transition:all .25s}
+.soc:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.wa-fab{position:fixed;right:20px;bottom:20px;z-index:60;width:56px;height:56px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.22);transition:transform .25s}
+.wa-fab:hover{transform:scale(1.08)}
+.wa-fab svg{width:30px;height:30px;fill:#fff}
 `;
 }
 
@@ -657,6 +698,15 @@ const ph = (img, label, cls='ph') => img
   ? `<div class="${cls}"><img src="${escAttr(img)}" alt="${escAttr(label||'')}" loading="lazy" /></div>`
   : `<div class="${cls}" aria-hidden="true"><span>${esc(label||'✦')}</span></div>`;
 const lines = s => String(s??'').split('\n').map(x=>x.trim()).filter(Boolean);
+const vtc = p => (p.variant && p.variant!=='default') ? `vt-${p.variant}` : '';
+function parseVideo(url){
+  const u = String(url||'').trim();
+  let m = u.match(/(?:youtube\.com\/(?:watch\?.*v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,20})/);
+  if (m) return { src:`https://www.youtube-nocookie.com/embed/${m[1]}` };
+  m = u.match(/vimeo\.com\/(?:video\/)?(\d{6,12})/);
+  if (m) return { src:`https://player.vimeo.com/video/${m[1]}` };
+  return null;
+}
 
 /* ---------- BLOCK REGISTRY ---------- */
 const BLOCKS = {
@@ -685,7 +735,8 @@ const BLOCKS = {
       {k:'primary',l:'Primary button',t:'text'},{k:'primaryHref',l:'Primary link',t:'text'},
       {k:'secondary',l:'Secondary button (blank = hidden)',t:'text'},{k:'secondaryHref',l:'Secondary link',t:'text'},
       {k:'layout',l:'Layout',t:'seg',opts:[['split','Split'],['center','Centered']]},
-      {k:'img',l:'Image URL (blank = brand placeholder)',t:'text',up:1}
+      {k:'img',l:'Image URL (blank = brand placeholder)',t:'text',up:1},
+      {k:'imgLabel',l:'Image alt text',t:'text'}
     ],
     render:p=>{
       const title = esc(p.title).replace(/\*(.+?)\*/g,'<em>$1</em>');
@@ -708,9 +759,10 @@ const BLOCKS = {
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'sub',l:'Subtitle',t:'textarea'},
       {k:'cols',l:'Columns',t:'seg',opts:[['2','2'],['3','3'],['4','4']]},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]},
       {k:'items',l:'Cards',t:'items',item:[{k:'icon',l:'Icon (emoji)',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Text',t:'textarea'}],titleKey:'title'}
     ],
-    render:p=>`<section id="features"><div class="wrap">
+    render:p=>`<section id="features" class="${vtc(p)}"><div class="wrap">
       <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2>${p.sub?`<p${ed('sub')}>${esc(p.sub)}</p>`:''}</div>
       <div class="feat-grid c${esc(p.cols)}">${p.items.map(i=>`<div class="feat"><div class="ic">${esc(i.icon)}</div><h3>${esc(i.title)}</h3><p>${esc(i.text)}</p></div>`).join('')}</div>
     </div></section>`
@@ -722,11 +774,11 @@ const BLOCKS = {
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Body text',t:'textarea'},
       {k:'cta',l:'Button (blank = hidden)',t:'text'},{k:'ctaHref',l:'Button link',t:'text'},
-      {k:'img',l:'Image URL',t:'text',up:1},{k:'flip',l:'Image on the left',t:'toggle'}
+      {k:'img',l:'Image URL',t:'text',up:1},{k:'alt',l:'Image alt text',t:'text'},{k:'flip',l:'Image on the left',t:'toggle'}
     ],
     render:p=>{
       const txt=`<div>${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2><p class="tx"${ed('text')}>${esc(p.text)}</p>${p.cta?`<a class="btn btn-ghost" href="${escAttr(p.ctaHref)}"${ed('cta')}>${esc(p.cta)}</a>`:''}</div>`;
-      const img=ph(p.img,'✦');
+      const img=ph(p.img, p.alt||'✦');
       return `<section><div class="wrap"><div class="split-grid">${p.flip?img+txt:txt+img}</div></div></section>`;
     }
   },
@@ -734,8 +786,8 @@ const BLOCKS = {
   stats: {
     name:'Stats', icon:'📈', desc:'Numbers that prove it',
     defaults:{ items:[{value:'10+',label:'Years in business'},{value:'1,200+',label:'Happy customers'},{value:'4.9★',label:'Average rating'},{value:'24h',label:'Reply time'}] },
-    fields:[{k:'items',l:'Stats',t:'items',item:[{k:'value',l:'Value',t:'text'},{k:'label',l:'Label',t:'text'}],titleKey:'label'}],
-    render:p=>`<section class="stats"><div class="wrap"><div class="stats-grid">${p.items.map(i=>`<div class="stat"><div class="v">${esc(i.value)}</div><div class="l">${esc(i.label)}</div></div>`).join('')}</div></div></section>`
+    fields:[{k:'items',l:'Stats',t:'items',item:[{k:'value',l:'Value',t:'text'},{k:'label',l:'Label',t:'text'}],titleKey:'label'},{k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}],
+    render:p=>`<section class="stats ${vtc(p)}"><div class="wrap"><div class="stats-grid">${p.items.map(i=>`<div class="stat"><div class="v">${esc(i.value)}</div><div class="l">${esc(i.label)}</div></div>`).join('')}</div></div></section>`
   },
 
   pricing: {
@@ -751,9 +803,10 @@ const BLOCKS = {
       {k:'items',l:'Plans',t:'items',item:[
         {k:'name',l:'Plan name',t:'text'},{k:'price',l:'Price',t:'text'},{k:'period',l:'Period / note',t:'text'},
         {k:'features',l:'Features (one per line)',t:'textarea'},{k:'cta',l:'Button',t:'text'},{k:'href',l:'Button link',t:'text'},{k:'hot',l:'Highlight this plan',t:'toggle'}
-      ],titleKey:'name'}
+      ],titleKey:'name'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
     ],
-    render:p=>`<section id="pricing"><div class="wrap">
+    render:p=>`<section id="pricing" class="${vtc(p)}"><div class="wrap">
       <div class="sec-head center">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2>${p.sub?`<p${ed('sub')}>${esc(p.sub)}</p>`:''}</div>
       <div class="price-grid">${p.items.map(i=>`<div class="plan ${i.hot?'hot':''}">${i.hot?'<span class="tag">Most picked</span>':''}
         <h3>${esc(i.name)}</h3><div class="amount">${esc(i.price)}</div><div class="per">${esc(i.period)}</div>
@@ -768,9 +821,10 @@ const BLOCKS = {
       items:[{quote:'A real quote from a real customer beats anything you could write yourself. Keep it short.',name:'Customer name',role:'Their business or city'},{quote:'Two or three of these are plenty. Pick the ones that mention results.',name:'Another customer',role:'Their role'}] },
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},
-      {k:'items',l:'Quotes',t:'items',item:[{k:'quote',l:'Quote',t:'textarea'},{k:'name',l:'Name',t:'text'},{k:'role',l:'Role / company',t:'text'}],titleKey:'name'}
+      {k:'items',l:'Quotes',t:'items',item:[{k:'quote',l:'Quote',t:'textarea'},{k:'name',l:'Name',t:'text'},{k:'role',l:'Role / company',t:'text'}],titleKey:'name'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
     ],
-    render:p=>`<section><div class="wrap">
+    render:p=>`<section class="${vtc(p)}"><div class="wrap">
       <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2></div>
       <div class="q-grid">${p.items.map(i=>`<div class="q"><span class="mark">\u201C</span><p>${esc(i.quote)}</p><div class="who"><b>${esc(i.name)}</b>${esc(i.role)}</div></div>`).join('')}</div>
     </div></section>`
@@ -794,11 +848,46 @@ const BLOCKS = {
     defaults:{ title:'Questions, answered', items:[{q:'How long does a build take?',a:'Most sites go live in 1–2 weeks depending on scope and how fast we get your content.'},{q:'Do I own the website?',a:'Yes. You pay once for the build and the files are yours. Hosting and care plans are optional.'}] },
     fields:[
       {k:'title',l:'Title',t:'text'},
-      {k:'items',l:'Questions',t:'items',item:[{k:'q',l:'Question',t:'text'},{k:'a',l:'Answer',t:'textarea'}],titleKey:'q'}
+      {k:'items',l:'Questions',t:'items',item:[{k:'q',l:'Question',t:'text'},{k:'a',l:'Answer',t:'textarea'}],titleKey:'q'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
     ],
-    render:p=>`<section><div class="wrap">
+    render:p=>`<section id="faq" class="${vtc(p)}"><div class="wrap">
       <div class="sec-head center"><h2${ed('title')}>${esc(p.title)}</h2></div>
       <div class="faq-list">${p.items.map(i=>`<details><summary>${esc(i.q)}</summary><div class="a">${esc(i.a)}</div></details>`).join('')}</div>
+    </div></section>`
+  },
+
+  video: {
+    name:'Video', icon:'🎬', desc:'YouTube or Vimeo embed',
+    defaults:{ eyebrow:'Watch', title:'See it in motion', url:'', variant:'default' },
+    fields:[
+      {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},
+      {k:'url',l:'Video URL (YouTube or Vimeo)',t:'text'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
+    ],
+    render:p=>{
+      const v = parseVideo(p.url);
+      const inner = v
+        ? `<iframe src="${escAttr(v.src)}" title="${escAttr(p.title||'Video')}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+        : `<div class="vid-ph"><span class="ic">🎬</span><span>${esc('Add a YouTube or Vimeo link')}</span></div>`;
+      return `<section class="${vtc(p)}"><div class="wrap">
+      <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2></div>
+      <div class="vidwrap">${inner}</div>
+    </div></section>`;
+    }
+  },
+
+  social: {
+    name:'Social links', icon:'🔗', desc:'Row of profile links',
+    defaults:{ title:'Find us here',
+      items:[{label:'Facebook',url:'#'},{label:'Instagram',url:'#'},{label:'TikTok',url:'#'}] },
+    fields:[
+      {k:'title',l:'Title',t:'text'},
+      {k:'items',l:'Links',t:'items',item:[{k:'label',l:'Label',t:'text'},{k:'url',l:'Link URL',t:'text'}],titleKey:'label'}
+    ],
+    render:p=>`<section><div class="wrap">
+      <div class="sec-head"><h2${ed('title')}>${esc(p.title)}</h2></div>
+      <div class="soc-row">${p.items.map(i=>`<a class="soc" href="${escAttr(i.url)}"${/^https?:/.test(i.url)?' target="_blank" rel="noopener"':''}>${esc(i.label)}</a>`).join('')}</div>
     </div></section>`
   },
 
@@ -850,7 +939,7 @@ const BLOCKS = {
   }
 };
 
-const BLOCK_ORDER = ['navbar','hero','features','split','stats','pricing','quotes','gallery','faq','cta','contact','footer'];
+const BLOCK_ORDER = ['navbar','hero','features','split','stats','pricing','quotes','gallery','video','faq','cta','contact','social','footer'];
 
 function renderBlockHTML(b, edit){
   EDIT = !!edit;
@@ -921,7 +1010,7 @@ function canvasDoc(){
   return `<!DOCTYPE html><html lang="${plang}"${pdir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="${fontLink(state.theme)}">
 <style>${siteCSS(state.theme)}</style><style>${OVERLAY_CSS}</style></head>
-<body>${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button></body></html>`;
+<body>${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button>${typeof waFabHTML==='function'?waFabHTML():''}</body></html>`;
 }
 
 let savedScroll = 0;
@@ -1056,7 +1145,7 @@ function blockAction(action, id){
 function select(id){
   selectedId = id;
   markSelected(); renderLayers(); renderInspector();
-  if (id){ $$('.ptab[data-rtab]').forEach(b=>b.classList.toggle('on', b.dataset.rtab==='block')); $('#rtab-block').hidden=false; $('#rtab-design').hidden=true; }
+  if (id){ $$('.ptab[data-rtab]').forEach(b=>b.classList.toggle('on', b.dataset.rtab==='block')); ['design','plugins','seo'].forEach(k=>$('#rtab-'+k).hidden=true); $('#rtab-block').hidden=false; }
 }
 
 /* =============== LEFT PANEL =============== */
@@ -1133,6 +1222,104 @@ function fieldHTML(f, val, path){
       <button class="add-item" data-add="${path}" data-f="${f.k}">${t('+ Add item')}</button></div>`;
   }
   return '';
+}
+
+/* =============== PLUGINS TAB =============== */
+function ensurePlugins(){
+  const d = { wa:{on:false,phone:'',msg:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''} };
+  state.plugins = state.plugins || {};
+  for (const k in d) state.plugins[k] = Object.assign({}, d[k], state.plugins[k]||{});
+  return state.plugins;
+}
+function plugRow(key, title, sub, fieldsHTML){
+  const p = state.plugins[key];
+  return `<div class="plug ${p.on?'on':''}" data-plug="${key}">
+    <div class="toggle" style="margin-bottom:${p.on?'10px':'0'}">
+      <label style="margin:0;font-size:.82rem;color:var(--ink);font-weight:700">${title}</label>
+      <button class="tg ${p.on?'on':''}" data-pltg="${key}" role="switch" aria-checked="${p.on}"></button>
+    </div>
+    ${p.on ? `<div class="plug-body">${sub?`<div class="empty-note" style="padding:0 0 8px">${sub}</div>`:''}${fieldsHTML}</div>` : ''}
+  </div>`;
+}
+function renderPlugins(){
+  ensurePlugins();
+  const P = state.plugins;
+  const inp = (k,f,ph,val,ta) => ta
+    ? `<textarea class="in" data-pl="${k}.${f}" placeholder="${escAttr(ph)}" style="min-height:90px;font-family:monospace;font-size:.78rem">${esc(val||'')}</textarea>`
+    : `<input class="in" data-pl="${k}.${f}" placeholder="${escAttr(ph)}" value="${escAttr(val||'')}" />`;
+  $('#rtab-plugins').innerHTML = `
+    ${plugRow('wa', t('WhatsApp chat button'), '', `
+      <div class="field"><label>${t('Phone number (with country code)')}</label>${inp('wa','phone','639171234567',P.wa.phone)}</div>
+      <div class="field"><label>${t('Preset message (optional)')}</label>${inp('wa','msg','Hi! I saw your website…',P.wa.msg)}</div>`)}
+    ${plugRow('ga', t('Google Analytics'), t('Applied on the exported site.'), `
+      <div class="field"><label>${t('Measurement ID')}</label>${inp('ga','id','G-XXXXXXXXXX',P.ga.id)}</div>`)}
+    ${plugRow('fbp', t('Facebook Pixel'), t('Applied on the exported site.'), `
+      <div class="field"><label>${t('Pixel ID')}</label>${inp('fbp','id','1234567890',P.fbp.id)}</div>`)}
+    ${plugRow('custom', t('Custom head code'), t('Paste analytics or verification tags. Applied on export.'), `
+      <div class="field">${inp('custom','head','<meta name=…>',P.custom.head,true)}</div>`)}
+  `;
+  $('#rtab-plugins').querySelectorAll('[data-pltg]').forEach(b=>b.addEventListener('click',()=>{
+    const k = b.dataset.pltg; snapshot();
+    state.plugins[k].on = !state.plugins[k].on;
+    renderPlugins(); renderCanvas(); autosave();
+  }));
+  $('#rtab-plugins').querySelectorAll('[data-pl]').forEach(el=>el.addEventListener('change',()=>{
+    const [k,f] = el.dataset.pl.split('.');
+    state.plugins[k][f] = el.value;
+    renderCanvas(); autosave();
+  }));
+}
+
+/* =============== SEO TAB =============== */
+function firstImage(){
+  for (const b of state.blocks){
+    if (b.props.img) return b.props.img;
+    if (b.type==='gallery') for (const it of b.props.items) if (it.img) return it.img;
+  }
+  return '';
+}
+function seoChecks(){
+  const title = state.meta.title||'', desc = state.meta.desc||'';
+  const has = ty => state.blocks.some(b=>b.type===ty);
+  const imgsOk = state.blocks.every(b=>{
+    if (b.type==='hero') return !b.props.img || !!b.props.imgLabel;
+    if (b.type==='split') return !b.props.img || !!b.props.alt;
+    if (b.type==='gallery') return b.props.items.every(i=>!i.img || !!i.caption);
+    return true;
+  });
+  const contact = state.blocks.find(b=>b.type==='contact');
+  return [
+    { ok: title.length>=10 && title.length<=60, l:'Page title 10–60 characters' },
+    { ok: desc.length>=50 && desc.length<=160, l:'SEO description 50–160 characters' },
+    { ok: has('hero'), l:'Has a main headline (Hero)' },
+    { ok: imgsOk, l:'All images have alt text' },
+    { ok: !!contact && !!(contact.props.email||contact.props.phone), l:'Contact details on the page' },
+    { ok: has('footer'), l:'Footer present' },
+    { ok: /^https?:\/\//.test(state.meta.siteUrl||''), l:'Site URL set' },
+    { ok: !!(state.meta.ogImage || firstImage()), l:'Social share image set' },
+    { ok: state.blocks.length>=4, l:'At least 4 sections' },
+    { ok: has('cta')||has('pricing'), l:'Has a call to action (CTA or Pricing)' }
+  ];
+}
+function renderSEO(){
+  const checks = seoChecks();
+  const n = checks.filter(c=>c.ok).length;
+  const pct = Math.round(n/checks.length*100);
+  const col = pct>=80 ? '#2c7a4b' : pct>=50 ? '#EDA33F' : '#c0392b';
+  $('#rtab-seo').innerHTML = `
+    <div class="seo-score"><div class="num" style="color:${col}">${n}<span>/${checks.length}</span></div>
+      <div class="bar"><i style="width:${pct}%;background:${col}"></i></div>
+      <div class="empty-note" style="padding:6px 0 0">${t('SEO score')}. ${t('Fix the unchecked items to strengthen this page.')}</div>
+    </div>
+    <div class="seo-list">${checks.map(c=>`<div class="seo-item ${c.ok?'ok':''}"><span class="m">${c.ok?'✓':'•'}</span>${t(c.l)}</div>`).join('')}</div>
+    <h4>${t('Page meta')}</h4>
+    <div class="field"><label>${t('Site URL (canonical)')}</label><input class="in" data-seo="siteUrl" placeholder="https://yourbrand.com" value="${escAttr(state.meta.siteUrl||'')}" /></div>
+    <div class="field"><label>${t('Social share image URL')}</label><input class="in" data-seo="ogImage" placeholder="${escAttr(t('Uses your first image when blank'))}" value="${escAttr(state.meta.ogImage||'')}" /></div>
+  `;
+  $('#rtab-seo').querySelectorAll('[data-seo]').forEach(el=>el.addEventListener('change',()=>{
+    state.meta[el.dataset.seo] = el.value.trim();
+    renderSEO(); autosave();
+  }));
 }
 
 /* image upload buttons (delegated once) */
@@ -1240,6 +1427,8 @@ function renderDesign(){
     <div class="field"><select data-tk="font">${Object.entries(FONTS).map(([k,f])=>`<option value="${k}" ${th.font===k?'selected':''}>${f.name}</option>`).join('')}</select></div>
     <h4>${t('Corners')}</h4>
     <div class="field"><input type="range" min="0" max="34" value="${th.radius}" data-tk="radius"><label style="margin-top:4px">${t('Radius')}: <span id="radv">${th.radius}</span>px</label></div>
+    <h4>${t('Spacing')}</h4>
+    <div class="field"><div class="seg" data-density>${[['compact','Compact'],['normal','Normal'],['roomy','Roomy']].map(([v,l])=>`<button data-v="${v}" class="${(th.density||'normal')===v?'on':''}">${t(l)}</button>`).join('')}</div></div>
     <h4>${t('Page meta')}</h4>
     <div class="field"><label>${t('Page language')}</label><select data-meta="lang">${Object.entries(LANGS).map(([k,n])=>`<option value="${k}" ${(state.meta.lang||'en')===k?'selected':''}>${n}</option>`).join('')}</select></div>
     <div class="field"><label>${t('Currency')}</label><select data-meta="currency">${Object.entries(CURRENCIES).map(([k,sym])=>`<option value="${k}" ${(state.meta.currency||'PHP')===k?'selected':''}>${sym} ${k}</option>`).join('')}</select></div>
@@ -1269,6 +1458,11 @@ function renderDesign(){
     });
   });
   $('[data-meta="desc"]',d).addEventListener('change',e=>{ state.meta.desc=e.target.value; autosave(); });
+  $('[data-density]',d).addEventListener('click',e=>{
+    const btn = e.target.closest('button[data-v]'); if(!btn) return;
+    snapshot(); state.theme.density = btn.dataset.v;
+    renderCanvas(); renderDesign(); autosave();
+  });
   $('[data-meta="lang"]',d).addEventListener('change',e=>{
     snapshot();
     state.meta.lang = e.target.value;
@@ -1323,6 +1517,49 @@ _resetConfirm:'Start over? Your current page will be cleared. (Ctrl+Z can still 
 
 const TR = {
 ja:{
+"Plugins":"プラグイン",
+"SEO":"SEO",
+"Video":"動画",
+"YouTube or Vimeo embed":"YouTube/Vimeo埋め込み",
+"Social links":"SNSリンク",
+"Row of profile links":"プロフィールリンクの列",
+"Video URL (YouTube or Vimeo)":"動画URL（YouTubeまたはVimeo）",
+"Link URL":"リンクURL",
+"Style":"スタイル",
+"Default":"標準",
+"Tinted":"色付き",
+"Dark":"ダーク",
+"Spacing":"余白",
+"Compact":"コンパクト",
+"Normal":"標準",
+"Roomy":"ゆったり",
+"Image alt text":"画像の代替テキスト",
+"SEO score":"SEOスコア",
+"Fix the unchecked items to strengthen this page.":"未達成の項目を改善するとページが強くなります。",
+"Site URL (canonical)":"サイトURL（canonical）",
+"Social share image URL":"SNSシェア画像URL",
+"Uses your first image when blank":"空欄なら最初の画像を使用",
+"WhatsApp chat button":"WhatsAppチャットボタン",
+"Phone number (with country code)":"電話番号（国番号付き）",
+"Preset message (optional)":"定型メッセージ（任意）",
+"Google Analytics":"Googleアナリティクス",
+"Measurement ID":"測定ID",
+"Facebook Pixel":"Facebookピクセル",
+"Pixel ID":"ピクセルID",
+"Custom head code":"カスタムheadコード",
+"Paste analytics or verification tags. Applied on export.":"解析や認証タグを貼り付け。エクスポート時に適用。",
+"Applied on the exported site.":"エクスポートしたサイトに適用されます。",
+"Add a YouTube or Vimeo link":"YouTubeまたはVimeoのリンクを追加",
+"Page title 10–60 characters":"ページタイトルは10〜60文字",
+"SEO description 50–160 characters":"SEO説明文は50〜160文字",
+"Has a main headline (Hero)":"メイン見出し（ヒーロー）がある",
+"All images have alt text":"全画像に代替テキスト",
+"Contact details on the page":"ページに連絡先がある",
+"Footer present":"フッターがある",
+"Site URL set":"サイトURLを設定済み",
+"Social share image set":"シェア画像を設定済み",
+"At least 4 sections":"セクションが4つ以上",
+"Has a call to action (CTA or Pricing)":"行動喚起（CTAか料金）がある",
 "Upload image":"画像をアップロード",
 "Uploading…":"アップロード中…",
 "Image added":"画像を追加しました",
@@ -1365,6 +1602,49 @@ _resetConfirm:'最初からやり直しますか？現在のページは消去�
 'Your page is empty. Add a block first':'ページが空です。まずブロックを追加してください','Downloaded! That file is your website':'ダウンロード完了！それがあなたのウェブサイトです','HTML copied to clipboard':'HTMLをコピーしました','Copy blocked by the browser. Use Download instead':'ブラウザによりコピーがブロックされました。ダウンロードをご利用ください','Pop-up blocked. Allow pop-ups to preview':'ポップアップがブロックされました。許可してください','Project file downloaded':'プロジェクトファイルをダウンロードしました','That file isn’t a Loop Builder project':'Loop Builderのプロジェクトファイルではありません','Project loaded':'プロジェクトを読み込みました','Welcome, {n}! Exporting is unlocked':'ようこそ、{n}さん！エクスポートが解除されました','Signed out. Back on trial':'サインアウトしました。トライアルに戻ります','Your client access has ended. Message us to renew.':'クライアントアクセスの期限が切れました。更新はご連絡ください。','Saved':'保存済み','Loop started! Click any text on the page to edit it':'開始！ページ上のテキストをクリックして編集','Block removed. Ctrl+Z to undo':'ブロックを削除しました。Ctrl+Zで元に戻せます','{b} added':'{b}を追加しました','Colors need a 6-digit hex like #D25A28':'色は#D25A28のような6桁の16進数で指定してください'
 },
 fr:{
+"Plugins":"Extensions",
+"SEO":"SEO",
+"Video":"Vidéo",
+"YouTube or Vimeo embed":"Intégration YouTube/Vimeo",
+"Social links":"Réseaux sociaux",
+"Row of profile links":"Rangée de liens de profils",
+"Video URL (YouTube or Vimeo)":"URL de la vidéo (YouTube ou Vimeo)",
+"Link URL":"URL du lien",
+"Style":"Style",
+"Default":"Standard",
+"Tinted":"Teinté",
+"Dark":"Sombre",
+"Spacing":"Espacement",
+"Compact":"Compact",
+"Normal":"Normal",
+"Roomy":"Aéré",
+"Image alt text":"Texte alternatif de l’image",
+"SEO score":"Score SEO",
+"Fix the unchecked items to strengthen this page.":"Corrigez les points non cochés pour renforcer la page.",
+"Site URL (canonical)":"URL du site (canonique)",
+"Social share image URL":"Image de partage (URL)",
+"Uses your first image when blank":"Utilise votre première image si vide",
+"WhatsApp chat button":"Bouton WhatsApp",
+"Phone number (with country code)":"Numéro (avec indicatif pays)",
+"Preset message (optional)":"Message prérempli (facultatif)",
+"Google Analytics":"Google Analytics",
+"Measurement ID":"ID de mesure",
+"Facebook Pixel":"Pixel Facebook",
+"Pixel ID":"ID du pixel",
+"Custom head code":"Code head personnalisé",
+"Paste analytics or verification tags. Applied on export.":"Collez vos balises. Appliqué à l’export.",
+"Applied on the exported site.":"Appliqué sur le site exporté.",
+"Add a YouTube or Vimeo link":"Ajoutez un lien YouTube ou Vimeo",
+"Page title 10–60 characters":"Titre de 10 à 60 caractères",
+"SEO description 50–160 characters":"Description de 50 à 160 caractères",
+"Has a main headline (Hero)":"A un titre principal (Héro)",
+"All images have alt text":"Toutes les images ont un texte alternatif",
+"Contact details on the page":"Coordonnées présentes sur la page",
+"Footer present":"Pied de page présent",
+"Site URL set":"URL du site renseignée",
+"Social share image set":"Image de partage définie",
+"At least 4 sections":"Au moins 4 sections",
+"Has a call to action (CTA or Pricing)":"A un appel à l’action (CTA ou Tarifs)",
 "Upload image":"Téléverser une image",
 "Uploading…":"Téléversement…",
 "Image added":"Image ajoutée",
@@ -1412,6 +1692,49 @@ _resetConfirm:'Tout recommencer ? Votre page actuelle sera effacée. (Ctrl+Z peu
 "use strict";
 Object.assign(TR, {
 zh:{
+"Plugins":"插件",
+"SEO":"SEO",
+"Video":"视频",
+"YouTube or Vimeo embed":"YouTube/Vimeo嵌入",
+"Social links":"社交链接",
+"Row of profile links":"一排社交主页链接",
+"Video URL (YouTube or Vimeo)":"视频URL（YouTube或Vimeo）",
+"Link URL":"链接URL",
+"Style":"样式",
+"Default":"默认",
+"Tinted":"浅色调",
+"Dark":"深色",
+"Spacing":"间距",
+"Compact":"紧凑",
+"Normal":"标准",
+"Roomy":"宽松",
+"Image alt text":"图片替代文本",
+"SEO score":"SEO评分",
+"Fix the unchecked items to strengthen this page.":"完成未达标项可提升页面表现。",
+"Site URL (canonical)":"网站URL（canonical）",
+"Social share image URL":"社交分享图URL",
+"Uses your first image when blank":"留空则使用第一张图片",
+"WhatsApp chat button":"WhatsApp聊天按钮",
+"Phone number (with country code)":"电话号码（含国家代码）",
+"Preset message (optional)":"预设消息（可选）",
+"Google Analytics":"谷歌分析",
+"Measurement ID":"衡量ID",
+"Facebook Pixel":"Facebook像素",
+"Pixel ID":"像素ID",
+"Custom head code":"自定义head代码",
+"Paste analytics or verification tags. Applied on export.":"粘贴统计或验证标签。导出时应用。",
+"Applied on the exported site.":"应用于导出的网站。",
+"Add a YouTube or Vimeo link":"添加YouTube或Vimeo链接",
+"Page title 10–60 characters":"页面标题10–60个字符",
+"SEO description 50–160 characters":"SEO描述50–160个字符",
+"Has a main headline (Hero)":"有主标题（首屏）",
+"All images have alt text":"所有图片都有替代文本",
+"Contact details on the page":"页面包含联系方式",
+"Footer present":"有页脚",
+"Site URL set":"已设置网站URL",
+"Social share image set":"已设置分享图片",
+"At least 4 sections":"至少4个板块",
+"Has a call to action (CTA or Pricing)":"有行动号召（CTA或价格）",
 "Upload image":"上传图片",
 "Uploading…":"上传中…",
 "Image added":"已添加图片",
@@ -1454,6 +1777,49 @@ _resetConfirm:'重新开始？当前页面将被清空。（关闭标签页前�
 'Your page is empty. Add a block first':'页面为空。请先添加模块','Downloaded! That file is your website':'已下载！该文件就是你的网站','HTML copied to clipboard':'HTML已复制到剪贴板','Copy blocked by the browser. Use Download instead':'浏览器阻止了复制。请改用下载','Pop-up blocked. Allow pop-ups to preview':'弹窗被拦截。请允许弹窗以预览','Project file downloaded':'项目文件已下载','That file isn’t a Loop Builder project':'该文件不是Loop Builder项目','Project loaded':'项目已载入','Welcome, {n}! Exporting is unlocked':'欢迎，{n}！导出已解锁','Signed out. Back on trial':'已退出。回到试用模式','Your client access has ended. Message us to renew.':'客户权限已到期。请联系我们续期。','Loop started! Click any text on the page to edit it':'开始！点击页面上的任意文字即可编辑','Block removed. Ctrl+Z to undo':'已删除模块。Ctrl+Z可撤销','{b} added':'已添加{b}','Colors need a 6-digit hex like #D25A28':'颜色需要6位十六进制，例如 #D25A28'
 },
 es:{
+"Plugins":"Plugins",
+"SEO":"SEO",
+"Video":"Vídeo",
+"YouTube or Vimeo embed":"Inserción de YouTube/Vimeo",
+"Social links":"Redes sociales",
+"Row of profile links":"Fila de enlaces a perfiles",
+"Video URL (YouTube or Vimeo)":"URL del vídeo (YouTube o Vimeo)",
+"Link URL":"URL del enlace",
+"Style":"Estilo",
+"Default":"Estándar",
+"Tinted":"Tintado",
+"Dark":"Oscuro",
+"Spacing":"Espaciado",
+"Compact":"Compacto",
+"Normal":"Normal",
+"Roomy":"Amplio",
+"Image alt text":"Texto alternativo de la imagen",
+"SEO score":"Puntuación SEO",
+"Fix the unchecked items to strengthen this page.":"Corrige los puntos sin marcar para reforzar la página.",
+"Site URL (canonical)":"URL del sitio (canónica)",
+"Social share image URL":"Imagen para compartir (URL)",
+"Uses your first image when blank":"Usa tu primera imagen si está vacío",
+"WhatsApp chat button":"Botón de chat de WhatsApp",
+"Phone number (with country code)":"Teléfono (con código de país)",
+"Preset message (optional)":"Mensaje predefinido (opcional)",
+"Google Analytics":"Google Analytics",
+"Measurement ID":"ID de medición",
+"Facebook Pixel":"Píxel de Facebook",
+"Pixel ID":"ID del píxel",
+"Custom head code":"Código head personalizado",
+"Paste analytics or verification tags. Applied on export.":"Pega etiquetas de analítica o verificación. Se aplica al exportar.",
+"Applied on the exported site.":"Se aplica en el sitio exportado.",
+"Add a YouTube or Vimeo link":"Añade un enlace de YouTube o Vimeo",
+"Page title 10–60 characters":"Título de 10 a 60 caracteres",
+"SEO description 50–160 characters":"Descripción de 50 a 160 caracteres",
+"Has a main headline (Hero)":"Tiene titular principal (Portada)",
+"All images have alt text":"Todas las imágenes tienen texto alternativo",
+"Contact details on the page":"Datos de contacto en la página",
+"Footer present":"Pie de página presente",
+"Site URL set":"URL del sitio configurada",
+"Social share image set":"Imagen para compartir configurada",
+"At least 4 sections":"Al menos 4 secciones",
+"Has a call to action (CTA or Pricing)":"Tiene llamada a la acción (CTA o Precios)",
 "Upload image":"Subir imagen",
 "Uploading…":"Subiendo…",
 "Image added":"Imagen añadida",
@@ -1496,6 +1862,49 @@ _resetConfirm:'¿Empezar de nuevo? Tu página actual se borrará. (Ctrl+Z aún p
 'Your page is empty. Add a block first':'Tu página está vacía. Añade un bloque primero','Downloaded! That file is your website':'¡Descargado! Ese archivo es tu sitio web','HTML copied to clipboard':'HTML copiado al portapapeles','Copy blocked by the browser. Use Download instead':'El navegador bloqueó la copia. Usa Descargar','Pop-up blocked. Allow pop-ups to preview':'Ventana bloqueada. Permite ventanas emergentes para previsualizar','Project file downloaded':'Archivo de proyecto descargado','That file isn’t a Loop Builder project':'Ese archivo no es un proyecto de Loop Builder','Project loaded':'Proyecto cargado','Welcome, {n}! Exporting is unlocked':'¡Bienvenido, {n}! Exportar está desbloqueado','Signed out. Back on trial':'Sesión cerrada. De vuelta a la prueba','Your client access has ended. Message us to renew.':'Tu acceso de cliente ha terminado. Escríbenos para renovar.','Loop started! Click any text on the page to edit it':'¡Empezamos! Haz clic en cualquier texto de la página para editarlo','Block removed. Ctrl+Z to undo':'Bloque eliminado. Ctrl+Z para deshacer','{b} added':'{b} añadido','Colors need a 6-digit hex like #D25A28':'Los colores necesitan un hex de 6 dígitos como #D25A28'
 },
 it:{
+"Plugins":"Plugin",
+"SEO":"SEO",
+"Video":"Video",
+"YouTube or Vimeo embed":"Incorporo YouTube/Vimeo",
+"Social links":"Link social",
+"Row of profile links":"Fila di link ai profili",
+"Video URL (YouTube or Vimeo)":"URL del video (YouTube o Vimeo)",
+"Link URL":"URL del link",
+"Style":"Stile",
+"Default":"Standard",
+"Tinted":"Tinta",
+"Dark":"Scuro",
+"Spacing":"Spaziatura",
+"Compact":"Compatto",
+"Normal":"Normale",
+"Roomy":"Arioso",
+"Image alt text":"Testo alternativo immagine",
+"SEO score":"Punteggio SEO",
+"Fix the unchecked items to strengthen this page.":"Sistema le voci non spuntate per rafforzare la pagina.",
+"Site URL (canonical)":"URL del sito (canonical)",
+"Social share image URL":"Immagine di condivisione (URL)",
+"Uses your first image when blank":"Usa la prima immagine se vuoto",
+"WhatsApp chat button":"Pulsante chat WhatsApp",
+"Phone number (with country code)":"Numero (con prefisso internazionale)",
+"Preset message (optional)":"Messaggio predefinito (facoltativo)",
+"Google Analytics":"Google Analytics",
+"Measurement ID":"ID misurazione",
+"Facebook Pixel":"Pixel di Facebook",
+"Pixel ID":"ID pixel",
+"Custom head code":"Codice head personalizzato",
+"Paste analytics or verification tags. Applied on export.":"Incolla tag di analytics o verifica. Applicato all’export.",
+"Applied on the exported site.":"Applicato al sito esportato.",
+"Add a YouTube or Vimeo link":"Aggiungi un link YouTube o Vimeo",
+"Page title 10–60 characters":"Titolo di 10–60 caratteri",
+"SEO description 50–160 characters":"Descrizione di 50–160 caratteri",
+"Has a main headline (Hero)":"Ha un titolo principale (Hero)",
+"All images have alt text":"Tutte le immagini hanno testo alternativo",
+"Contact details on the page":"Contatti presenti in pagina",
+"Footer present":"Footer presente",
+"Site URL set":"URL del sito impostato",
+"Social share image set":"Immagine di condivisione impostata",
+"At least 4 sections":"Almeno 4 sezioni",
+"Has a call to action (CTA or Pricing)":"Ha una call to action (CTA o Prezzi)",
 "Upload image":"Carica immagine",
 "Uploading…":"Caricamento…",
 "Image added":"Immagine aggiunta",
@@ -1538,6 +1947,49 @@ _resetConfirm:'Ricominciare? La pagina attuale sarà cancellata. (Ctrl+Z può an
 'Your page is empty. Add a block first':'La pagina è vuota. Aggiungi prima un blocco','Downloaded! That file is your website':'Scaricato! Quel file è il tuo sito','HTML copied to clipboard':'HTML copiato negli appunti','Copy blocked by the browser. Use Download instead':'Copia bloccata dal browser. Usa Scarica','Pop-up blocked. Allow pop-ups to preview':'Pop-up bloccato. Consenti i pop-up per l\u2019anteprima','Project file downloaded':'File di progetto scaricato','That file isn’t a Loop Builder project':'Quel file non è un progetto Loop Builder','Project loaded':'Progetto caricato','Welcome, {n}! Exporting is unlocked':'Benvenuto, {n}! L\u2019esportazione è sbloccata','Signed out. Back on trial':'Disconnesso. Di nuovo in prova','Your client access has ended. Message us to renew.':'Il tuo accesso cliente è terminato. Scrivici per rinnovare.','Loop started! Click any text on the page to edit it':'Si parte! Clicca un testo qualsiasi della pagina per modificarlo','Block removed. Ctrl+Z to undo':'Blocco eliminato. Ctrl+Z per annullare','{b} added':'{b} aggiunto','Colors need a 6-digit hex like #D25A28':'I colori richiedono un esadecimale a 6 cifre come #D25A28'
 },
 ar:{
+"Plugins":"الإضافات",
+"SEO":"SEO",
+"Video":"فيديو",
+"YouTube or Vimeo embed":"تضمين YouTube/Vimeo",
+"Social links":"روابط التواصل",
+"Row of profile links":"صف من روابط الحسابات",
+"Video URL (YouTube or Vimeo)":"رابط الفيديو (YouTube أو Vimeo)",
+"Link URL":"رابط",
+"Style":"النمط",
+"Default":"افتراضي",
+"Tinted":"مُلوَّن",
+"Dark":"داكن",
+"Spacing":"التباعد",
+"Compact":"مضغوط",
+"Normal":"عادي",
+"Roomy":"واسع",
+"Image alt text":"النص البديل للصورة",
+"SEO score":"نتيجة SEO",
+"Fix the unchecked items to strengthen this page.":"أصلح العناصر غير المحققة لتقوية الصفحة.",
+"Site URL (canonical)":"رابط الموقع (canonical)",
+"Social share image URL":"رابط صورة المشاركة",
+"Uses your first image when blank":"يستخدم أول صورة إن تُرك فارغًا",
+"WhatsApp chat button":"زر دردشة واتساب",
+"Phone number (with country code)":"رقم الهاتف (مع رمز الدولة)",
+"Preset message (optional)":"رسالة جاهزة (اختياري)",
+"Google Analytics":"تحليلات Google",
+"Measurement ID":"معرّف القياس",
+"Facebook Pixel":"بكسل فيسبوك",
+"Pixel ID":"معرّف البكسل",
+"Custom head code":"كود head مخصص",
+"Paste analytics or verification tags. Applied on export.":"الصق وسوم التحليلات أو التحقق. تُطبق عند التصدير.",
+"Applied on the exported site.":"يُطبق على الموقع المُصدَّر.",
+"Add a YouTube or Vimeo link":"أضف رابط YouTube أو Vimeo",
+"Page title 10–60 characters":"عنوان الصفحة 10–60 حرفًا",
+"SEO description 50–160 characters":"وصف SEO بين 50 و160 حرفًا",
+"Has a main headline (Hero)":"يوجد عنوان رئيسي (الواجهة)",
+"All images have alt text":"كل الصور لها نص بديل",
+"Contact details on the page":"بيانات التواصل موجودة",
+"Footer present":"يوجد تذييل",
+"Site URL set":"تم تعيين رابط الموقع",
+"Social share image set":"تم تعيين صورة المشاركة",
+"At least 4 sections":"4 أقسام على الأقل",
+"Has a call to action (CTA or Pricing)":"توجد دعوة لاتخاذ إجراء (CTA أو الأسعار)",
 "Upload image":"رفع صورة",
 "Uploading…":"جارٍ الرفع…",
 "Image added":"تمت إضافة الصورة",
@@ -1593,6 +2045,7 @@ function applyLang(){
   const set = (sel, key, html=false) => { const el=$(sel); if(!el) return; if(html) el.innerHTML=t(key); else el.textContent=t(key); };
   set('[data-tab="blocks"]','Blocks'); set('[data-tab="layers"]','Layers');
   set('[data-rtab="block"]','Block'); set('[data-rtab="design"]','Design');
+  set('[data-rtab="plugins"]','Plugins'); set('[data-rtab="seo"]','SEO');
   set('#guideBtn','? Guide'); set('#jsonBtn','Save / Load');
   $('#previewBtn').innerHTML = $('#previewBtn').querySelector('svg').outerHTML + t('Preview');
   set('#hintBlocks','Click a block to add it, or drag it onto the page.');
@@ -1611,6 +2064,8 @@ function applyLang(){
   const st = $('#saveState .t'); if (st && st.textContent) st.textContent = t('Saved');
   updateAccessUI();
   renderLibrary(); renderLayers(); renderInspector(); renderDesign(); renderCanvas();
+  if (!$('#rtab-plugins').hidden) renderPlugins();
+  if (!$('#rtab-seo').hidden) renderSEO();
 }
 
 /* language picker */
@@ -1805,6 +2260,68 @@ $('#accessChip').addEventListener('click', ()=>{ renderAccessModal(false); openM
 const TRIAL_RIBBON = '<div style="position:fixed;bottom:14px;right:14px;z-index:9999;background:#2B140E;color:#FAF7ED;font:600 12px/1 system-ui,sans-serif;padding:9px 15px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.3)">Trial preview \u00b7 Blink<span style="color:#EDA33F">Loop</span> Builder</div>';
 
 /* =============== EXPORT / PREVIEW =============== */
+const WA_SVG = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C9.4 3 4 8.3 4 14.9c0 2.6.8 5 2.3 7L4 29l7.3-2.3c1.5.8 3.1 1.2 4.7 1.2 6.6 0 12-5.3 12-11.9S22.6 3 16 3zm0 21.6c-1.5 0-3-.4-4.3-1.1l-.3-.2-4.3 1.4 1.4-4.2-.2-.3c-1.3-1.6-2-3.5-2-5.4 0-5.3 4.4-9.6 9.7-9.6s9.7 4.3 9.7 9.6-4.4 9.8-9.7 9.8zm5.4-7.2c-.3-.2-1.7-.9-2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1c-.3-.2-1.2-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2.1s0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.5 1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.1 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4s.3-1.3.2-1.4c-.1-.1-.3-.2-.6-.3z"/></svg>';
+function waFabHTML(){
+  const P = state.plugins || {};
+  if (!P.wa || !P.wa.on || !P.wa.phone) return '';
+  const digits = String(P.wa.phone).replace(/[^0-9]/g,'');
+  if (!digits) return '';
+  const msg = P.wa.msg ? '?text='+encodeURIComponent(P.wa.msg) : '';
+  return `<a class="wa-fab" href="https://wa.me/${digits}${msg}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">${WA_SVG}</a>`;
+}
+function faviconHref(){
+  const nav = state.blocks.find(b=>b.type==='navbar');
+  const letter = ((nav && nav.props.brand) || state.meta.title || 'B').trim().charAt(0).toUpperCase() || 'B';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${state.theme.accent}"/><text x="32" y="43" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="700" text-anchor="middle" fill="#ffffff">${letter}</text></svg>`;
+  return 'data:image/svg+xml,'+encodeURIComponent(svg);
+}
+function seoHeadHTML(){
+  const m = state.meta;
+  const title = esc(m.title||'');
+  const desc = esc(m.desc||'');
+  const url = /^https?:\/\//.test(m.siteUrl||'') ? m.siteUrl.replace(/\/$/,'') : '';
+  const og = m.ogImage || firstImage();
+  const nav = state.blocks.find(b=>b.type==='navbar');
+  const contact = state.blocks.find(b=>b.type==='contact');
+  let out = `
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="${escAttr(state.theme.bg)}">
+<link rel="icon" href="${faviconHref()}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${title}">
+${desc?`<meta property="og:description" content="${desc}">`:''}
+${url?`<link rel="canonical" href="${escAttr(url)}">\n<meta property="og:url" content="${escAttr(url)}">`:''}
+${og?`<meta property="og:image" content="${escAttr(og)}">`:''}
+<meta name="twitter:card" content="${og?'summary_large_image':'summary'}">
+<meta name="twitter:title" content="${title}">
+${desc?`<meta name="twitter:description" content="${desc}">`:''}
+${og?`<meta name="twitter:image" content="${escAttr(og)}">`:''}`;
+  if (contact && (contact.props.email || contact.props.phone)){
+    const ld = { '@context':'https://schema.org', '@type':'LocalBusiness',
+      name: (nav && nav.props.brand ? (nav.props.brand + (nav.props.brandAccent||'')) : m.title) };
+    if (url) ld.url = url;
+    if (contact.props.email) ld.email = contact.props.email;
+    if (contact.props.phone) ld.telephone = contact.props.phone;
+    if (contact.props.location) ld.address = { '@type':'PostalAddress', addressLocality: contact.props.location };
+    out += `\n<script type="application/ld+json">${JSON.stringify(ld)}<\/script>`;
+  }
+  return out;
+}
+function pluginsHeadHTML(){
+  const P = state.plugins || {};
+  let out = '';
+  if (P.ga && P.ga.on && /^G-[A-Z0-9]{4,}$/i.test((P.ga.id||'').trim())){
+    const id = escAttr(P.ga.id.trim());
+    out += `\n<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"><\/script>\n<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${id}');<\/script>`;
+  }
+  if (P.fbp && P.fbp.on && /^\d{5,20}$/.test((P.fbp.id||'').trim())){
+    const id = P.fbp.id.trim();
+    out += `\n<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${id}');fbq('track','PageView');<\/script>`;
+  }
+  if (P.custom && P.custom.on && P.custom.head) out += '\n' + P.custom.head;
+  return out;
+}
+
 function exportHTML(){
   const t = state.theme;
   const navJS = state.blocks.some(b=>b.type==='navbar')
@@ -1817,10 +2334,7 @@ function exportHTML(){
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(state.meta.title)}</title>
-<meta name="description" content="${escAttr(state.meta.desc || state.meta.title)}" />
-<meta name="theme-color" content="${escAttr(t.bg)}" />
-<meta property="og:title" content="${escAttr(state.meta.title)}" />
-<meta property="og:description" content="${escAttr(state.meta.desc || '')}" />
+<meta name="description" content="${escAttr(state.meta.desc || state.meta.title)}" />${seoHeadHTML()}${pluginsHeadHTML()}
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="${fontLink(t)}" rel="stylesheet" />
@@ -1830,7 +2344,7 @@ function exportHTML(){
 ${pageBodyHTML(false)}
 ${navJS}
 <!-- Built with Loop Builder · blinkloop -->
-</body>
+${waFabHTML()}</body>
 </html>`;
 }
 
@@ -1941,7 +2455,8 @@ function openPicker(idx){
 
 /* =============== TEMPLATES =============== */
 function freshState(){
-  return { meta:{title:'My website',desc:'',lang:'en',currency:'PHP'}, theme:{...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
+  return { meta:{title:'My website',desc:'',lang:'en',currency:'PHP',siteUrl:'',ogImage:''},
+    plugins:{ wa:{on:false,phone:'',msg:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''} }, theme:{ density:'normal',...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
 }
 function tplBlocks(types, overrides={}){
   return types.map(t=>{
@@ -2013,8 +2528,9 @@ $$('.ptab[data-tab]').forEach(b=>b.addEventListener('click',()=>{
 }));
 $$('.ptab[data-rtab]').forEach(b=>b.addEventListener('click',()=>{
   $$('.ptab[data-rtab]').forEach(x=>x.classList.toggle('on',x===b));
-  $('#rtab-block').hidden = b.dataset.rtab!=='block';
-  $('#rtab-design').hidden = b.dataset.rtab!=='design';
+  ['block','design','plugins','seo'].forEach(k=>{ $('#rtab-'+k).hidden = b.dataset.rtab!==k; });
+  if (b.dataset.rtab==='plugins') renderPlugins();
+  if (b.dataset.rtab==='seo') renderSEO();
 }));
 /* click outside or ✕ closes any modal, except the template chooser on an empty page */
 $$('.modal-bg').forEach(m=>m.addEventListener('click',e=>{
@@ -2052,6 +2568,10 @@ function toast(msg){
   try{ saved = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
   if (saved && saved.blocks && saved.theme && saved.meta){
     state = saved;
+    const fresh = freshState();
+    state.meta = Object.assign(fresh.meta, state.meta);
+    state.theme = Object.assign(fresh.theme, state.theme);
+    state.plugins = state.plugins || fresh.plugins;
     $('#pageTitle').value = state.meta.title;
     applyLang();
   } else {
