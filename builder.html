@@ -657,6 +657,7 @@ section{padding:var(--secpad) 0}
   .hero-grid,.split-grid,.contact-grid{grid-template-columns:1fr;gap:36px}
   .feat-grid.c3,.feat-grid.c4{grid-template-columns:repeat(2,1fr)}
   .gal-grid.c3,.gal-grid.c4{grid-template-columns:repeat(2,1fr)}
+  .pay-grid.has-qr{grid-template-columns:1fr}
   .nav nav{position:fixed;inset:72px 0 auto 0;background:var(--bg);border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start;padding:22px 26px;gap:18px;display:none}
   .nav nav.open{display:flex}
   .nav .mtoggle{display:block}
@@ -684,9 +685,24 @@ section{padding:var(--secpad) 0}
 .soc-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 .soc{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border:1px solid var(--line);border-radius:999px;font-weight:600;transition:all .25s}
 .soc:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
-.wa-fab{position:fixed;right:20px;bottom:20px;z-index:60;width:56px;height:56px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.22);transition:transform .25s}
-.wa-fab:hover{transform:scale(1.08)}
-.wa-fab svg{width:30px;height:30px;fill:#fff}
+.pay-grid{display:grid;grid-template-columns:1fr;gap:22px;align-items:start}
+.pay-grid.has-qr{grid-template-columns:1.5fr 1fr}
+.pay-list{display:grid;gap:14px}
+.pay-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.pay-card .pm{color:var(--accent);font-weight:700;font-size:.82rem;letter-spacing:.04em;text-transform:uppercase}
+.pay-card .pn{color:var(--muted);font-size:.88rem;margin-top:4px}
+.pay-card .pv{font-family:var(--disp);font-weight:600;font-size:1.15rem;margin-top:2px;letter-spacing:.02em}
+.pay-qr{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;text-align:center}
+.pay-qr img{width:100%;max-width:230px;border-radius:calc(var(--r)*.6)}
+.pay-qr .pq{color:var(--muted);font-size:.85rem;margin-top:10px}
+.pay-note{color:var(--muted);font-size:.9rem;margin-top:18px;text-align:center}
+.vt-dark :is(.pay-card,.pay-qr){background:color-mix(in srgb, var(--bg) 7%, transparent);border-color:color-mix(in srgb, var(--bg) 16%, transparent)}
+.vt-dark .pay-card .pv{color:var(--bg)}
+.fab-col{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;flex-direction:column;gap:12px}
+.chat-fab{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.22);transition:transform .25s}
+.chat-fab:hover{transform:scale(1.08)}
+.chat-fab svg{width:30px;height:30px;fill:#fff}
+.cf-wa{background:#25D366}.cf-ms{background:#0084FF}.cf-vb{background:#7360F2}
 `;
 }
 
@@ -857,6 +873,34 @@ const BLOCKS = {
     </div></section>`
   },
 
+  payments: {
+    name:'Payments', icon:'💳', desc:'GCash, Maya, or bank details',
+    defaults:{ eyebrow:'Payment', title:'Easy ways to pay', sub:'Pick whichever is easiest for you, then send a screenshot to confirm.',
+      qr:'', qrCaption:'Scan to pay via GCash',
+      items:[
+        {method:'GCash', name:'Your Name', number:'0917 000 0000'},
+        {method:'Maya', name:'Your Name', number:'0917 000 0000'},
+        {method:'Bank transfer (BPI)', name:'Your Name', number:'1234 5678 90'}
+      ],
+      note:'', variant:'default' },
+    fields:[
+      {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'sub',l:'Subtitle',t:'textarea'},
+      {k:'items',l:'Payment methods',t:'items',item:[{k:'method',l:'Method',t:'text'},{k:'name',l:'Account name',t:'text'},{k:'number',l:'Number / details',t:'text'}],titleKey:'method'},
+      {k:'qr',l:'QR code image (optional)',t:'text',up:1},
+      {k:'qrCaption',l:'QR caption',t:'text'},
+      {k:'note',l:'How to pay (optional note)',t:'textarea'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
+    ],
+    render:p=>`<section id="pay" class="${vtc(p)}"><div class="wrap">
+      <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2>${p.sub?`<p${ed('sub')}>${esc(p.sub)}</p>`:''}</div>
+      <div class="pay-grid ${p.qr?'has-qr':''}">
+        <div class="pay-list">${p.items.map(i=>`<div class="pay-card"><div class="pm">${esc(i.method)}</div><div class="pn">${esc(i.name)}</div><div class="pv">${esc(i.number)}</div></div>`).join('')}</div>
+        ${p.qr?`<div class="pay-qr"><img src="${escAttr(p.qr)}" alt="${escAttr(p.qrCaption||'Payment QR code')}" loading="lazy" /><div class="pq">${esc(p.qrCaption||'')}</div></div>`:''}
+      </div>
+      ${p.note?`<p class="pay-note"${ed('note')}>${esc(p.note)}</p>`:''}
+    </div></section>`
+  },
+
   video: {
     name:'Video', icon:'🎬', desc:'YouTube or Vimeo embed',
     defaults:{ eyebrow:'Watch', title:'See it in motion', url:'', variant:'default' },
@@ -939,7 +983,7 @@ const BLOCKS = {
   }
 };
 
-const BLOCK_ORDER = ['navbar','hero','features','split','stats','pricing','quotes','gallery','video','faq','cta','contact','social','footer'];
+const BLOCK_ORDER = ['navbar','hero','features','split','stats','pricing','payments','quotes','gallery','video','faq','cta','contact','social','footer'];
 
 function renderBlockHTML(b, edit){
   EDIT = !!edit;
@@ -1226,7 +1270,7 @@ function fieldHTML(f, val, path){
 
 /* =============== PLUGINS TAB =============== */
 function ensurePlugins(){
-  const d = { wa:{on:false,phone:'',msg:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''} };
+  const d = { wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''} };
   state.plugins = state.plugins || {};
   for (const k in d) state.plugins[k] = Object.assign({}, d[k], state.plugins[k]||{});
   return state.plugins;
@@ -1251,6 +1295,10 @@ function renderPlugins(){
     ${plugRow('wa', t('WhatsApp chat button'), '', `
       <div class="field"><label>${t('Phone number (with country code)')}</label>${inp('wa','phone','639171234567',P.wa.phone)}</div>
       <div class="field"><label>${t('Preset message (optional)')}</label>${inp('wa','msg','Hi! I saw your website…',P.wa.msg)}</div>`)}
+    ${plugRow('ms', t('Messenger chat button'), '', `
+      <div class="field"><label>${t('Facebook page username or m.me link')}</label>${inp('ms','page','yourpage',P.ms.page)}</div>`)}
+    ${plugRow('vb', t('Viber chat button'), '', `
+      <div class="field"><label>${t('Viber number (with country code)')}</label>${inp('vb','number','639171234567',P.vb.number)}</div>`)}
     ${plugRow('ga', t('Google Analytics'), t('Applied on the exported site.'), `
       <div class="field"><label>${t('Measurement ID')}</label>${inp('ga','id','G-XXXXXXXXXX',P.ga.id)}</div>`)}
     ${plugRow('fbp', t('Facebook Pixel'), t('Applied on the exported site.'), `
@@ -1517,6 +1565,19 @@ _resetConfirm:'Start over? Your current page will be cleared. (Ctrl+Z can still 
 
 const TR = {
 ja:{
+"Payments":"支払い",
+"GCash, Maya, or bank details":"GCash・Maya・銀行情報",
+"Payment methods":"支払い方法",
+"Method":"方法",
+"Account name":"口座名義",
+"Number / details":"番号 / 詳細",
+"QR code image (optional)":"QRコード画像（任意）",
+"QR caption":"QRの説明",
+"How to pay (optional note)":"支払い方法の説明（任意）",
+"Messenger chat button":"Messengerチャットボタン",
+"Facebook page username or m.me link":"Facebookページ名またはm.meリンク",
+"Viber chat button":"Viberチャットボタン",
+"Viber number (with country code)":"Viber番号（国番号付き）",
 "Plugins":"プラグイン",
 "SEO":"SEO",
 "Video":"動画",
@@ -1602,6 +1663,19 @@ _resetConfirm:'最初からやり直しますか？現在のページは消去�
 'Your page is empty. Add a block first':'ページが空です。まずブロックを追加してください','Downloaded! That file is your website':'ダウンロード完了！それがあなたのウェブサイトです','HTML copied to clipboard':'HTMLをコピーしました','Copy blocked by the browser. Use Download instead':'ブラウザによりコピーがブロックされました。ダウンロードをご利用ください','Pop-up blocked. Allow pop-ups to preview':'ポップアップがブロックされました。許可してください','Project file downloaded':'プロジェクトファイルをダウンロードしました','That file isn’t a Loop Builder project':'Loop Builderのプロジェクトファイルではありません','Project loaded':'プロジェクトを読み込みました','Welcome, {n}! Exporting is unlocked':'ようこそ、{n}さん！エクスポートが解除されました','Signed out. Back on trial':'サインアウトしました。トライアルに戻ります','Your client access has ended. Message us to renew.':'クライアントアクセスの期限が切れました。更新はご連絡ください。','Saved':'保存済み','Loop started! Click any text on the page to edit it':'開始！ページ上のテキストをクリックして編集','Block removed. Ctrl+Z to undo':'ブロックを削除しました。Ctrl+Zで元に戻せます','{b} added':'{b}を追加しました','Colors need a 6-digit hex like #D25A28':'色は#D25A28のような6桁の16進数で指定してください'
 },
 fr:{
+"Payments":"Paiements",
+"GCash, Maya, or bank details":"GCash, Maya ou coordonnées bancaires",
+"Payment methods":"Moyens de paiement",
+"Method":"Moyen",
+"Account name":"Titulaire du compte",
+"Number / details":"Numéro / détails",
+"QR code image (optional)":"Image du QR code (facultatif)",
+"QR caption":"Légende du QR",
+"How to pay (optional note)":"Comment payer (note facultative)",
+"Messenger chat button":"Bouton Messenger",
+"Facebook page username or m.me link":"Nom de page Facebook ou lien m.me",
+"Viber chat button":"Bouton Viber",
+"Viber number (with country code)":"Numéro Viber (avec indicatif)",
 "Plugins":"Extensions",
 "SEO":"SEO",
 "Video":"Vidéo",
@@ -1692,6 +1766,19 @@ _resetConfirm:'Tout recommencer ? Votre page actuelle sera effacée. (Ctrl+Z peu
 "use strict";
 Object.assign(TR, {
 zh:{
+"Payments":"收款",
+"GCash, Maya, or bank details":"GCash、Maya或银行信息",
+"Payment methods":"收款方式",
+"Method":"方式",
+"Account name":"账户名",
+"Number / details":"号码 / 详情",
+"QR code image (optional)":"二维码图片（可选）",
+"QR caption":"二维码说明",
+"How to pay (optional note)":"付款说明（可选）",
+"Messenger chat button":"Messenger聊天按钮",
+"Facebook page username or m.me link":"Facebook主页名或m.me链接",
+"Viber chat button":"Viber聊天按钮",
+"Viber number (with country code)":"Viber号码（含国家代码）",
 "Plugins":"插件",
 "SEO":"SEO",
 "Video":"视频",
@@ -1777,6 +1864,19 @@ _resetConfirm:'重新开始？当前页面将被清空。（关闭标签页前�
 'Your page is empty. Add a block first':'页面为空。请先添加模块','Downloaded! That file is your website':'已下载！该文件就是你的网站','HTML copied to clipboard':'HTML已复制到剪贴板','Copy blocked by the browser. Use Download instead':'浏览器阻止了复制。请改用下载','Pop-up blocked. Allow pop-ups to preview':'弹窗被拦截。请允许弹窗以预览','Project file downloaded':'项目文件已下载','That file isn’t a Loop Builder project':'该文件不是Loop Builder项目','Project loaded':'项目已载入','Welcome, {n}! Exporting is unlocked':'欢迎，{n}！导出已解锁','Signed out. Back on trial':'已退出。回到试用模式','Your client access has ended. Message us to renew.':'客户权限已到期。请联系我们续期。','Loop started! Click any text on the page to edit it':'开始！点击页面上的任意文字即可编辑','Block removed. Ctrl+Z to undo':'已删除模块。Ctrl+Z可撤销','{b} added':'已添加{b}','Colors need a 6-digit hex like #D25A28':'颜色需要6位十六进制，例如 #D25A28'
 },
 es:{
+"Payments":"Pagos",
+"GCash, Maya, or bank details":"GCash, Maya o datos bancarios",
+"Payment methods":"Métodos de pago",
+"Method":"Método",
+"Account name":"Titular de la cuenta",
+"Number / details":"Número / detalles",
+"QR code image (optional)":"Imagen del código QR (opcional)",
+"QR caption":"Leyenda del QR",
+"How to pay (optional note)":"Cómo pagar (nota opcional)",
+"Messenger chat button":"Botón de chat de Messenger",
+"Facebook page username or m.me link":"Nombre de página de Facebook o enlace m.me",
+"Viber chat button":"Botón de chat de Viber",
+"Viber number (with country code)":"Número de Viber (con código de país)",
 "Plugins":"Plugins",
 "SEO":"SEO",
 "Video":"Vídeo",
@@ -1862,6 +1962,19 @@ _resetConfirm:'¿Empezar de nuevo? Tu página actual se borrará. (Ctrl+Z aún p
 'Your page is empty. Add a block first':'Tu página está vacía. Añade un bloque primero','Downloaded! That file is your website':'¡Descargado! Ese archivo es tu sitio web','HTML copied to clipboard':'HTML copiado al portapapeles','Copy blocked by the browser. Use Download instead':'El navegador bloqueó la copia. Usa Descargar','Pop-up blocked. Allow pop-ups to preview':'Ventana bloqueada. Permite ventanas emergentes para previsualizar','Project file downloaded':'Archivo de proyecto descargado','That file isn’t a Loop Builder project':'Ese archivo no es un proyecto de Loop Builder','Project loaded':'Proyecto cargado','Welcome, {n}! Exporting is unlocked':'¡Bienvenido, {n}! Exportar está desbloqueado','Signed out. Back on trial':'Sesión cerrada. De vuelta a la prueba','Your client access has ended. Message us to renew.':'Tu acceso de cliente ha terminado. Escríbenos para renovar.','Loop started! Click any text on the page to edit it':'¡Empezamos! Haz clic en cualquier texto de la página para editarlo','Block removed. Ctrl+Z to undo':'Bloque eliminado. Ctrl+Z para deshacer','{b} added':'{b} añadido','Colors need a 6-digit hex like #D25A28':'Los colores necesitan un hex de 6 dígitos como #D25A28'
 },
 it:{
+"Payments":"Pagamenti",
+"GCash, Maya, or bank details":"GCash, Maya o dati bancari",
+"Payment methods":"Metodi di pagamento",
+"Method":"Metodo",
+"Account name":"Intestatario",
+"Number / details":"Numero / dettagli",
+"QR code image (optional)":"Immagine QR code (facoltativa)",
+"QR caption":"Didascalia del QR",
+"How to pay (optional note)":"Come pagare (nota facoltativa)",
+"Messenger chat button":"Pulsante chat Messenger",
+"Facebook page username or m.me link":"Nome pagina Facebook o link m.me",
+"Viber chat button":"Pulsante chat Viber",
+"Viber number (with country code)":"Numero Viber (con prefisso)",
 "Plugins":"Plugin",
 "SEO":"SEO",
 "Video":"Video",
@@ -1947,6 +2060,19 @@ _resetConfirm:'Ricominciare? La pagina attuale sarà cancellata. (Ctrl+Z può an
 'Your page is empty. Add a block first':'La pagina è vuota. Aggiungi prima un blocco','Downloaded! That file is your website':'Scaricato! Quel file è il tuo sito','HTML copied to clipboard':'HTML copiato negli appunti','Copy blocked by the browser. Use Download instead':'Copia bloccata dal browser. Usa Scarica','Pop-up blocked. Allow pop-ups to preview':'Pop-up bloccato. Consenti i pop-up per l\u2019anteprima','Project file downloaded':'File di progetto scaricato','That file isn’t a Loop Builder project':'Quel file non è un progetto Loop Builder','Project loaded':'Progetto caricato','Welcome, {n}! Exporting is unlocked':'Benvenuto, {n}! L\u2019esportazione è sbloccata','Signed out. Back on trial':'Disconnesso. Di nuovo in prova','Your client access has ended. Message us to renew.':'Il tuo accesso cliente è terminato. Scrivici per rinnovare.','Loop started! Click any text on the page to edit it':'Si parte! Clicca un testo qualsiasi della pagina per modificarlo','Block removed. Ctrl+Z to undo':'Blocco eliminato. Ctrl+Z per annullare','{b} added':'{b} aggiunto','Colors need a 6-digit hex like #D25A28':'I colori richiedono un esadecimale a 6 cifre come #D25A28'
 },
 ar:{
+"Payments":"الدفع",
+"GCash, Maya, or bank details":"GCash أو Maya أو بيانات البنك",
+"Payment methods":"طرق الدفع",
+"Method":"الطريقة",
+"Account name":"اسم الحساب",
+"Number / details":"الرقم / التفاصيل",
+"QR code image (optional)":"صورة رمز QR (اختياري)",
+"QR caption":"وصف رمز QR",
+"How to pay (optional note)":"طريقة الدفع (ملاحظة اختيارية)",
+"Messenger chat button":"زر دردشة ماسنجر",
+"Facebook page username or m.me link":"اسم صفحة فيسبوك أو رابط m.me",
+"Viber chat button":"زر دردشة فايبر",
+"Viber number (with country code)":"رقم فايبر (مع رمز الدولة)",
 "Plugins":"الإضافات",
 "SEO":"SEO",
 "Video":"فيديو",
@@ -2261,14 +2387,29 @@ const TRIAL_RIBBON = '<div style="position:fixed;bottom:14px;right:14px;z-index:
 
 /* =============== EXPORT / PREVIEW =============== */
 const WA_SVG = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C9.4 3 4 8.3 4 14.9c0 2.6.8 5 2.3 7L4 29l7.3-2.3c1.5.8 3.1 1.2 4.7 1.2 6.6 0 12-5.3 12-11.9S22.6 3 16 3zm0 21.6c-1.5 0-3-.4-4.3-1.1l-.3-.2-4.3 1.4 1.4-4.2-.2-.3c-1.3-1.6-2-3.5-2-5.4 0-5.3 4.4-9.6 9.7-9.6s9.7 4.3 9.7 9.6-4.4 9.8-9.7 9.8zm5.4-7.2c-.3-.2-1.7-.9-2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1c-.3-.2-1.2-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2.1s0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.5 1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.1 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4s.3-1.3.2-1.4c-.1-.1-.3-.2-.6-.3z"/></svg>';
-function waFabHTML(){
+const MS_SVG = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C8.8 3 3 8.4 3 15c0 3.7 1.8 7 4.7 9.2V29l4.4-2.4c1.2.3 2.5.5 3.9.5 7.2 0 13-5.4 13-12S23.2 3 16 3zm1.4 16.1-3.3-3.5-6.5 3.5 7.1-7.6 3.4 3.5 6.4-3.5-7.1 7.6z"/></svg>';
+const VB_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>';
+function chatFabsHTML(){
   const P = state.plugins || {};
-  if (!P.wa || !P.wa.on || !P.wa.phone) return '';
-  const digits = String(P.wa.phone).replace(/[^0-9]/g,'');
-  if (!digits) return '';
-  const msg = P.wa.msg ? '?text='+encodeURIComponent(P.wa.msg) : '';
-  return `<a class="wa-fab" href="https://wa.me/${digits}${msg}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">${WA_SVG}</a>`;
+  const fabs = [];
+  if (P.wa && P.wa.on && P.wa.phone){
+    const digits = String(P.wa.phone).replace(/[^0-9]/g,'');
+    if (digits){
+      const msg = P.wa.msg ? '?text='+encodeURIComponent(P.wa.msg) : '';
+      fabs.push(`<a class="chat-fab cf-wa" href="https://wa.me/${digits}${msg}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">${WA_SVG}</a>`);
+    }
+  }
+  if (P.ms && P.ms.on && P.ms.page){
+    let u = String(P.ms.page).trim().replace(/^https?:\/\/(www\.)?(m\.me|messenger\.com\/t|facebook\.com)\//i,'').replace(/\/+$/,'').split(/[/?#]/)[0];
+    if (u) fabs.push(`<a class="chat-fab cf-ms" href="https://m.me/${escAttr(u)}" target="_blank" rel="noopener" aria-label="Chat on Messenger">${MS_SVG}</a>`);
+  }
+  if (P.vb && P.vb.on && P.vb.number){
+    const digits = String(P.vb.number).replace(/[^0-9]/g,'');
+    if (digits) fabs.push(`<a class="chat-fab cf-vb" href="viber://chat?number=%2B${digits}" aria-label="Chat on Viber">${VB_SVG}</a>`);
+  }
+  return fabs.length ? `<div class="fab-col">${fabs.join('')}</div>` : '';
 }
+const waFabHTML = chatFabsHTML; /* canvas + export both use this */
 function faviconHref(){
   const nav = state.blocks.find(b=>b.type==='navbar');
   const letter = ((nav && nav.props.brand) || state.meta.title || 'B').trim().charAt(0).toUpperCase() || 'B';
@@ -2456,7 +2597,7 @@ function openPicker(idx){
 /* =============== TEMPLATES =============== */
 function freshState(){
   return { meta:{title:'My website',desc:'',lang:'en',currency:'PHP',siteUrl:'',ogImage:''},
-    plugins:{ wa:{on:false,phone:'',msg:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''} }, theme:{ density:'normal',...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
+    plugins:{ wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''} }, theme:{ density:'normal',...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
 }
 function tplBlocks(types, overrides={}){
   return types.map(t=>{
