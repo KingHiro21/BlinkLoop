@@ -86,8 +86,8 @@ a.btnlike.ghost{background:transparent;border:1px solid var(--line);color:var(--
 "use strict";
 const $ = s => document.querySelector(s);
 const nextUrl = () => {
-  const n = new URLSearchParams(location.search).get('next') || '/builder';
-  return n.startsWith('/') ? n : '/builder';
+  const n = new URLSearchParams(location.search).get('next');
+  return (n && n.startsWith('/')) ? n : null; // only redirect when sent here from a protected page
 };
 function showIn(d){
   $('#formBox').classList.add('hide');
@@ -110,7 +110,12 @@ async function signIn(){
   try{
     const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
     const d = await r.json();
-    if (d.ok){ location.href = nextUrl(); return; }
+    if (d.ok){
+      const next = nextUrl();
+      if (next){ location.href = next; return; }
+      showIn(d); // stay here: show the staff hub instead of jumping to the builder
+      return;
+    }
     $('#err').textContent = d.reason==='expired'
       ? 'That code has expired. Ask for a new one.'
       : 'That code didn\u2019t match. Check it and try again.';
