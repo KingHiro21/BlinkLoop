@@ -42,5 +42,5 @@ export default async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/builder', '/builder.html', '/admin', '/admin.html']
+  matcher: ['/builder', '/builder.html']
 };
