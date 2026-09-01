@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BlinkLoop | Websites in a blink</title>
+<meta name="description" content="BlinkLoop designs, builds, hosts, and maintains websites for small businesses in Cebu. One-time build fee. You own the site, we keep it running." />
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#FFFCF7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%23F45D2A%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2243%22%20font-family%3D%22Arial%2CHelvetica%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22700%22%20text-anchor%3D%22middle%22%20fill%3D%22%23ffffff%22%3EB%3C%2Ftext%3E%3C%2Fsvg%3E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="BlinkLoop | Websites in a blink">
+<meta property="og:description" content="BlinkLoop designs, builds, hosts, and maintains websites for small businesses in Cebu. One-time build fee. You own the site, we keep it running.">
+<link rel="canonical" href="https://blink-loop.vercel.app">
+<meta property="og:url" content="https://blink-loop.vercel.app">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="BlinkLoop | Websites in a blink">
+<meta name="twitter:description" content="BlinkLoop designs, builds, hosts, and maintains websites for small businesses in Cebu. One-time build fee. You own the site, we keep it running.">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"LocalBusiness","name":"BlinkLoop.","url":"https://blink-loop.vercel.app","email":"hello@blinkloop.studio"}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#FFFCF7; --ink:#3A1B1E; --accent:#F45D2A; --accent2:#7F2027; --r:22px;
+  --secpad:84px;
+  --muted:color-mix(in srgb, var(--ink) 58%, var(--bg));
+  --line:color-mix(in srgb, var(--ink) 16%, transparent);
+  --card:color-mix(in srgb, var(--ink) 5%, var(--bg));
+  --card-2:color-mix(in srgb, var(--ink) 9%, var(--bg));
+  --on-accent:#FFFdf7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'Sora',system-ui,sans-serif;font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{font-family:'Unbounded',sans-serif;line-height:1.14;font-weight:600;letter-spacing:-.01em}
+::selection{background:var(--accent);color:var(--on-accent)}
+.wrap{max-width:1140px;margin:0 auto;padding:0 26px}
+section{padding:var(--secpad) 0}
+.eyebrow{display:inline-block;padding:7px 15px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:.76rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;font-weight:600}
+.sec-head{max-width:640px;margin-bottom:46px}
+.sec-head h2{font-size:clamp(1.7rem,3.4vw,2.5rem);margin:16px 0 12px}
+.sec-head p{color:var(--muted);font-size:1.04rem}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.btn{display:inline-block;padding:13px 28px;border-radius:999px;font-weight:600;font-size:.95rem;transition:transform .3s cubic-bezier(.22,.8,.24,1),box-shadow .3s,background .3s;cursor:pointer;border:none;font-family:inherit}
+.btn-solid{background:var(--accent);color:var(--on-accent)}
+.btn-solid:hover{transform:translateY(-2px);box-shadow:0 10px 28px color-mix(in srgb, var(--accent) 45%, transparent)}
+.btn-ghost{border:1.5px solid var(--line);background:transparent;color:var(--ink)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.ph{background:linear-gradient(135deg, color-mix(in srgb,var(--accent) 78%, var(--ink)), var(--accent2));border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:var(--on-accent);font-family:'Unbounded',sans-serif;font-weight:600;overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb, var(--bg) 84%, transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:72px}
+.nav .logo{font-family:'Unbounded',sans-serif;font-weight:700;font-size:1.08rem}
+.nav .logo b{color:var(--accent);font-weight:700}
+.nav nav{display:flex;align-items:center;gap:30px;font-size:.9rem;color:var(--muted)}
+.nav nav a:hover{color:var(--ink)}
+.nav .btn{padding:9px 20px;font-size:.85rem}
+.nav .mtoggle{display:none;background:none;border:none;color:var(--ink);font-size:1.5rem;cursor:pointer;line-height:1}
+
+/* hero */
+.hero{padding:112px 0 96px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(720px 480px at 85% -10%, color-mix(in srgb,var(--accent) 14%, transparent), transparent 62%),radial-gradient(640px 460px at -8% 45%, color-mix(in srgb,var(--accent2) 13%, transparent), transparent 60%)}
+.hero .wrap{position:relative}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center}
+.hero.center .hero-grid{grid-template-columns:1fr;text-align:center;max-width:780px;margin:0 auto}
+.hero.center .hero-cta{justify-content:center}
+.hero h1{font-size:clamp(2.3rem,5.2vw,3.9rem);margin:22px 0 20px}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero .lede{font-size:1.13rem;color:var(--muted);max-width:33rem;margin-bottom:34px}
+.hero.center .lede{margin-left:auto;margin-right:auto}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.hero .ph{aspect-ratio:4/3.4;font-size:2.6rem}
+
+/* features */
+.feat-grid{display:grid;gap:18px}
+.feat-grid.c2{grid-template-columns:repeat(2,1fr)}
+.feat-grid.c3{grid-template-columns:repeat(3,1fr)}
+.feat-grid.c4{grid-template-columns:repeat(4,1fr)}
+.feat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px;transition:transform .3s cubic-bezier(.22,.8,.24,1),box-shadow .3s}
+.feat:hover{transform:translateY(-4px);box-shadow:0 14px 34px color-mix(in srgb,var(--ink) 10%, transparent)}
+.feat .ic{font-size:1.6rem;margin-bottom:14px}
+.feat h3{font-size:1.02rem;margin-bottom:8px}
+.feat p{font-size:.9rem;color:var(--muted)}
+
+/* split */
+.split-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.split-grid .ph{aspect-ratio:4/3;font-size:2.2rem}
+.split-grid h2{font-size:clamp(1.6rem,3vw,2.3rem);margin:14px 0 14px}
+.split-grid .tx{color:var(--muted);font-size:1.02rem;white-space:pre-line;margin-bottom:26px}
+
+/* stats */
+.stats{padding:56px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:22px;text-align:center}
+.stat .v{font-family:'Unbounded',sans-serif;font-weight:700;font-size:clamp(1.8rem,3.4vw,2.6rem);color:var(--accent)}
+.stat .l{color:var(--muted);font-size:.86rem;margin-top:4px}
+
+/* pricing */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;align-items:stretch}
+.plan{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:30px 26px;display:flex;flex-direction:column;position:relative}
+.plan.hot{border-color:var(--accent);box-shadow:0 16px 44px color-mix(in srgb,var(--accent) 22%, transparent)}
+.plan .tag{position:absolute;top:-13px;left:26px;background:var(--accent);color:var(--on-accent);font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 13px;border-radius:999px}
+.plan h3{font-size:1.05rem}
+.plan .amount{font-family:'Unbounded',sans-serif;font-weight:700;font-size:2.2rem;margin:14px 0 2px}
+.plan .per{color:var(--muted);font-size:.84rem;margin-bottom:18px}
+.plan ul{list-style:none;margin:0 0 26px;flex:1}
+.plan li{padding:7px 0 7px 26px;position:relative;font-size:.9rem;color:var(--muted);border-bottom:1px dashed var(--line)}
+.plan li:last-child{border-bottom:none}
+.plan li::before{content:"✓";position:absolute;left:2px;color:var(--accent);font-weight:700}
+.plan .btn{width:100%;text-align:center}
+
+/* quotes */
+.q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.q .mark{color:var(--accent);font-family:'Unbounded',sans-serif;font-size:2rem;line-height:.6;display:block;margin-bottom:14px}
+.q p{font-size:.96rem;margin-bottom:18px}
+.q .who{font-size:.82rem;color:var(--muted)}
+.q .who b{color:var(--ink);display:block;font-size:.88rem}
+
+/* gallery */
+.gal-grid{display:grid;gap:16px}
+.gal-grid.c2{grid-template-columns:repeat(2,1fr)}
+.gal-grid.c3{grid-template-columns:repeat(3,1fr)}
+.gal-grid.c4{grid-template-columns:repeat(4,1fr)}
+.gal .ph{aspect-ratio:1/0.8;font-size:1.4rem}
+.gal figcaption{font-size:.82rem;color:var(--muted);margin-top:9px}
+
+/* faq */
+.faq-list{max-width:760px;margin:0 auto}
+.faq-list details{border:1px solid var(--line);border-radius:calc(var(--r) * .7);background:var(--card);margin-bottom:11px;overflow:hidden}
+.faq-list summary{padding:17px 20px;cursor:pointer;font-weight:600;font-size:.96rem;list-style:none;display:flex;justify-content:space-between;gap:14px;align-items:center}
+.faq-list summary::-webkit-details-marker{display:none}
+.faq-list summary::after{content:"+";font-family:'Unbounded',sans-serif;color:var(--accent);font-size:1.2rem;transition:transform .3s}
+.faq-list details[open] summary::after{transform:rotate(45deg)}
+.faq-list .a{padding:0 20px 18px;color:var(--muted);font-size:.92rem;white-space:pre-line}
+
+/* cta band */
+.ctaband{padding:0}
+.ctaband .inner{background:linear-gradient(120deg, color-mix(in srgb,var(--accent) 88%, var(--ink)), var(--accent2));border-radius:var(--r);padding:64px 40px;text-align:center;color:var(--on-accent)}
+.ctaband h2{font-size:clamp(1.7rem,3.4vw,2.5rem);margin-bottom:12px}
+.ctaband p{opacity:.92;max-width:34rem;margin:0 auto 30px}
+.ctaband .btn{background:var(--on-accent);color:#241207}
+
+/* contact */
+.contact-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:52px}
+.contact .meta{color:var(--muted);font-size:.95rem;line-height:2;margin-top:18px}
+.contact .meta b{color:var(--ink)}
+.cform{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:28px}
+.cform label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin:0 0 6px}
+.cform input,.cform textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:calc(var(--r)*.5);padding:12px 14px;font:inherit;color:inherit;margin-bottom:16px}
+.cform input:focus,.cform textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.cform textarea{min-height:120px;resize:vertical}
+
+/* footer */
+.foot{border-top:1px solid var(--line);padding:52px 0 40px}
+.foot .top{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;margin-bottom:30px}
+.foot .logo{font-family:'Unbounded',sans-serif;font-weight:700;font-size:1.05rem}
+.foot .logo b{color:var(--accent)}
+.foot .tag{color:var(--muted);font-size:.88rem;max-width:26rem;margin-top:8px}
+.foot nav{display:flex;gap:24px;flex-wrap:wrap;font-size:.88rem;color:var(--muted)}
+.foot nav a:hover{color:var(--ink)}
+.foot .fine{color:var(--muted);font-size:.78rem;border-top:1px solid var(--line);padding-top:22px}
+
+@media (max-width:860px){
+  section{padding:calc(var(--secpad)*.74) 0}
+  .hero{padding:84px 0 64px}
+  .hero-grid,.split-grid,.contact-grid{grid-template-columns:1fr;gap:36px}
+  .feat-grid.c3,.feat-grid.c4{grid-template-columns:repeat(2,1fr)}
+  .gal-grid.c3,.gal-grid.c4{grid-template-columns:repeat(2,1fr)}
+  .pay-grid.has-qr{grid-template-columns:1fr}
+  .nav nav{position:fixed;inset:72px 0 auto 0;background:var(--bg);border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start;padding:22px 26px;gap:18px;display:none}
+  .nav nav.open{display:flex}
+  .nav .mtoggle{display:block}
+}
+@media (max-width:560px){
+  .feat-grid.c2,.feat-grid.c3,.feat-grid.c4,.gal-grid.c2,.gal-grid.c3,.gal-grid.c4{grid-template-columns:1fr}
+  .ctaband .inner{padding:46px 24px}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+
+.vt-tint{background:color-mix(in srgb, var(--accent) 7%, var(--bg))}
+.vt-dark{background:color-mix(in srgb, var(--ink) 96%, black);color:var(--bg)}
+.vt-dark :is(h2,h3,.stat .v,.price){color:var(--bg)}
+.vt-dark :is(p,.sec-head p,.stat .l,.faq-item p,.quote p,.plan .period,.plan li){color:color-mix(in srgb, var(--bg) 76%, var(--ink))}
+.vt-dark .eyebrow{background:color-mix(in srgb, var(--bg) 12%, transparent);color:var(--bg)}
+.vt-dark :is(.feat,.plan,.quote,.faq-item,.stat){background:color-mix(in srgb, var(--bg) 7%, transparent);border-color:color-mix(in srgb, var(--bg) 16%, transparent)}
+.vt-dark .plan.hot{border-color:var(--accent)}
+.vidwrap{position:relative;aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;background:var(--card);border:1px solid var(--line);max-width:880px;margin:0 auto}
+.vidwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vid-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--muted);font-size:.95rem}
+.vid-ph .ic{font-size:2.2rem}
+.soc-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.soc{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border:1px solid var(--line);border-radius:999px;font-weight:600;transition:all .25s}
+.soc:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.pay-grid{display:grid;grid-template-columns:1fr;gap:22px;align-items:start}
+.pay-grid.has-qr{grid-template-columns:1.5fr 1fr}
+.pay-list{display:grid;gap:14px}
+.pay-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.pay-card .pm{color:var(--accent);font-weight:700;font-size:.82rem;letter-spacing:.04em;text-transform:uppercase}
+.pay-card .pn{color:var(--muted);font-size:.88rem;margin-top:4px}
+.pay-card .pv{font-family:var(--disp);font-weight:600;font-size:1.15rem;margin-top:2px;letter-spacing:.02em}
+.pay-qr{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;text-align:center}
+.pay-qr img{width:100%;max-width:230px;border-radius:calc(var(--r)*.6)}
+.pay-qr .pq{color:var(--muted);font-size:.85rem;margin-top:10px}
+.pay-note{color:var(--muted);font-size:.9rem;margin-top:18px;text-align:center}
+.vt-dark :is(.pay-card,.pay-qr){background:color-mix(in srgb, var(--bg) 7%, transparent);border-color:color-mix(in srgb, var(--bg) 16%, transparent)}
+.vt-dark .pay-card .pv{color:var(--bg)}
+.fab-col{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;flex-direction:column;gap:12px}
+.chat-fab{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.22);transition:transform .25s}
+.chat-fab:hover{transform:scale(1.08)}
+.chat-fab svg{width:30px;height:30px;fill:#fff}
+.cf-wa{background:#25D366}.cf-ms{background:#0084FF}.cf-vb{background:#7360F2}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+      <a href="#" class="logo"><span>Blink</span><b>Loop.</b></a>
+      <button class="mtoggle" aria-label="Menu" onclick="this.nextElementSibling.classList.toggle('open')">☰</button>
+      <nav><a href="#features">What we do</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
+      <a class="btn btn-solid" href="#contact">Start your loop</a></nav>
+    </div></header>
+<section class="hero "><div class="wrap"><div class="hero-grid"><div>
+        <span class="eyebrow">BlinkLoop · Creative studio · Cebu</span>
+        <h1>Websites in a <em>blink</em>.</h1>
+        <p class="lede">We design, build, host, and maintain websites for small businesses. One-time build fee. You own the site. We keep it running.</p>
+        <div class="hero-cta">
+          <a class="btn btn-solid" href="#contact">Start your loop</a>
+          <a class="btn btn-ghost" href="#pricing">See pricing</a>
+        </div></div><div class="ph" aria-hidden="true"><span>BlinkLoop</span></div></div></div></section>
+<section id="features" class=""><div class="wrap">
+      <div class="sec-head"><span class="eyebrow">What we do</span><h2>Built right, kept simple</h2><p>Everything a small business needs to look serious online, without the agency runaround.</p></div>
+      <div class="feat-grid c3"><div class="feat"><div class="ic">🎨</div><h3>Design that fits you</h3><p>Custom design around your brand and your customers, not a template that fits nobody.</p></div><div class="feat"><div class="ic">⚡</div><h3>Fast, honest builds</h3><p>Responsive, secure, and quick to load. Clean code that you fully own when it ships.</p></div><div class="feat"><div class="ic">🛠️</div><h3>Hosting and care</h3><p>We host it, keep it online, update the content, and actually reply when you message us.</p></div></div>
+    </div></section>
+<section class="stats vt-tint"><div class="wrap"><div class="stats-grid"><div class="stat"><div class="v">₱15k</div><div class="l">starting build price</div></div><div class="stat"><div class="v">1×</div><div class="l">you pay for the build once</div></div><div class="stat"><div class="v">∞</div><div class="l">the site is yours forever</div></div></div></div></section>
+<section><div class="wrap"><div class="split-grid"><div><span class="eyebrow">How it works</span><h2>From idea to online in days</h2><p class="tx">Tell us what your business does and what you want people to do on your site.
+
+We design and build it, then send you a private preview to react to.
+
+You review, we polish, it goes live. After that, update it yourself or let us handle everything on a care plan.</p><a class="btn btn-ghost" href="#contact">Talk to us</a></div><div class="ph" aria-hidden="true"><span>✦</span></div></div></div></section>
+<section id="pricing" class=""><div class="wrap">
+      <div class="sec-head center"><span class="eyebrow">Pricing</span><h2>Pay once. Own it.</h2><p>Every project is quoted before work begins. No monthly builder fees, no renewal traps.</p></div>
+      <div class="price-grid"><div class="plan ">
+        <h3>Starter</h3><div class="amount">₱15,000+</div><div class="per">one-time</div>
+        <ul><li>Custom design</li><li>Up to 5 pages</li><li>Contact form</li><li>SSL setup and deployment</li></ul>
+        <a class="btn btn-ghost" href="#contact">Start with Starter</a></div><div class="plan hot"><span class="tag">Most picked</span>
+        <h3>Business</h3><div class="amount">₱30,000+</div><div class="per">one-time</div>
+        <ul><li>Everything in Starter</li><li>Up to 10 pages</li><li>CMS and analytics</li><li>Performance optimization</li></ul>
+        <a class="btn btn-solid" href="#contact">Start with Business</a></div><div class="plan ">
+        <h3>Custom</h3><div class="amount">₱60,000+</div><div class="per">starting, one-time</div>
+        <ul><li>Everything in Business</li><li>Custom features and integrations</li><li>Advanced SEO</li><li>Built around your requirements</li></ul>
+        <a class="btn btn-ghost" href="#contact">Talk to us first</a></div></div>
+    </div></section>
+<section id="faq" class=""><div class="wrap">
+      <div class="sec-head center"><h2>Questions people actually ask</h2></div>
+      <div class="faq-list"><details><summary>Do I really own the website?</summary><div class="a">Yes. You pay a one-time build fee and the finished site is yours: the files, the design, all of it. If you ever leave, you take it with you.</div></details><details><summary>What about hosting?</summary><div class="a">Optional. We offer managed hosting and care plans billed annually, or we can deploy to hosting you already have. Hosting is never forced into the build price.</div></details><details><summary>How long does a site take?</summary><div class="a">Most sites go live within one to two weeks from the moment we have your content. Custom builds take longer and we tell you upfront.</div></details></div>
+    </div></section>
+<section class="ctaband"><div class="wrap"><div class="inner">
+      <h2>Start your loop</h2><p>Message us what your business does. We reply with a plan and an honest quote.</p>
+      <a class="btn" href="#contact">Start your loop</a>
+    </div></div></section>
+<section id="contact" class="contact"><div class="wrap"><div class="contact-grid">
+      <div><h2>Tell us about your project</h2><p class="tx" style="color:var(--muted);margin-top:12px">One message is enough to start. No forms longer than the site itself.</p>
+        <div class="meta"><div>📧 <b>hello@blinkloop.studio</b></div><div>📍 <b>Cebu, Philippines</b></div></div></div>
+      <form class="cform" action="mailto:hello@blinkloop.studio" method="GET">
+        <label for="cf-n">Name</label><input id="cf-n" name="name" required placeholder="Your name" />
+        <label for="cf-e">Email</label><input id="cf-e" name="email" type="email" required placeholder="you@email.com" />
+        <label for="cf-m">Message</label><textarea id="cf-m" name="message" required placeholder="What are you building?"></textarea>
+        <button class="btn btn-solid" type="submit">Send message</button>
+      </form></div></div></section>
+<footer class="foot"><div class="wrap">
+      <div class="top"><div><div class="logo"><span>BlinkLoop.</span><b>Brand</b></div><p class="tag">Websites in a blink.</p></div>
+      <nav><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="/privacy">Privacy</a></nav></div>
+      <div class="fine">© 2026 BlinkLoop · Cebu, Philippines</div>
+    </div></footer>
+<script>document.querySelectorAll('.nav nav a').forEach(function(a){a.addEventListener('click',function(){var n=a.closest('nav');if(n)n.classList.remove('open')})});</script>
+<!-- Built with Loop Builder · blinkloop -->
+<section id="privacy" style="padding:56px 0;border-top:1px solid var(--line)"><div class="wrap" style="max-width:760px">
+    <h2 style="font-size:1.15rem">Privacy</h2>
+    <div style="color:var(--muted);font-size:.92rem;line-height:1.7">
+    <p style="margin:10px 0">BlinkLoop. respects your privacy. Here is what happens with your information when you use this site:</p>
+    <ul style="margin:0 0 10px 20px"><li><b>Contact form details.</b> When you send a message through this site, your name, contact details, and message go directly to us so we can reply. We use them for nothing else.</li></ul>
+    <p style="margin:10px 0">We do not sell personal information. For any privacy question or request (including deletion of your data), email <a href="mailto:hello@blinkloop.studio" style="color:var(--accent)">hello@blinkloop.studio</a>.</p>
+    </div>
+  </div></section></body>
+</html>

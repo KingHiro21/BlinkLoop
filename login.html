@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Staff Login | BlinkLoop</title>
+<script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --rust:#F45D2A; --rust-deep:#D94E1F; --bg:#FFFCF7; --ink:#2B140E; --muted:#7E5D4C;
+  --glass:rgba(251,235,221,.5); --glass-strong:rgba(255,247,239,.82); --line:rgba(127,32,39,.16);
+}
+:root[data-theme="dark"]{
+  --bg:#140806; --ink:#FAF4EA; --muted:#C9A395;
+  --glass:rgba(250,244,234,.06); --glass-strong:rgba(250,244,234,.1); --line:rgba(250,244,234,.13);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  min-height:100svh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:
+    radial-gradient(700px 500px at 85% -5%, rgba(127,32,39,.10), transparent 62%),
+    radial-gradient(600px 460px at -8% 40%, rgba(244,93,42,.10), transparent 60%),
+    var(--bg);
+  color:var(--ink); font-family:'Sora',system-ui,sans-serif; font-size:15px; line-height:1.55;
+}
+.card{
+  width:100%;max-width:420px;background:var(--glass-strong);backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:26px;padding:34px;text-align:center;
+  box-shadow:0 20px 60px rgba(43,20,14,.14);
+}
+h1{font-family:'Unbounded';font-size:1.15rem;margin-bottom:6px}
+h1 span{color:var(--rust)}
+h1 em{font-style:normal;font-weight:500;font-size:.68rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-left:4px}
+.sub{color:var(--muted);font-size:.88rem;margin-bottom:20px}
+input{
+  width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;font:inherit;color:inherit;text-align:center;letter-spacing:.04em;
+}
+input:focus{outline:none;border-color:var(--rust)}
+button{
+  width:100%;margin-top:14px;padding:13px;border:none;border-radius:999px;cursor:pointer;
+  background:var(--rust);color:#FFF7EC;font:inherit;font-weight:600;font-size:.95rem;
+  transition:transform .3s, box-shadow .3s;
+}
+button:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(217,78,31,.4)}
+button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.err{color:#c0392b;font-size:.82rem;margin-top:12px;min-height:1.2em}
+.who{font-weight:600;margin-bottom:4px}
+.meta{color:var(--muted);font-size:.8rem;margin-bottom:16px}
+.note{color:var(--muted);font-size:.72rem;margin-top:18px;opacity:.85}
+.hide{display:none}
+a.btnlike{display:block;margin-top:14px;padding:13px;border-radius:999px;background:var(--rust);color:#FFF7EC;font-weight:600;text-decoration:none}
+a.btnlike.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Blink<span>Loop</span> <em>Staff</em></h1>
+
+  <div id="formBox">
+    <p class="sub">Sign in with your team code to open the builder.</p>
+    <input id="code" placeholder="LOOP-NAME-DATE-CODE" autocomplete="off" />
+    <button id="go">Sign in</button>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div id="inBox" class="hide">
+    <p class="who" id="who"></p>
+    <p class="meta" id="until"></p>
+    <a class="btnlike" href="/builder">Open the Builder</a>
+    <a class="btnlike ghost" href="/admin">Open Admin (codes)</a>
+    <button class="ghost" id="out">Sign out</button>
+    <div class="err" id="err2"></div>
+  </div>
+
+  <p class="note">Internal access for the BlinkLoop team only.</p>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const nextUrl = () => {
+  const n = new URLSearchParams(location.search).get('next') || '/builder';
+  return n.startsWith('/') ? n : '/builder';
+};
+function showIn(d){
+  $('#formBox').classList.add('hide');
+  $('#inBox').classList.remove('hide');
+  $('#who').textContent = 'Signed in as ' + d.client;
+  $('#until').textContent = 'Access until end of ' + d.expires + ' (PH time)';
+}
+async function boot(){
+  try{
+    const r = await fetch('/api/me');
+    const d = await r.json();
+    if (d.ok) showIn(d);
+  }catch(e){}
+}
+boot();
+async function signIn(){
+  const code = $('#code').value.trim();
+  if (!code) return;
+  const btn = $('#go'); btn.disabled = true; btn.textContent = 'Checking\u2026'; $('#err').textContent='';
+  try{
+    const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+    const d = await r.json();
+    if (d.ok){ location.href = nextUrl(); return; }
+    $('#err').textContent = d.reason==='expired'
+      ? 'That code has expired. Ask for a new one.'
+      : 'That code didn\u2019t match. Check it and try again.';
+  }catch(e){
+    $('#err').textContent = 'Couldn\u2019t reach the server. Try again.';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+$('#go').addEventListener('click', signIn);
+$('#code').addEventListener('keydown', e=>{ if(e.key==='Enter') signIn(); });
+$('#out').addEventListener('click', async ()=>{
+  try{ await fetch('/api/logout', { method:'POST' }); }catch(e){}
+  try{ localStorage.removeItem('lb-access'); }catch(e){}
+  $('#inBox').classList.add('hide');
+  $('#formBox').classList.remove('hide');
+});
+</script>
+</body>
+</html>

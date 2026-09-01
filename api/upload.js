@@ -50,7 +50,12 @@ module.exports = async (req, res) => {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
 
-  const client = checkCode(body.code, secret);
+  let raw = body.code;
+  if (!raw){
+    const m = String(req.headers.cookie || '').match(/(?:^|;\s*)bl_session=([^;]+)/);
+    if (m) raw = decodeURIComponent(m[1]);
+  }
+  const client = checkCode(raw, secret);
   if (!client) return res.status(401).json({ ok: false, reason: 'unauthorized' });
 
   const ext = TYPES[body.type];

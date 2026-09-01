@@ -4,8 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#FFFCF7" />
-<title>Loop Builder | BlinkLoop</title>
-<meta name="description" content="Build a website in a blink. Drag blocks, edit live, export clean HTML, hosted by BlinkLoop." />
+<title>Loop Builder · BlinkLoop Internal</title>
+<meta name="robots" content="noindex, nofollow" />
 <script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -295,6 +295,17 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 .seo-item.ok{color:var(--ink)}
 .seo-item .m{width:14px;color:#c0392b;font-weight:700}
 .seo-item.ok .m{color:#2c7a4b}
+.lock-screen{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(700px 500px at 85% -5%, rgba(127,32,39,.10), transparent 62%),radial-gradient(600px 460px at -8% 40%, rgba(244,93,42,.10), transparent 60%)}
+.lock-screen.show{display:flex}
+.lock-card{width:min(420px,92vw);background:var(--glass-strong);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:24px;padding:34px;text-align:center;box-shadow:0 20px 60px rgba(43,20,14,.14)}
+.lk-brand{font-family:'Unbounded';font-weight:700;font-size:1.15rem;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px}
+.lk-brand span{color:var(--rust)}
+.lk-brand em{font-style:normal;font-weight:500;font-size:.7rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-left:2px}
+.lk-icon{width:26px;height:26px;border-radius:7px}
+.lk-sub{color:var(--muted);font-size:.88rem;margin:6px 0 18px;line-height:1.55}
+.lock-card .access-in{width:100%;text-align:center;letter-spacing:.04em}
+.lock-card .access-err{min-height:1.2em;margin:8px 0}
+.lk-note{color:var(--muted);font-size:.72rem;margin-top:16px;opacity:.8}
 </style>
 </head>
 <body>
@@ -454,6 +465,17 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-card">
+    <div class="lk-brand"><img src="" alt="" class="lk-icon" id="lkIcon" aria-hidden="true" />Blink<span>Loop</span> <em>Builder</em></div>
+    <p class="lk-sub">Enter your BlinkLoop team code to open the builder.</p>
+    <input class="in access-in" id="accessCodeL" placeholder="LOOP-NAME-DATE-CODE" autocomplete="off" />
+    <div class="access-err" id="accessErrL"></div>
+    <button class="tb-cta" id="accessGoL" style="width:100%;justify-content:center">Unlock</button>
+    <p class="lk-note">Internal tool for the BlinkLoop team. Codes are minted at /admin.</p>
+  </div>
+</div>
 <script>
 /* =====================================================
    Loop Builder | BlinkLoop
@@ -1054,7 +1076,7 @@ function canvasDoc(){
   return `<!DOCTYPE html><html lang="${plang}"${pdir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="${fontLink(state.theme)}">
 <style>${siteCSS(state.theme)}</style><style>${OVERLAY_CSS}</style></head>
-<body>${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button>${typeof waFabHTML==='function'?waFabHTML():''}</body></html>`;
+<body>${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button>${typeof privacySectionHTML==='function'?privacySectionHTML():''}${typeof waFabHTML==='function'?waFabHTML():''}</body></html>`;
 }
 
 let savedScroll = 0;
@@ -1270,7 +1292,7 @@ function fieldHTML(f, val, path){
 
 /* =============== PLUGINS TAB =============== */
 function ensurePlugins(){
-  const d = { wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''} };
+  const d = { wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''}, priv:{on:false,email:''} };
   state.plugins = state.plugins || {};
   for (const k in d) state.plugins[k] = Object.assign({}, d[k], state.plugins[k]||{});
   return state.plugins;
@@ -1303,6 +1325,8 @@ function renderPlugins(){
       <div class="field"><label>${t('Measurement ID')}</label>${inp('ga','id','G-XXXXXXXXXX',P.ga.id)}</div>`)}
     ${plugRow('fbp', t('Facebook Pixel'), t('Applied on the exported site.'), `
       <div class="field"><label>${t('Pixel ID')}</label>${inp('fbp','id','1234567890',P.fbp.id)}</div>`)}
+    ${plugRow('priv', t('Privacy policy section'), t('Adds a plain-language privacy section at the bottom of the page. It adapts to the features you enable. A starter, not legal advice.'), `
+      <div class="field"><label>${t('Contact email for privacy requests')}</label>${inp('priv','email','hello@yourbrand.com',P.priv.email)}</div>`)}
     ${plugRow('custom', t('Custom head code'), t('Paste analytics or verification tags. Applied on export.'), `
       <div class="field">${inp('custom','head','<meta name=…>',P.custom.head,true)}</div>`)}
   `;
@@ -1543,7 +1567,7 @@ _gS:'Four things and you know the whole tool.',
 _g1t:'Add blocks', _g1b:'Click any block in the left panel, drag it onto the page, or use the <b>＋</b> buttons that appear on the page itself.',
 _g2t:'Click text to edit it', _g2b:'Headings, paragraphs, buttons: click them right on the page and type. Lists like pricing plans are edited in the right panel.',
 _g3t:'Make it yours in Design', _g3b:'The Design tab (top right) changes colors, fonts, and corner roundness for the whole site at once.',
-_g4t:'Export when ready', _g4b:'Export gives you the finished website as one clean HTML file. Exporting is part of client access. On a trial you can build, preview, and save your draft, and we take it from there.',
+_g4t:'Export when ready', _g4b:'Export gives you the finished page as one clean, self-contained HTML file, ready to drop into any BlinkLoop repo or client project.',
 _keys:'Handy keys: <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Delete</kbd> removes the selected block · <kbd>Esc</kbd> deselects.',
 _pickS:'It will be inserted right where you clicked ＋.',
 _exS:'You get one self-contained HTML file, and that file <b>is</b> the website. No plugins, nothing to install.',
@@ -1553,6 +1577,7 @@ _noSel:'Select a block on the canvas to edit its content, or <b>drag a block in<
 _empty:'Your page is empty.<br>Click a block in the left panel, or press the button below.',
 _accTrialS:'You\u2019re on the free trial: you can build the whole page, preview it, and save your draft. Exporting the finished website comes with any active BlinkLoop build or hosting plan.',
 _accS:'Have a client code? Enter it below. It comes with any active BlinkLoop build or hosting plan.',
+_accTeamS:'Enter your BlinkLoop team code to open the builder.',
 _accActiveS:'Unlocked for <b>{c}</b> until <b>{d}</b> (end of day, PH time). Thanks for building with BlinkLoop.',
 _perk1:'Export your site as a clean, ready-to-host HTML file',
 _perk2:'We host it, keep it online, and help with updates',
@@ -1565,6 +1590,15 @@ _resetConfirm:'Start over? Your current page will be cleared. (Ctrl+Z can still 
 
 const TR = {
 ja:{
+"Team ✓":"チーム ✓",
+"Locked":"ロック中",
+"Team access":"チームアクセス",
+"Team access active":"チームアクセス有効",
+"_accTeamS":"BlinkLoopのチームコードを入力してビルダーを開いてください。",
+"_g4b":"エクスポートで、完成ページを1つの独立したHTMLファイルとして出力します。BlinkLoopのリポジトリやクライアント案件にそのまま使えます。",
+"Privacy policy section":"プライバシーポリシーセクション",
+"Adds a plain-language privacy section at the bottom of the page. It adapts to the features you enable. A starter, not legal advice.":"ページ下部に平易なプライバシーセクションを追加します。有効な機能に合わせて内容が変わります。ひな形であり、法的助言ではありません。",
+"Contact email for privacy requests":"プライバシー窓口のメール",
 "Payments":"支払い",
 "GCash, Maya, or bank details":"GCash・Maya・銀行情報",
 "Payment methods":"支払い方法",
@@ -1663,6 +1697,15 @@ _resetConfirm:'最初からやり直しますか？現在のページは消去�
 'Your page is empty. Add a block first':'ページが空です。まずブロックを追加してください','Downloaded! That file is your website':'ダウンロード完了！それがあなたのウェブサイトです','HTML copied to clipboard':'HTMLをコピーしました','Copy blocked by the browser. Use Download instead':'ブラウザによりコピーがブロックされました。ダウンロードをご利用ください','Pop-up blocked. Allow pop-ups to preview':'ポップアップがブロックされました。許可してください','Project file downloaded':'プロジェクトファイルをダウンロードしました','That file isn’t a Loop Builder project':'Loop Builderのプロジェクトファイルではありません','Project loaded':'プロジェクトを読み込みました','Welcome, {n}! Exporting is unlocked':'ようこそ、{n}さん！エクスポートが解除されました','Signed out. Back on trial':'サインアウトしました。トライアルに戻ります','Your client access has ended. Message us to renew.':'クライアントアクセスの期限が切れました。更新はご連絡ください。','Saved':'保存済み','Loop started! Click any text on the page to edit it':'開始！ページ上のテキストをクリックして編集','Block removed. Ctrl+Z to undo':'ブロックを削除しました。Ctrl+Zで元に戻せます','{b} added':'{b}を追加しました','Colors need a 6-digit hex like #D25A28':'色は#D25A28のような6桁の16進数で指定してください'
 },
 fr:{
+"Team ✓":"Équipe ✓",
+"Locked":"Verrouillé",
+"Team access":"Accès équipe",
+"Team access active":"Accès équipe actif",
+"_accTeamS":"Saisissez votre code équipe BlinkLoop pour ouvrir le builder.",
+"_g4b":"L’export produit la page finie en un seul fichier HTML autonome, prêt pour un dépôt BlinkLoop ou un projet client.",
+"Privacy policy section":"Section politique de confidentialité",
+"Adds a plain-language privacy section at the bottom of the page. It adapts to the features you enable. A starter, not legal advice.":"Ajoute une section confidentialité en langage clair en bas de page. Elle s’adapte aux fonctions activées. Un modèle de départ, pas un avis juridique.",
+"Contact email for privacy requests":"E-mail de contact pour la confidentialité",
 "Payments":"Paiements",
 "GCash, Maya, or bank details":"GCash, Maya ou coordonnées bancaires",
 "Payment methods":"Moyens de paiement",
@@ -1766,6 +1809,15 @@ _resetConfirm:'Tout recommencer ? Votre page actuelle sera effacée. (Ctrl+Z peu
 "use strict";
 Object.assign(TR, {
 zh:{
+"Team ✓":"团队 ✓",
+"Locked":"已锁定",
+"Team access":"团队权限",
+"Team access active":"团队权限已激活",
+"_accTeamS":"输入BlinkLoop团队代码以打开构建器。",
+"_g4b":"导出会生成一个独立的HTML文件，可直接放入BlinkLoop仓库或客户项目。",
+"Privacy policy section":"隐私政策板块",
+"Adds a plain-language privacy section at the bottom of the page. It adapts to the features you enable. A starter, not legal advice.":"在页面底部添加通俗易懂的隐私板块，内容随启用的功能自动调整。仅为模板，不构成法律意见。",
+"Contact email for privacy requests":"隐私事务联系邮箱",
 "Payments":"收款",
 "GCash, Maya, or bank details":"GCash、Maya或银行信息",
 "Payment methods":"收款方式",
@@ -1864,6 +1916,15 @@ _resetConfirm:'重新开始？当前页面将被清空。（关闭标签页前�
 'Your page is empty. Add a block first':'页面为空。请先添加模块','Downloaded! That file is your website':'已下载！该文件就是你的网站','HTML copied to clipboard':'HTML已复制到剪贴板','Copy blocked by the browser. Use Download instead':'浏览器阻止了复制。请改用下载','Pop-up blocked. Allow pop-ups to preview':'弹窗被拦截。请允许弹窗以预览','Project file downloaded':'项目文件已下载','That file isn’t a Loop Builder project':'该文件不是Loop Builder项目','Project loaded':'项目已载入','Welcome, {n}! Exporting is unlocked':'欢迎，{n}！导出已解锁','Signed out. Back on trial':'已退出。回到试用模式','Your client access has ended. Message us to renew.':'客户权限已到期。请联系我们续期。','Loop started! Click any text on the page to edit it':'开始！点击页面上的任意文字即可编辑','Block removed. Ctrl+Z to undo':'已删除模块。Ctrl+Z可撤销','{b} added':'已添加{b}','Colors need a 6-digit hex like #D25A28':'颜色需要6位十六进制，例如 #D25A28'
 },
 es:{
+"Team ✓":"Equipo ✓",
+"Locked":"Bloqueado",
+"Team access":"Acceso del equipo",
+"Team access active":"Acceso del equipo activo",
+"_accTeamS":"Introduce tu código de equipo de BlinkLoop para abrir el builder.",
+"_g4b":"Exportar genera la página terminada en un único archivo HTML autónomo, listo para cualquier repositorio de BlinkLoop o proyecto de cliente.",
+"Privacy policy section":"Sección de política de privacidad",
+"Adds a plain-language privacy section at the bottom of the page. It adapts to the features you enable. A starter, not legal advice.":"Añade una sección de privacidad en lenguaje claro al final de la página. Se adapta a las funciones que actives. Es una base, no asesoría legal.",
+"Contact email for privacy requests":"Correo de contacto para privacidad",
 "Payments":"Pagos",
 "GCash, Maya, or bank details":"GCash, Maya o datos bancarios",
 "Payment methods":"Métodos de pago",
@@ -1962,6 +2023,15 @@ _resetConfirm:'¿Empezar de nuevo? Tu página actual se borrará. (Ctrl+Z aún p
 'Your page is empty. Add a block first':'Tu página está vacía. Añade un bloque primero','Downloaded! That file is your website':'¡Descargado! Ese archivo es tu sitio web','HTML copied to clipboard':'HTML copiado al portapapeles','Copy blocked by the browser. Use Download instead':'El navegador bloqueó la copia. Usa Descargar','Pop-up blocked. Allow pop-ups to preview':'Ventana bloqueada. Permite ventanas emergentes para previsualizar','Project file downloaded':'Archivo de proyecto descargado','That file isn’t a Loop Builder project':'Ese archivo no es un proyecto de Loop Builder','Project loaded':'Proyecto cargado','Welcome, {n}! Exporting is unlocked':'¡Bienvenido, {n}! Exportar está desbloqueado','Signed out. Back on trial':'Sesión cerrada. De vuelta a la prueba','Your client access has ended. Message us to renew.':'Tu acceso de cliente ha terminado. Escríbenos para renovar.','Loop started! Click any text on the page to edit it':'¡Empezamos! Haz clic en cualquier texto de la página para editarlo','Block removed. Ctrl+Z to undo':'Bloque eliminado. Ctrl+Z para deshacer','{b} added':'{b} añadido','Colors need a 6-digit hex like #D25A28':'Los colores necesitan un hex de 6 dígitos como #D25A28'
 },
 it:{
+"Team ✓":"Team ✓",
+"Locked":"Bloccato",
+"Team access":"Accesso team",
+"Team access active":"Accesso team attivo",
+"_accTeamS":"Inserisci il codice team BlinkLoop per aprire il builder.",
+"_g4b":"L’esportazione produce la pagina finita in un unico file HTML autonomo, pronto per un repository BlinkLoop o un progetto cliente.",
+"Privacy policy section":"Sezione privacy policy",
+"Adds a plain-language privacy section at the bottom of the page. It adapts to the features you enable. A starter, not legal advice.":"Aggiunge una sezione privacy in linguaggio semplice in fondo alla pagina. Si adatta alle funzioni attivate. È una base, non consulenza legale.",
+"Contact email for privacy requests":"Email di contatto per la privacy",
 "Payments":"Pagamenti",
 "GCash, Maya, or bank details":"GCash, Maya o dati bancari",
 "Payment methods":"Metodi di pagamento",
@@ -2060,6 +2130,15 @@ _resetConfirm:'Ricominciare? La pagina attuale sarà cancellata. (Ctrl+Z può an
 'Your page is empty. Add a block first':'La pagina è vuota. Aggiungi prima un blocco','Downloaded! That file is your website':'Scaricato! Quel file è il tuo sito','HTML copied to clipboard':'HTML copiato negli appunti','Copy blocked by the browser. Use Download instead':'Copia bloccata dal browser. Usa Scarica','Pop-up blocked. Allow pop-ups to preview':'Pop-up bloccato. Consenti i pop-up per l\u2019anteprima','Project file downloaded':'File di progetto scaricato','That file isn’t a Loop Builder project':'Quel file non è un progetto Loop Builder','Project loaded':'Progetto caricato','Welcome, {n}! Exporting is unlocked':'Benvenuto, {n}! L\u2019esportazione è sbloccata','Signed out. Back on trial':'Disconnesso. Di nuovo in prova','Your client access has ended. Message us to renew.':'Il tuo accesso cliente è terminato. Scrivici per rinnovare.','Loop started! Click any text on the page to edit it':'Si parte! Clicca un testo qualsiasi della pagina per modificarlo','Block removed. Ctrl+Z to undo':'Blocco eliminato. Ctrl+Z per annullare','{b} added':'{b} aggiunto','Colors need a 6-digit hex like #D25A28':'I colori richiedono un esadecimale a 6 cifre come #D25A28'
 },
 ar:{
+"Team ✓":"الفريق ✓",
+"Locked":"مقفل",
+"Team access":"وصول الفريق",
+"Team access active":"وصول الفريق مفعّل",
+"_accTeamS":"أدخل رمز فريق BlinkLoop لفتح أداة البناء.",
+"_g4b":"يُنتج التصدير الصفحة الجاهزة في ملف HTML واحد مستقل، جاهز لأي مستودع BlinkLoop أو مشروع عميل.",
+"Privacy policy section":"قسم سياسة الخصوصية",
+"Adds a plain-language privacy section at the bottom of the page. It adapts to the features you enable. A starter, not legal advice.":"يضيف قسم خصوصية بلغة واضحة أسفل الصفحة، ويتكيّف مع الميزات المفعّلة. نموذج أولي وليس استشارة قانونية.",
+"Contact email for privacy requests":"بريد التواصل لطلبات الخصوصية",
 "Payments":"الدفع",
 "GCash, Maya, or bank details":"GCash أو Maya أو بيانات البنك",
 "Payment methods":"طرق الدفع",
@@ -2192,6 +2271,7 @@ function applyLang(){
   renderLibrary(); renderLayers(); renderInspector(); renderDesign(); renderCanvas();
   if (!$('#rtab-plugins').hidden) renderPlugins();
   if (!$('#rtab-seo').hidden) renderSEO();
+  if (typeof renderLockScreen==='function') renderLockScreen();
 }
 
 /* language picker */
@@ -2307,6 +2387,15 @@ function prettyDate(iso){
 
 async function checkAccess(){
   clientMode = false; clientInfo = null;
+  /* 1) site session cookie (set at /login or on this lock screen) */
+  try{
+    const r = await fetch('/api/me');
+    if (r.ok){
+      const d = await r.json();
+      if (d.ok){ clientMode = true; clientInfo = {client:d.client, expires:d.expires}; updateAccessUI(); return; }
+    }
+  }catch(e){}
+  /* 2) fallback: stored code (offline / local dev) */
   let stored = null;
   try{ stored = localStorage.getItem('lb-access'); }catch(e){}
   if (stored){
@@ -2323,67 +2412,82 @@ async function checkAccess(){
 }
 function updateAccessUI(){
   const chip = $('#accessChip');
-  chip.textContent = clientMode ? t('Client \u2713') : t('Trial');
+  chip.textContent = clientMode ? t('Team \u2713') : t('Locked');
   chip.className = 'chip ' + (clientMode ? 'client' : 'trial');
-  $('#exportBtn').innerHTML = (clientMode ? '' : '\ud83d\udd12 ') + t('Export site');
+  $('#exportBtn').innerHTML = t('Export site');
+  const lock = $('#lockScreen');
+  if (lock) lock.classList.toggle('show', !clientMode);
 }
 function renderAccessModal(fromExport){
   $('#accessBody').innerHTML = clientMode
-    ? `<h2>${t('Client access active')}</h2>
+    ? `<h2>${t('Team access active')}</h2>
        <p class="sub">${t('_accActiveS').replace('{c}', esc(clientInfo.client)).replace('{d}', esc(prettyDate(clientInfo.expires)))}</p>
        <button class="signout" id="accessOut">${t('Sign out on this browser')}</button>`
-    : `<h2>${fromExport ? t('Exporting is for clients') : t('Client access')}</h2>
-       <p class="sub">${fromExport ? t('_accTrialS') : t('_accS')}</p>
-       <input class="in access-in" id="accessCode" placeholder="LOOP-YOURNAME-DATE-CODE" autocomplete="off" />
+    : `<h2>${t('Team access')}</h2>
+       <p class="sub">${t('_accTeamS')}</p>
+       <input class="in access-in" id="accessCode" placeholder="LOOP-NAME-DATE-CODE" autocomplete="off" />
        <div class="access-err" id="accessErr"></div>
        <div class="row">
          <button class="tb-cta" id="accessGo">${t('Unlock')}</button>
-         <a class="tb-btn" style="border:1px solid var(--line)" href="/hosting">${t('See plans & pricing')}</a>
-         <a class="tb-btn" style="border:1px solid var(--line)" href="/#start">${t('Talk to us')}</a>
-       </div>
-       <ul class="access-perks">
-         <li>${t('_perk1')}</li>
-         <li>${t('_perk2')}</li>
-         <li>${t('_perk3')}</li>
-       </ul>`;
-  const go = $('#accessGo');
-  if (go){
+       </div>`;
+  bindAccessInputs();
+  const out = $('#accessOut');
+  if (out) out.addEventListener('click', ()=>{
+    try{ fetch('/api/logout', { method:'POST' }); }catch(e){}
+    try{ localStorage.removeItem('lb-access'); }catch(e){}
+    clientMode=false; clientInfo=null; updateAccessUI(); closeModals(); renderLockScreen();
+    toast(t('Signed out. Back on trial'));
+  });
+}
+function renderLockScreen(){
+  const lock = $('#lockScreen');
+  if (!lock) return;
+  const tbIcon = document.querySelector('img.bicon');
+  const lk = $('#lkIcon');
+  if (tbIcon && lk && tbIcon.src){ lk.src = tbIcon.src; lk.style.display='inline-block'; } else if (lk){ lk.style.display='none'; }
+  lock.querySelector('.lk-sub').textContent = t('_accTeamS');
+  lock.querySelector('#accessGoL').textContent = t('Unlock');
+  bindAccessInputs('L');
+}
+function bindAccessInputs(sfx=''){
+  const go = $('#accessGo'+sfx);
+  if (go && !go._wired){
+    go._wired = true;
     const tryCode = async ()=>{
-      const v = ($('#accessCode').value||'').trim().toUpperCase();
+      const v = ($('#accessCode'+sfx).value||'').trim().toUpperCase();
       if (!v) return;
       go.disabled = true; go.textContent = t('Checking\u2026');
-      $('#accessErr').textContent = '';
+      $('#accessErr'+sfx).textContent = '';
       try{
-        const d = await verifyCode(v);
+        let d = null;
+        try{
+          const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code:v }) });
+          if (r.status !== 404 && r.status !== 405) d = await r.json();
+        }catch(e){}
+        if (!d) d = await verifyCode(v);
         if (d.ok){
           try{ localStorage.setItem('lb-access', v); }catch(e){}
           clientMode = true; clientInfo = {client:d.client, expires:d.expires};
           updateAccessUI(); closeModals();
+          if (!state.blocks.length) openTemplates();
           toast(t('Welcome, {n}! Exporting is unlocked').replace('{n}', d.client));
         } else if (d.reason === 'expired'){
-          $('#accessErr').textContent = t('_errExpired');
+          $('#accessErr'+sfx).textContent = t('_errExpired');
         } else {
-          $('#accessErr').textContent = t('_errInvalid');
+          $('#accessErr'+sfx).textContent = t('_errInvalid');
         }
       }catch(e){
-        $('#accessErr').textContent = t('_errNet');
+        $('#accessErr'+sfx).textContent = t('_errNet');
       }finally{
         go.disabled = false; go.textContent = t('Unlock');
       }
     };
     go.addEventListener('click', tryCode);
-    $('#accessCode').addEventListener('keydown', e=>{ if(e.key==='Enter') tryCode(); });
+    $('#accessCode'+sfx).addEventListener('keydown', e=>{ if(e.key==='Enter') tryCode(); });
   }
-  const out = $('#accessOut');
-  if (out) out.addEventListener('click', ()=>{
-    try{ localStorage.removeItem('lb-access'); }catch(e){}
-    clientMode=false; clientInfo=null; updateAccessUI(); renderAccessModal(false);
-    toast(t('Signed out. Back on trial'));
-  });
 }
 $('#accessChip').addEventListener('click', ()=>{ renderAccessModal(false); openModal('accessModal'); });
 
-const TRIAL_RIBBON = '<div style="position:fixed;bottom:14px;right:14px;z-index:9999;background:#2B140E;color:#FAF7ED;font:600 12px/1 system-ui,sans-serif;padding:9px 15px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.3)">Trial preview \u00b7 Blink<span style="color:#EDA33F">Loop</span> Builder</div>';
 
 /* =============== EXPORT / PREVIEW =============== */
 const WA_SVG = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C9.4 3 4 8.3 4 14.9c0 2.6.8 5 2.3 7L4 29l7.3-2.3c1.5.8 3.1 1.2 4.7 1.2 6.6 0 12-5.3 12-11.9S22.6 3 16 3zm0 21.6c-1.5 0-3-.4-4.3-1.1l-.3-.2-4.3 1.4 1.4-4.2-.2-.3c-1.3-1.6-2-3.5-2-5.4 0-5.3 4.4-9.6 9.7-9.6s9.7 4.3 9.7 9.6-4.4 9.8-9.7 9.8zm5.4-7.2c-.3-.2-1.7-.9-2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1c-.3-.2-1.2-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2.1s0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.5 1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.1 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4s.3-1.3.2-1.4c-.1-.1-.3-.2-.6-.3z"/></svg>';
@@ -2410,6 +2514,31 @@ function chatFabsHTML(){
   return fabs.length ? `<div class="fab-col">${fabs.join('')}</div>` : '';
 }
 const waFabHTML = chatFabsHTML; /* canvas + export both use this */
+
+function privacySectionHTML(){
+  const P = state.plugins || {};
+  if (!P.priv || !P.priv.on) return '';
+  const nav = state.blocks.find(b=>b.type==='navbar');
+  const contact = state.blocks.find(b=>b.type==='contact');
+  const name = esc((nav && (nav.props.brand+(nav.props.brandAccent||''))) || state.meta.title || 'This website');
+  const email = esc(P.priv.email || (contact && contact.props.email) || '');
+  const collects = [];
+  if (contact) collects.push('<li><b>Contact form details.</b> When you send a message through this site, your name, contact details, and message go directly to us so we can reply. We use them for nothing else.</li>');
+  if ((P.ga && P.ga.on) || (P.fbp && P.fbp.on)){
+    const tools = [P.ga && P.ga.on ? 'Google Analytics' : null, P.fbp && P.fbp.on ? 'Meta (Facebook) Pixel' : null].filter(Boolean).join(' and ');
+    collects.push(`<li><b>Basic visit statistics.</b> This site uses ${tools}, which set cookies to help us understand how visitors use the site (pages viewed, time spent). You can block cookies in your browser settings and the site will still work.</li>`);
+  }
+  if ((P.wa && P.wa.on) || (P.ms && P.ms.on) || (P.vb && P.vb.on)) collects.push('<li><b>Chat messages.</b> If you contact us through the chat buttons, your conversation happens inside that app (WhatsApp, Messenger, or Viber) under that app\u2019s own privacy policy.</li>');
+  if (!collects.length) collects.push('<li>This site does not actively collect personal information. Our hosting provider may keep standard technical logs (such as IP addresses) to keep the site running securely.</li>');
+  return `<section id="privacy" style="padding:56px 0;border-top:1px solid var(--line)"><div class="wrap" style="max-width:760px">
+    <h2 style="font-size:1.15rem">Privacy</h2>
+    <div style="color:var(--muted);font-size:.92rem;line-height:1.7">
+    <p style="margin:10px 0">${name} respects your privacy. Here is what happens with your information when you use this site:</p>
+    <ul style="margin:0 0 10px 20px">${collects.join('')}</ul>
+    <p style="margin:10px 0">We do not sell personal information.${email?` For any privacy question or request (including deletion of your data), email <a href="mailto:${email}" style="color:var(--accent)">${email}</a>.`:''}</p>
+    </div>
+  </div></section>`;
+}
 function faviconHref(){
   const nav = state.blocks.find(b=>b.type==='navbar');
   const letter = ((nav && nav.props.brand) || state.meta.title || 'B').trim().charAt(0).toUpperCase() || 'B';
@@ -2485,7 +2614,7 @@ function exportHTML(){
 ${pageBodyHTML(false)}
 ${navJS}
 <!-- Built with Loop Builder · blinkloop -->
-${waFabHTML()}</body>
+${privacySectionHTML()}${waFabHTML()}</body>
 </html>`;
 }
 
@@ -2503,7 +2632,6 @@ function closeModals(){ $$('.modal-bg').forEach(m=>m.classList.remove('show')); 
 
 $('#exportBtn').addEventListener('click', ()=>{
   if(!state.blocks.length) return toast(t('Your page is empty. Add a block first'));
-  if(!clientMode){ renderAccessModal(true); openModal('accessModal'); return; }
   openModal('exportModal');
 });
 $('#doExport').addEventListener('click', ()=>{
@@ -2525,7 +2653,6 @@ $('#previewBtn').addEventListener('click', ()=>{
 });
 function previewSite(){
   let html = exportHTML();
-  if(!clientMode) html = html.replace('</body>', TRIAL_RIBBON + '</body>');
   const url = URL.createObjectURL(new Blob([html],{type:'text/html'}));
   const w = window.open(url,'_blank');
   if(!w) toast(t('Pop-up blocked. Allow pop-ups to preview'));
@@ -2597,7 +2724,7 @@ function openPicker(idx){
 /* =============== TEMPLATES =============== */
 function freshState(){
   return { meta:{title:'My website',desc:'',lang:'en',currency:'PHP',siteUrl:'',ogImage:''},
-    plugins:{ wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''} }, theme:{ density:'normal',...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
+    plugins:{ wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''}, priv:{on:false,email:''} }, theme:{ density:'normal',...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
 }
 function tplBlocks(types, overrides={}){
   return types.map(t=>{
@@ -2720,6 +2847,7 @@ function toast(msg){
     applyLang();
     openTemplates();
   }
+  renderLockScreen();
   updateHistoryBtns();
   checkAccess();
   $('#saveState').classList.add('saved'); $('#saveState .t').textContent='Saved';

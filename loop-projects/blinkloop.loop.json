@@ -1,0 +1,262 @@
+{
+  "meta": {
+    "title": "BlinkLoop | Websites in a blink",
+    "desc": "BlinkLoop designs, builds, hosts, and maintains websites for small businesses in Cebu. One-time build fee. You own the site, we keep it running.",
+    "lang": "en",
+    "currency": "PHP",
+    "siteUrl": "https://blink-loop.vercel.app",
+    "ogImage": ""
+  },
+  "plugins": {
+    "wa": {
+      "on": false,
+      "phone": "",
+      "msg": ""
+    },
+    "ms": {
+      "on": false,
+      "page": ""
+    },
+    "vb": {
+      "on": false,
+      "number": ""
+    },
+    "ga": {
+      "on": false,
+      "id": ""
+    },
+    "fbp": {
+      "on": false,
+      "id": ""
+    },
+    "custom": {
+      "on": false,
+      "head": ""
+    },
+    "priv": {
+      "on": true,
+      "email": ""
+    }
+  },
+  "theme": {
+    "density": "normal",
+    "palette": "ember",
+    "bg": "#FFFCF7",
+    "ink": "#3A1B1E",
+    "accent": "#F45D2A",
+    "accent2": "#7F2027",
+    "font": "blink",
+    "radius": 22
+  },
+  "blocks": [
+    {
+      "id": "bem8jj4s",
+      "type": "navbar",
+      "props": {
+        "brand": "Blink",
+        "brandAccent": "Loop.",
+        "links": [
+          {
+            "label": "What we do",
+            "href": "#features"
+          },
+          {
+            "label": "Pricing",
+            "href": "#pricing"
+          },
+          {
+            "label": "FAQ",
+            "href": "#faq"
+          }
+        ],
+        "cta": "Start your loop",
+        "ctaHref": "#contact"
+      }
+    },
+    {
+      "id": "bacoqqgf",
+      "type": "hero",
+      "props": {
+        "eyebrow": "BlinkLoop · Creative studio · Cebu",
+        "title": "Websites in a *blink*.",
+        "sub": "We design, build, host, and maintain websites for small businesses. One-time build fee. You own the site. We keep it running.",
+        "primary": "Start your loop",
+        "primaryHref": "#contact",
+        "secondary": "See pricing",
+        "secondaryHref": "#pricing",
+        "img": "",
+        "imgLabel": "BlinkLoop",
+        "layout": "split"
+      }
+    },
+    {
+      "id": "b3u2nv95",
+      "type": "features",
+      "props": {
+        "eyebrow": "What we do",
+        "title": "Built right, kept simple",
+        "sub": "Everything a small business needs to look serious online, without the agency runaround.",
+        "cols": "3",
+        "items": [
+          {
+            "icon": "🎨",
+            "title": "Design that fits you",
+            "text": "Custom design around your brand and your customers, not a template that fits nobody."
+          },
+          {
+            "icon": "⚡",
+            "title": "Fast, honest builds",
+            "text": "Responsive, secure, and quick to load. Clean code that you fully own when it ships."
+          },
+          {
+            "icon": "🛠️",
+            "title": "Hosting and care",
+            "text": "We host it, keep it online, update the content, and actually reply when you message us."
+          }
+        ],
+        "variant": "default"
+      }
+    },
+    {
+      "id": "bhegbqjf",
+      "type": "stats",
+      "props": {
+        "items": [
+          {
+            "value": "₱15k",
+            "label": "starting build price"
+          },
+          {
+            "value": "1×",
+            "label": "you pay for the build once"
+          },
+          {
+            "value": "∞",
+            "label": "the site is yours forever"
+          }
+        ],
+        "variant": "tint"
+      }
+    },
+    {
+      "id": "bm91ob7p",
+      "type": "split",
+      "props": {
+        "eyebrow": "How it works",
+        "title": "From idea to online in days",
+        "text": "Tell us what your business does and what you want people to do on your site.\n\nWe design and build it, then send you a private preview to react to.\n\nYou review, we polish, it goes live. After that, update it yourself or let us handle everything on a care plan.",
+        "cta": "Talk to us",
+        "ctaHref": "#contact",
+        "img": "",
+        "flip": false
+      }
+    },
+    {
+      "id": "bh09ioqq",
+      "type": "pricing",
+      "props": {
+        "eyebrow": "Pricing",
+        "title": "Pay once. Own it.",
+        "sub": "Every project is quoted before work begins. No monthly builder fees, no renewal traps.",
+        "items": [
+          {
+            "name": "Starter",
+            "price": "₱15,000+",
+            "period": "one-time",
+            "features": "Custom design\nUp to 5 pages\nContact form\nSSL setup and deployment",
+            "cta": "Start with Starter",
+            "href": "#contact",
+            "hot": false
+          },
+          {
+            "name": "Business",
+            "price": "₱30,000+",
+            "period": "one-time",
+            "features": "Everything in Starter\nUp to 10 pages\nCMS and analytics\nPerformance optimization",
+            "cta": "Start with Business",
+            "href": "#contact",
+            "hot": true
+          },
+          {
+            "name": "Custom",
+            "price": "₱60,000+",
+            "period": "starting, one-time",
+            "features": "Everything in Business\nCustom features and integrations\nAdvanced SEO\nBuilt around your requirements",
+            "cta": "Talk to us first",
+            "href": "#contact",
+            "hot": false
+          }
+        ],
+        "variant": "default"
+      }
+    },
+    {
+      "id": "bkbkn95e",
+      "type": "faq",
+      "props": {
+        "title": "Questions people actually ask",
+        "items": [
+          {
+            "q": "Do I really own the website?",
+            "a": "Yes. You pay a one-time build fee and the finished site is yours: the files, the design, all of it. If you ever leave, you take it with you."
+          },
+          {
+            "q": "What about hosting?",
+            "a": "Optional. We offer managed hosting and care plans billed annually, or we can deploy to hosting you already have. Hosting is never forced into the build price."
+          },
+          {
+            "q": "How long does a site take?",
+            "a": "Most sites go live within one to two weeks from the moment we have your content. Custom builds take longer and we tell you upfront."
+          }
+        ],
+        "variant": "default"
+      }
+    },
+    {
+      "id": "btsbzb0f",
+      "type": "cta",
+      "props": {
+        "title": "Start your loop",
+        "sub": "Message us what your business does. We reply with a plan and an honest quote.",
+        "label": "Start your loop",
+        "href": "#contact"
+      }
+    },
+    {
+      "id": "bjrjrnji",
+      "type": "contact",
+      "props": {
+        "title": "Tell us about your project",
+        "sub": "One message is enough to start. No forms longer than the site itself.",
+        "email": "hello@blinkloop.studio",
+        "phone": "",
+        "where": "Cebu, Philippines",
+        "action": ""
+      }
+    },
+    {
+      "id": "bzrczhwu",
+      "type": "footer",
+      "props": {
+        "brand": "BlinkLoop.",
+        "brandAccent": "Brand",
+        "tagline": "Websites in a blink.",
+        "links": [
+          {
+            "label": "Pricing",
+            "href": "#pricing"
+          },
+          {
+            "label": "FAQ",
+            "href": "#faq"
+          },
+          {
+            "label": "Privacy",
+            "href": "/privacy"
+          }
+        ],
+        "fine": "© 2026 BlinkLoop · Cebu, Philippines"
+      }
+    }
+  ]
+}
