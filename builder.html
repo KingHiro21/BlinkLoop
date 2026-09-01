@@ -2410,7 +2410,14 @@ async function checkAccess(){
   }
   updateAccessUI();
 }
+function startPresence(){
+  if (window.__blBeat || !clientMode) return;
+  const beat = ()=>{ try{ fetch('/api/presence',{method:'POST'}).catch(()=>{}); }catch(e){} };
+  beat();
+  window.__blBeat = setInterval(()=>{ if(!document.hidden && clientMode) beat(); }, 60000);
+}
 function updateAccessUI(){
+  if (clientMode) startPresence();
   const chip = $('#accessChip');
   chip.textContent = clientMode ? t('Team \u2713') : t('Locked');
   chip.className = 'chip ' + (clientMode ? 'client' : 'trial');

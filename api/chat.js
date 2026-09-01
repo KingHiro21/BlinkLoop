@@ -10,6 +10,26 @@
 const crypto = require('crypto');
 const { put, list, del } = require('@vercel/blob');
 
+const PRESENCE_WINDOW = 120000;
+async function presenceBeat(me){
+  const now = Date.now();
+  await put(`presence/${me}-${now}`, '1', { access:'public', contentType:'text/plain', addRandomSuffix:false });
+  try {
+    const { blobs } = await list({ prefix:`presence/${me}-`, limit:100 });
+    await Promise.all(blobs.filter(b=>!b.pathname.endsWith(`-${now}`)).map(b=>del(b.url).catch(()=>{})));
+  } catch(e){}
+}
+function onlineFrom(blobs){
+  const latest = {};
+  for (const b of blobs){
+    const m = b.pathname.match(/^presence\/([A-Z0-9]{2,12})-(\d{10,16})$/);
+    if (!m) continue;
+    if (!latest[m[1]] || Number(m[2]) > latest[m[1]]) latest[m[1]] = Number(m[2]);
+  }
+  const now = Date.now();
+  return Object.entries(latest).filter(([,ts])=>now-ts<PRESENCE_WINDOW).map(([client])=>client);
+}
+
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 function b32(buf, len){ let bits=0,v=0,out=''; for(const x of buf){ v=(v<<8)|x; bits+=8; while(bits>=5){ out+=B32[(v>>>(bits-5))&31]; bits-=5; } } return out.slice(0,len); }
 function manilaToday(){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date()).replace(/-/g,''); }
@@ -50,7 +70,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET'){
       const url = new URL(req.url, 'http://x');
       const since = Number(url.searchParams.get('since') || 0);
-      const [msgBlobs, pinBlobs] = await Promise.all([ listAll('chat/m/'), listAll('chat/p/') ]);
+      const [msgBlobs, pinBlobs, presBlobs] = await Promise.all([ listAll('chat/m/'), listAll('chat/p/'), listAll('presence/'), presenceBeat(me).catch(()=>{}) ]);
       let candidates = msgBlobs
         .map(b => ({ ...b, ts: Number(idFromPath(b.pathname).split('-')[0] || 0) }))
         .filter(b => b.ts > since)
@@ -65,7 +85,7 @@ module.exports = async (req, res) => {
         } catch(e){ return null; }
       }))).filter(Boolean);
       const pinnedIds = pinBlobs.map(b => b.pathname.replace(/^chat\/p\//,'').replace(/\.json$/,''));
-      return res.status(200).json({ ok:true, me, now: Date.now(), pinnedIds, messages });
+      return res.status(200).json({ ok:true, me, now: Date.now(), pinnedIds, messages, online: [...new Set([me, ...onlineFrom(presBlobs)])].sort() });
     }
 
     if (req.method !== 'POST') return res.status(405).json({ ok:false, reason:'method' });

@@ -100,6 +100,7 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 <header>
   <div class="brand">Blink<span>Loop</span><em>Team</em></div>
   <div class="hright">
+    <span id="onlineBar" title="Online now"></span>
     <span id="who"></span>
     <a class="hbtn" href="/builder">Builder</a>
     <button class="hbtn" id="logout">Sign out</button>
@@ -153,6 +154,7 @@ async function poll(){
     const d = await r.json();
     if (!d.ok) return;
     ME = d.me;
+    if (d.online) $('#onlineBar').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22)"></span>'+d.online.map(esc).join(', ')+'</span>';
     const newPins = new Set(d.pinnedIds);
     const pinsChanged = newPins.size !== pinnedIds.size || [...newPins].some(x=>!pinnedIds.has(x));
     pinnedIds = newPins;

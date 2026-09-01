@@ -796,6 +796,7 @@ body.has-glow .glow{opacity:1}
       <a href="/hosting" class="active">Pricing</a>
       <a href="/builder" class="staff-link" hidden>Builder</a>
       <a href="/team" class="staff-link" hidden>Team</a>
+      <span id="authSlot" style="display:contents"></span>
       <a href="#start" class="nav-cta">Start your loop</a>
     </nav>
     <div class="nav-actions">
@@ -1138,7 +1139,6 @@ body.has-glow .glow{opacity:1}
       <a href="/#services">Services</a>
       <a href="/hosting" class="active">Pricing</a>
       <a href="/privacy">Privacy</a>
-      <a href="/login" rel="nofollow">Staff</a>
     </nav>
     <div class="foot-right">
       <a class="addr" href="https://www.google.com/maps/search/?api=1&query=BLOQ+SOHO+Lofts,+Mandaue,+Cebu" target="_blank" rel="noopener">
@@ -1432,6 +1432,24 @@ body.has-glow .glow{opacity:1}
   }
 })();
 </script>
-<script>(function(){try{if(document.cookie.indexOf('bl_staff=1')>-1){document.querySelectorAll('.staff-link').forEach(function(a){a.hidden=false;});}}catch(e){}})();</script>
+<script>(function(){
+  var staff=false; try{ staff = document.cookie.indexOf('bl_staff=1')>-1; }catch(e){}
+  if (staff) document.querySelectorAll('.staff-link').forEach(function(a){a.hidden=false;});
+  var slot = document.getElementById('authSlot'); if(!slot) return;
+  if (!staff){
+    slot.innerHTML = '<a href="/login" style="border:1px solid var(--line);border-radius:999px;padding:8px 18px;font-weight:600;font-size:.85rem;color:var(--muted)">Log in</a>';
+    return;
+  }
+  function draw(d){
+    var others = (d.online||[]).map(function(o){return o.client;}).filter(function(n){return n!==d.me;});
+    var extra = others.length ? ' · ' + others.slice(0,2).join(', ') + (others.length>2 ? ' +'+(others.length-2) : '') : '';
+    slot.innerHTML = '<a href="/team" title="Open team chat" style="display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:600;font-size:.82rem;color:var(--ink)">'
+      + '<span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.25)"></span>'
+      + d.me + extra + '</a>';
+  }
+  function beat(){ try{ fetch('/api/presence',{method:'POST'}).catch(function(){}); }catch(e){} }
+  function refresh(){ try{ fetch('/api/presence').then(function(r){return r.json();}).then(function(d){ if(d && d.ok) draw(d); }).catch(function(){}); }catch(e){} }
+  beat(); refresh(); setInterval(function(){ beat(); refresh(); }, 60000);
+})();</script>
 </body>
 </html>
