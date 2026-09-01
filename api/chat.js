@@ -1,38 +1,22 @@
-// /api/chat — internal team chat for BlinkLoop staff. Session cookie required.
-// Storage model (Vercel Blob, no database):
-//   chat/m/<ts>-<rand>.json   one immutable blob per message (collision-proof)
-//   chat/p/<messageId>.json   marker blob = message is pinned
-//   chat-files/<ts>-<name>    attachments
-// GET  ?since=<ts>  -> { ok, me, now, pinnedIds, messages:[...] } (new messages only; first load returns latest 80)
-// POST {action:'post', text, att?} | {action:'pin'|'unpin', id} | {action:'del', id}
-//      {action:'file', name, type, data(base64)} -> { ok, att:{name,url,size,type} }
+// /api/chat — BlinkLoop team chat: daily pages, threads, pins, files, search.
+// Storage (Vercel Blob):
+//   chat/m/<ts>-<rand>.json        root messages
+//   chat/r/<rootId>/<ts>-<rand>.json  thread replies
+//   chat/p/<rootId>.json           pin markers
+//   chat-files/<ts>-<name>         attachments
+//   presence/<CLIENT>-<ts>         heartbeats
+// GET  ?day=YYYYMMDD&since=ts -> that day's roots (+days list, counts, pins, online)
+// GET  ?thread=<rootId>       -> root + all replies
+// GET  ?q=<query>             -> search across all days (roots + replies)
+// POST post{text,att,parent?} | pin/unpin{id} | del{id,parent?} | file{name,type,data}
 
 const crypto = require('crypto');
 const { put, list, del } = require('@vercel/blob');
 
-const PRESENCE_WINDOW = 120000;
-async function presenceBeat(me){
-  const now = Date.now();
-  await put(`presence/${me}-${now}`, '1', { access:'public', contentType:'text/plain', addRandomSuffix:false });
-  try {
-    const { blobs } = await list({ prefix:`presence/${me}-`, limit:100 });
-    await Promise.all(blobs.filter(b=>!b.pathname.endsWith(`-${now}`)).map(b=>del(b.url).catch(()=>{})));
-  } catch(e){}
-}
-function onlineFrom(blobs){
-  const latest = {};
-  for (const b of blobs){
-    const m = b.pathname.match(/^presence\/([A-Z0-9]{2,12})-(\d{10,16})$/);
-    if (!m) continue;
-    if (!latest[m[1]] || Number(m[2]) > latest[m[1]]) latest[m[1]] = Number(m[2]);
-  }
-  const now = Date.now();
-  return Object.entries(latest).filter(([,ts])=>now-ts<PRESENCE_WINDOW).map(([client])=>client);
-}
-
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 function b32(buf, len){ let bits=0,v=0,out=''; for(const x of buf){ v=(v<<8)|x; bits+=8; while(bits>=5){ out+=B32[(v>>>(bits-5))&31]; bits-=5; } } return out.slice(0,len); }
 function manilaToday(){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date()).replace(/-/g,''); }
+function dayOf(ts){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date(ts)).replace(/-/g,''); }
 function sessionClient(req, secret){
   const m = String(req.headers.cookie||'').match(/(?:^|;\s*)bl_session=([^;]+)/);
   if (!m) return null;
@@ -45,18 +29,37 @@ function sessionClient(req, secret){
   return client;
 }
 
-const MAX_TEXT = 2000;
-const MAX_FILE = 3.5 * 1024 * 1024;
+const MAX_TEXT = 2000, MAX_FILE = 3.5*1024*1024, PRESENCE_WINDOW = 120000, SEARCH_SCAN = 600, SEARCH_HITS = 50;
 
 async function listAll(prefix){
   let out = [], cursor;
-  do {
-    const r = await list({ prefix, cursor, limit: 1000 });
-    out = out.concat(r.blobs); cursor = r.hasMore ? r.cursor : null;
-  } while (cursor);
+  do { const r = await list({ prefix, cursor, limit:1000 }); out = out.concat(r.blobs); cursor = r.hasMore ? r.cursor : null; } while (cursor);
   return out;
 }
-const idFromPath = p => p.replace(/^chat\/m\//,'').replace(/\.json$/,'');
+const rootId = p => p.replace(/^chat\/m\//,'').replace(/\.json$/,'');
+const replyInfo = p => { const m = p.match(/^chat\/r\/([^/]+)\/(.+)\.json$/); return m ? { parent:m[1], id:m[2] } : null; };
+const tsOf = id => Number(String(id).split('-')[0] || 0);
+async function fetchMsg(b){ try{ const r = await fetch(b.url); return await r.json(); }catch(e){ return null; } }
+
+async function presenceBeat(me){
+  const now = Date.now();
+  await put(`presence/${me}-${now}`, '1', { access:'public', contentType:'text/plain', addRandomSuffix:false });
+  try{
+    const { blobs } = await list({ prefix:`presence/${me}-`, limit:100 });
+    await Promise.all(blobs.filter(b=>!b.pathname.endsWith(`-${now}`)).map(b=>del(b.url).catch(()=>{})));
+  }catch(e){}
+}
+function onlineFrom(blobs, me){
+  const latest = {};
+  for (const b of blobs){
+    const m = b.pathname.match(/^presence\/([A-Z0-9]{2,12})-(\d{10,16})$/);
+    if (m && (!latest[m[1]] || Number(m[2])>latest[m[1]])) latest[m[1]] = Number(m[2]);
+  }
+  const now = Date.now();
+  const on = Object.entries(latest).filter(([,ts])=>now-ts<PRESENCE_WINDOW).map(([c])=>c);
+  if (!on.includes(me)) on.push(me);
+  return on.sort();
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -69,90 +72,129 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'GET'){
       const url = new URL(req.url, 'http://x');
-      const since = Number(url.searchParams.get('since') || 0);
-      const [msgBlobs, pinBlobs, presBlobs] = await Promise.all([ listAll('chat/m/'), listAll('chat/p/'), listAll('presence/'), presenceBeat(me).catch(()=>{}) ]);
-      let candidates = msgBlobs
-        .map(b => ({ ...b, ts: Number(idFromPath(b.pathname).split('-')[0] || 0) }))
-        .filter(b => b.ts > since)
-        .sort((a,b) => a.ts - b.ts);
-      if (!since) candidates = candidates.slice(-80);
-      else candidates = candidates.slice(-200);
-      const messages = (await Promise.all(candidates.map(async b => {
-        try {
-          const r = await fetch(b.url);
-          const d = await r.json();
-          return { id: idFromPath(b.pathname), ...d };
-        } catch(e){ return null; }
+      const q = (url.searchParams.get('q')||'').trim().toLowerCase();
+      const thread = (url.searchParams.get('thread')||'').replace(/[^0-9a-f-]/g,'');
+
+      /* ---- thread view ---- */
+      if (thread){
+        const [roots, replies] = await Promise.all([ listAll('chat/m/'), listAll(`chat/r/${thread}/`) ]);
+        const rootBlob = roots.find(b=>b.pathname===`chat/m/${thread}.json`);
+        if (!rootBlob) return res.status(200).json({ ok:false, reason:'not-found' });
+        const root = { id:thread, ...(await fetchMsg(rootBlob)) };
+        const reps = (await Promise.all(replies.map(async b=>{
+          const info = replyInfo(b.pathname);
+          const d = await fetchMsg(b);
+          return d && info ? { id:info.id, parent:thread, ...d } : null;
+        }))).filter(Boolean).sort((a,b)=>a.ts-b.ts);
+        return res.status(200).json({ ok:true, me, root, replies:reps });
+      }
+
+      /* ---- search ---- */
+      if (q){
+        const [roots, replies] = await Promise.all([ listAll('chat/m/'), listAll('chat/r/') ]);
+        const all = roots.map(b=>({ b, id:rootId(b.pathname), parent:null }))
+          .concat(replies.map(b=>{ const i=replyInfo(b.pathname); return i?{ b, id:i.id, parent:i.parent }:null; }).filter(Boolean))
+          .sort((a,x)=>tsOf(x.id)-tsOf(a.id)).slice(0, SEARCH_SCAN);
+        const hits = [];
+        const contents = await Promise.all(all.map(e=>fetchMsg(e.b)));
+        for (let i=0;i<all.length && hits.length<SEARCH_HITS;i++){
+          const d = contents[i]; if (!d) continue;
+          const hay = `${d.author||''} ${d.text||''} ${d.att?d.att.name:''}`.toLowerCase();
+          if (hay.includes(q)) hits.push({ id:all[i].id, parent:all[i].parent, day:dayOf(d.ts), ...d });
+        }
+        return res.status(200).json({ ok:true, me, q, hits });
+      }
+
+      /* ---- day feed ---- */
+      const today = manilaToday();
+      let day = (url.searchParams.get('day')||today).replace(/[^0-9]/g,'').slice(0,8) || today;
+      const since = Number(url.searchParams.get('since')||0);
+      const [rootBlobs, replyBlobs, pinBlobs, presBlobs] = await Promise.all([
+        listAll('chat/m/'), listAll('chat/r/'), listAll('chat/p/'), listAll('presence/'), presenceBeat(me).catch(()=>{})
+      ]);
+      const daysSet = new Set([today]);
+      for (const b of rootBlobs) daysSet.add(dayOf(tsOf(rootId(b.pathname))));
+      const days = [...daysSet].sort().reverse();
+      const counts = {};
+      for (const b of replyBlobs){ const i = replyInfo(b.pathname); if (i) counts[i.parent] = (counts[i.parent]||0)+1; }
+      const pinnedIds = pinBlobs.map(b=>b.pathname.replace(/^chat\/p\//,'').replace(/\.json$/,''));
+
+      let dayRoots = rootBlobs.map(b=>({ b, id:rootId(b.pathname), ts:tsOf(rootId(b.pathname)) }))
+        .filter(e=>dayOf(e.ts)===day && e.ts>since).sort((a,x)=>a.ts-x.ts);
+      if (!since) dayRoots = dayRoots.slice(-200);
+      const messages = (await Promise.all(dayRoots.map(async e=>{
+        const d = await fetchMsg(e.b); return d ? { id:e.id, ...d } : null;
       }))).filter(Boolean);
-      const pinnedIds = pinBlobs.map(b => b.pathname.replace(/^chat\/p\//,'').replace(/\.json$/,''));
-      return res.status(200).json({ ok:true, me, now: Date.now(), pinnedIds, messages, online: [...new Set([me, ...onlineFrom(presBlobs)])].sort() });
+
+      /* pinned messages content (any day) */
+      const pinned = (await Promise.all(pinnedIds.map(async id=>{
+        const hit = rootBlobs.find(b=>b.pathname===`chat/m/${id}.json`);
+        if (!hit) return null;
+        const d = await fetchMsg(hit); return d ? { id, day:dayOf(d.ts), ...d } : null;
+      }))).filter(Boolean).sort((a,b)=>b.ts-a.ts);
+
+      return res.status(200).json({ ok:true, me, now:Date.now(), today, day, days, counts, pinnedIds, pinned, messages, online: onlineFrom(presBlobs, me) });
     }
 
     if (req.method !== 'POST') return res.status(405).json({ ok:false, reason:'method' });
     let body = req.body;
     if (typeof body === 'string'){ try{ body = JSON.parse(body); }catch{ body = {}; } }
     body = body || {};
-    const action = String(body.action || '');
+    const action = String(body.action||'');
 
     if (action === 'post'){
-      const text = String(body.text || '').slice(0, MAX_TEXT).trim();
-      const att = body.att && body.att.url ? {
-        name: String(body.att.name||'file').slice(0,80),
-        url: String(body.att.url),
-        size: Number(body.att.size)||0,
-        type: String(body.att.type||'').slice(0,60)
-      } : null;
+      const text = String(body.text||'').slice(0,MAX_TEXT).trim();
+      const att = body.att && body.att.url ? { name:String(body.att.name||'file').slice(0,80), url:String(body.att.url), size:Number(body.att.size)||0, type:String(body.att.type||'').slice(0,60) } : null;
       if (!text && !att) return res.status(200).json({ ok:false, reason:'empty' });
+      const parent = String(body.parent||'').replace(/[^0-9a-f-]/g,'');
       const ts = Date.now();
       const id = `${ts}-${crypto.randomBytes(3).toString('hex')}`;
-      const msg = { ts, author: me, text, att };
-      await put(`chat/m/${id}.json`, JSON.stringify(msg), { access:'public', contentType:'application/json', addRandomSuffix:false });
-      return res.status(200).json({ ok:true, message: { id, ...msg } });
+      const msg = { ts, author:me, text, att };
+      const path = parent ? `chat/r/${parent}/${id}.json` : `chat/m/${id}.json`;
+      await put(path, JSON.stringify(msg), { access:'public', contentType:'application/json', addRandomSuffix:false });
+      return res.status(200).json({ ok:true, message:{ id, parent: parent||null, ...msg } });
     }
 
     if (action === 'pin' || action === 'unpin'){
       const id = String(body.id||'').replace(/[^0-9a-f-]/g,'');
       if (!id) return res.status(200).json({ ok:false, reason:'bad-id' });
-      if (action === 'pin'){
-        await put(`chat/p/${id}.json`, '1', { access:'public', contentType:'text/plain', addRandomSuffix:false });
-      } else {
-        const pins = await listAll('chat/p/');
-        const hit = pins.find(b => b.pathname === `chat/p/${id}.json`);
-        if (hit) await del(hit.url);
-      }
-      return res.status(200).json({ ok:true, id, pinned: action==='pin' });
+      if (action === 'pin') await put(`chat/p/${id}.json`,'1',{ access:'public', contentType:'text/plain', addRandomSuffix:false });
+      else { const pins = await listAll('chat/p/'); const hit = pins.find(b=>b.pathname===`chat/p/${id}.json`); if (hit) await del(hit.url); }
+      return res.status(200).json({ ok:true, id, pinned:action==='pin' });
     }
 
     if (action === 'del'){
       const id = String(body.id||'').replace(/[^0-9a-f-]/g,'');
-      const msgs = await listAll('chat/m/');
-      const hit = msgs.find(b => b.pathname === `chat/m/${id}.json`);
+      const parent = String(body.parent||'').replace(/[^0-9a-f-]/g,'');
+      const prefix = parent ? `chat/r/${parent}/` : 'chat/m/';
+      const blobs = await listAll(prefix);
+      const hit = blobs.find(b=>b.pathname===`${prefix}${id}.json`);
       if (!hit) return res.status(200).json({ ok:false, reason:'not-found' });
-      const d = await (await fetch(hit.url)).json();
-      if (d.author !== me) return res.status(403).json({ ok:false, reason:'not-yours' });
+      const d = await fetchMsg(hit);
+      if (!d || d.author !== me) return res.status(403).json({ ok:false, reason:'not-yours' });
       await del(hit.url);
-      const pins = await listAll('chat/p/');
-      const pinHit = pins.find(b => b.pathname === `chat/p/${id}.json`);
-      if (pinHit) await del(pinHit.url);
+      if (!parent){
+        const [pins, reps] = await Promise.all([ listAll('chat/p/'), listAll(`chat/r/${id}/`) ]);
+        const pinHit = pins.find(b=>b.pathname===`chat/p/${id}.json`);
+        await Promise.all([ pinHit?del(pinHit.url):null, ...reps.map(b=>del(b.url).catch(()=>{})) ]);
+      }
       return res.status(200).json({ ok:true, id });
     }
 
     if (action === 'file'){
-      let buf;
-      try { buf = Buffer.from(String(body.data||''), 'base64'); } catch { buf = null; }
+      let buf; try{ buf = Buffer.from(String(body.data||''),'base64'); }catch{ buf = null; }
       if (!buf || buf.length < 10) return res.status(200).json({ ok:false, reason:'bad-data' });
       if (buf.length > MAX_FILE) return res.status(200).json({ ok:false, reason:'too-large' });
-      const rawName = String(body.name || 'file');
-      const ext = (rawName.match(/\.([a-zA-Z0-9]{1,8})$/) || [,''])[1].toLowerCase();
-      const base = rawName.replace(/\.[^.]*$/,'').toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50) || 'file';
-      const safe = ext ? `${base}.${ext}` : base;
-      const type = String(body.type || 'application/octet-stream').slice(0,80);
-      const blob = await put(`chat-files/${Date.now()}-${safe}`, buf, { access:'public', contentType:type, addRandomSuffix:false });
-      return res.status(200).json({ ok:true, att: { name: rawName.slice(0,80), url: blob.url, size: buf.length, type } });
+      const rawName = String(body.name||'file');
+      const ext = (rawName.match(/\.([a-zA-Z0-9]{1,8})$/)||[,''])[1].toLowerCase();
+      const base = rawName.replace(/\.[^.]*$/,'').toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||'file';
+      const type = String(body.type||'application/octet-stream').slice(0,80);
+      const blob = await put(`chat-files/${Date.now()}-${ext?base+'.'+ext:base}`, buf, { access:'public', contentType:type, addRandomSuffix:false });
+      return res.status(200).json({ ok:true, att:{ name:rawName.slice(0,80), url:blob.url, size:buf.length, type } });
     }
 
     return res.status(200).json({ ok:false, reason:'bad-action' });
-  } catch(e) {
+  } catch(e){
     return res.status(200).json({ ok:false, reason:'store-failed' });
   }
 };

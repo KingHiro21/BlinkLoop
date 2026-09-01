@@ -29,6 +29,22 @@ body{
   color:var(--ink);font-family:'Sora',system-ui,sans-serif;font-size:15px;line-height:1.55;
 }
 a{color:var(--rust);text-decoration:none}
+.daybar{border-bottom:1px solid var(--line);background:var(--glass-strong)}
+.readonly{background:color-mix(in srgb, var(--rust) 8%, var(--bg));border-bottom:1px solid var(--line);text-align:center;padding:8px;font-size:.8rem;color:var(--muted)}
+.reply-link{border:none;background:none;color:var(--rust);cursor:pointer;font:inherit;font-size:.75rem;font-weight:600;padding:2px 0;margin-top:4px;display:inline-flex;gap:5px;align-items:center}
+.sr-item{display:flex;gap:10px;align-items:baseline;padding:8px 10px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;background:var(--glass-strong);cursor:pointer;font-size:.82rem}
+.sr-item:hover{border-color:var(--rust)}
+.sr-item .d{color:var(--muted);white-space:nowrap;font-size:.72rem}
+.sr-item .a{font-weight:700;white-space:nowrap}
+.sr-item .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);background:var(--bg);border-left:1px solid var(--line);box-shadow:-16px 0 40px rgba(43,20,14,.15);z-index:80;display:none;flex-direction:column}
+.drawer.open{display:flex}
+.drawer .dhead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--glass-strong)}
+.drawer .dbody{flex:1;overflow-y:auto;padding:16px}
+.drawer .dfoot{border-top:1px solid var(--line);padding:10px 12px;background:var(--glass-strong)}
+.drawer .dfoot .composer textarea{min-height:40px}
+.hl{animation:hl 2.4s ease}
+@keyframes hl{0%,60%{background:color-mix(in srgb, var(--rust) 18%, transparent)}100%{background:transparent}}
 header{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:12px 18px;border-bottom:1px solid var(--line);background:var(--glass-strong);backdrop-filter:blur(12px);
@@ -102,10 +118,33 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
   <div class="hright">
     <span id="onlineBar" title="Online now"></span>
     <span id="who"></span>
+    <a class="hbtn" href="/">Site</a>
     <a class="hbtn" href="/builder">Builder</a>
+    <a class="hbtn" href="/admin">Codes</a>
     <button class="hbtn" id="logout">Sign out</button>
   </div>
 </header>
+
+<div class="daybar">
+  <div class="wrap" style="display:flex;align-items:center;gap:10px;padding:8px 18px">
+    <button class="hbtn" id="dayPrev" title="Previous day">‹</button>
+    <b id="dayLabel" style="font-size:.85rem;min-width:90px;text-align:center"></b>
+    <button class="hbtn" id="dayNext" title="Next day">›</button>
+    <button class="hbtn" id="dayToday" hidden>Jump to today</button>
+    <span style="flex:1"></span>
+    <input id="searchIn" placeholder="Search chats…" style="background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;font-size:.8rem;color:inherit;width:min(260px,40vw)" />
+  </div>
+</div>
+
+<div id="searchPanel" hidden style="border-bottom:1px solid var(--line);background:var(--glass);max-height:45vh;overflow-y:auto">
+  <div class="wrap" style="padding:10px 18px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <b style="font-size:.8rem" id="searchTitle"></b><span style="flex:1"></span>
+      <button class="hbtn" id="searchX">✕ Close</button>
+    </div>
+    <div id="searchRes"></div>
+  </div>
+</div>
 
 <div id="pinsBar">
   <div class="pins-head" id="pinsHead">📌 Pinned <span class="n" id="pinsN"></span></div>
@@ -116,6 +155,17 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
   <div class="empty" id="empty">No messages yet. Say hi to the team.</div>
 </div></main>
 
+<div class="readonly" id="readonlyBar" hidden>Viewing an archived day. It is read-only — <button class="hbtn" id="roToday" style="padding:3px 12px">jump to today</button> to chat.</div>
+<div class="drawer" id="drawer">
+  <div class="dhead"><b style="font-size:.9rem">Thread</b><span style="flex:1"></span><button class="hbtn" id="drawerX">✕</button></div>
+  <div class="dbody" id="drawerBody"></div>
+  <div class="dfoot">
+    <div class="composer">
+      <textarea id="tText" placeholder="Reply in thread…" rows="1"></textarea>
+      <button class="cbtn send" id="tSend" title="Reply">➤</button>
+    </div>
+  </div>
+</div>
 <footer><div class="wrap">
   <div id="attPrev">📎 <b id="attName"></b> <span id="attSize"></span> <button id="attX" title="Remove">✕</button></div>
   <div class="composer">
@@ -130,51 +180,64 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
-let ME = '', since = 0, pinnedIds = new Set(), msgs = [], pendingAtt = null, polling = null;
+let ME='', TODAY='', viewDay='', days=[], msgs=[], counts={}, pinnedIds=new Set(), pinnedFull=[], since=0, pendingAtt=null, openTh=null;
 const COLORS = ['#F45D2A','#7F2027','#2E7D5B','#0E7CD1','#7360F2','#B8860B','#C2185B'];
 const colorFor = a => COLORS[[...a].reduce((n,c)=>n+c.charCodeAt(0),0) % COLORS.length];
 const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtSize = n => n>1048576 ? (n/1048576).toFixed(1)+' MB' : n>1024 ? (n/1024|0)+' KB' : n+' B';
 const fmtTime = ts => new Date(ts).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Manila'});
-const fmtDay = ts => new Date(ts).toLocaleDateString('en-PH',{month:'long',day:'numeric',timeZone:'Asia/Manila'});
+const dayName = y => y===TODAY ? 'Today' : new Date(Date.UTC(+y.slice(0,4),+y.slice(4,6)-1,+y.slice(6,8))).toLocaleDateString('en-PH',{month:'short',day:'numeric'});
 
 async function boot(){
   try{
-    const r = await fetch('/api/me');
-    const d = await r.json();
-    if (!d.ok){ location.href = '/login?next=%2Fteam'; return; }
+    const r = await fetch('/api/me'); const d = await r.json();
+    if (!d.ok){ location.href='/login?next=%2Fteam'; return; }
     $('#who').innerHTML = 'Signed in as <b>'+esc(d.client)+'</b>';
   }catch(e){ location.href='/login?next=%2Fteam'; return; }
-  await poll();
-  polling = setInterval(()=>{ if(!document.hidden) poll(); }, 4000);
+  await loadDay('');
+  setInterval(()=>{ if(document.hidden) return; if(viewDay===TODAY) pollToday(); if(openTh) refreshThread(false); }, 4000);
 }
-async function poll(){
+
+function applyFeedData(d){
+  ME=d.me; TODAY=d.today; viewDay=d.day; days=d.days; counts=d.counts||{};
+  pinnedIds = new Set(d.pinnedIds); pinnedFull = d.pinned||[];
+  if (d.online) $('#onlineBar').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22)"></span>'+d.online.map(esc).join(', ')+'</span>';
+}
+async function loadDay(day){
+  const r = await fetch('/api/chat'+(day?'?day='+day:'')); const d = await r.json();
+  if (!d.ok) return;
+  applyFeedData(d);
+  msgs = d.messages;
+  since = msgs.length ? Math.max(...msgs.map(m=>m.ts)) : 0;
+  render(true); renderBar();
+}
+async function pollToday(){
   try{
-    const r = await fetch('/api/chat?since='+since);
-    const d = await r.json();
+    const r = await fetch('/api/chat?day='+TODAY+'&since='+since); const d = await r.json();
     if (!d.ok) return;
-    ME = d.me;
-    if (d.online) $('#onlineBar').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22)"></span>'+d.online.map(esc).join(', ')+'</span>';
-    const newPins = new Set(d.pinnedIds);
-    const pinsChanged = newPins.size !== pinnedIds.size || [...newPins].some(x=>!pinnedIds.has(x));
-    pinnedIds = newPins;
+    applyFeedData(d);
     if (d.messages.length){
       const known = new Set(msgs.map(m=>m.id));
       const fresh = d.messages.filter(m=>!known.has(m.id));
-      msgs = msgs.concat(fresh).sort((a,b)=>a.ts-b.ts);
-      since = Math.max(since, ...d.messages.map(m=>m.ts));
-      if (fresh.length) render(true);
-      else if (pinsChanged) render(false);
-    } else if (pinsChanged) render(false);
+      if (fresh.length){ msgs = msgs.concat(fresh).sort((a,b)=>a.ts-b.ts); since = Math.max(since, ...fresh.map(m=>m.ts)); }
+    }
+    render(false); renderBar();
   }catch(e){}
 }
+function renderBar(){
+  $('#dayLabel').textContent = dayName(viewDay);
+  const i = days.indexOf(viewDay);
+  $('#dayPrev').disabled = i===-1 || i>=days.length-1;
+  $('#dayNext').disabled = i<=0;
+  const archived = viewDay!==TODAY;
+  $('#dayToday').hidden = !archived;
+  $('#readonlyBar').hidden = !archived;
+  document.querySelector('footer').style.display = archived ? 'none' : '';
+}
 function render(scroll){
-  const feed = $('#feed');
   const atBottom = $('#main').scrollHeight - $('#main').scrollTop - $('#main').clientHeight < 80;
-  let html = '', lastDay = '';
+  let html = '';
   for (const m of msgs){
-    const day = fmtDay(m.ts);
-    if (day !== lastDay){ html += `<div class="day">${day}</div>`; lastDay = day; }
     const pinned = pinnedIds.has(m.id);
     let attHtml = '';
     if (m.att){
@@ -183,6 +246,7 @@ function render(scroll){
         ? `<a class="att imgatt" href="${esc(m.att.url)}" target="_blank" rel="noopener"><img src="${esc(m.att.url)}" alt="${esc(m.att.name)}" loading="lazy" /></a>`
         : `<a class="att" href="${esc(m.att.url)}" target="_blank" rel="noopener" download><span class="ic">📄</span><span class="nm">${esc(m.att.name)}</span><span class="sz">${fmtSize(m.att.size)}</span></a>`;
     }
+    const n = counts[m.id]||0;
     html += `<div class="msg ${pinned?'pinned-msg':''}" data-id="${m.id}">
       <div class="av" style="background:${colorFor(m.author)}">${esc(m.author.slice(0,2))}</div>
       <div class="body">
@@ -194,52 +258,165 @@ function render(scroll){
         </div>
         ${m.text?`<div class="mtext">${esc(m.text)}</div>`:''}
         ${attHtml}
+        <button class="reply-link" data-th="${m.id}">💬 ${n? n+(n===1?' reply':' replies') : 'Reply'}</button>
       </div>
     </div>`;
   }
-  feed.innerHTML = (msgs.length?'':'<div class="empty" id="empty">No messages yet. Say hi to the team.</div>') + html;
+  $('#feed').innerHTML = html || '<div class="empty">No messages on this day.</div>';
   renderPins();
   if (scroll || atBottom) $('#main').scrollTop = $('#main').scrollHeight;
 }
 function renderPins(){
-  const pinned = msgs.filter(m=>pinnedIds.has(m.id));
   const bar = $('#pinsBar');
-  bar.classList.toggle('has', pinned.length>0);
-  $('#pinsN').textContent = pinned.length ? '('+pinned.length+')' : '';
-  $('#pinsList').innerHTML = pinned.map(m=>`
-    <div class="pin-item">
+  bar.classList.toggle('has', pinnedFull.length>0);
+  $('#pinsN').textContent = pinnedFull.length ? '('+pinnedFull.length+')' : '';
+  $('#pinsList').innerHTML = pinnedFull.map(m=>`
+    <div class="pin-item" data-goto="${m.id}" data-day="${m.day}" style="cursor:pointer">
       <span class="a">${esc(m.author)}</span>
       <span class="t">${esc(m.text || (m.att ? '📎 '+m.att.name : ''))}</span>
+      <span style="color:var(--muted);font-size:.72rem;white-space:nowrap">${dayName(m.day)}</span>
       <button data-unpin="${m.id}" title="Unpin">✕</button>
     </div>`).join('');
 }
+function flash(id, root){
+  const el = (root||document).querySelector(`[data-id="${id}"]`);
+  if (!el) return;
+  el.scrollIntoView({block:'center'});
+  el.classList.remove('hl'); void el.offsetWidth; el.classList.add('hl');
+}
+
+/* ---------- threads ---------- */
+async function openThread(id, hlId){
+  openTh = id;
+  $('#drawer').classList.add('open');
+  $('#drawerBody').innerHTML = '<div class="empty">Loading…</div>';
+  await refreshThread(true, hlId);
+}
+function threadMsgHTML(m, isRoot){
+  let attHtml = '';
+  if (m.att){
+    const isImg = /^image\//.test(m.att.type||'');
+    attHtml = isImg
+      ? `<a class="att imgatt" href="${esc(m.att.url)}" target="_blank" rel="noopener"><img src="${esc(m.att.url)}" alt="${esc(m.att.name)}" /></a>`
+      : `<a class="att" href="${esc(m.att.url)}" target="_blank" rel="noopener" download><span class="ic">📄</span><span class="nm">${esc(m.att.name)}</span><span class="sz">${fmtSize(m.att.size)}</span></a>`;
+  }
+  return `<div class="msg" data-id="${m.id}" style="${isRoot?'padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px':''}">
+    <div class="av" style="background:${colorFor(m.author)}">${esc(m.author.slice(0,2))}</div>
+    <div class="body">
+      <div class="mhead"><span class="a" style="color:${colorFor(m.author)}">${esc(m.author)}</span><span class="tm">${fmtTime(m.ts)} · ${dayName(m.day||dayFromTs(m.ts))}</span>
+        <span class="tools">${!isRoot && m.author===ME?`<button data-del="${m.id}" data-parent="${openTh}" title="Delete">✕</button>`:''}</span>
+      </div>
+      ${m.text?`<div class="mtext">${esc(m.text)}</div>`:''}
+      ${attHtml}
+    </div>
+  </div>`;
+}
+const dayFromTs = ts => new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date(ts)).replace(/-/g,'');
+async function refreshThread(scroll, hlId){
+  if (!openTh) return;
+  try{
+    const r = await fetch('/api/chat?thread='+openTh); const d = await r.json();
+    if (!d.ok){ closeThread(); return; }
+    counts[openTh] = d.replies.length;
+    $('#drawerBody').innerHTML = threadMsgHTML(d.root, true) + d.replies.map(m=>threadMsgHTML(m,false)).join('');
+    if (scroll) $('#drawerBody').scrollTop = $('#drawerBody').scrollHeight;
+    if (hlId) flash(hlId, $('#drawerBody'));
+    render(false);
+  }catch(e){}
+}
+function closeThread(){ openTh=null; $('#drawer').classList.remove('open'); }
+$('#drawerX').addEventListener('click', closeThread);
+$('#tSend').addEventListener('click', sendReply);
+$('#tText').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendReply(); } });
+async function sendReply(){
+  const text = $('#tText').value.trim();
+  if (!text || !openTh) return;
+  const btn = $('#tSend'); btn.disabled = true;
+  try{
+    const r = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'post', text, parent: openTh})});
+    const d = await r.json();
+    if (d.ok){ $('#tText').value=''; await refreshThread(true); }
+  }catch(e){}
+  finally{ btn.disabled = false; }
+}
+
+/* ---------- search ---------- */
+$('#searchIn').addEventListener('keydown', async e=>{
+  if (e.key!=='Enter') return;
+  const q = $('#searchIn').value.trim();
+  if (!q) return;
+  $('#searchPanel').hidden = false;
+  $('#searchTitle').textContent = 'Searching…';
+  $('#searchRes').innerHTML = '';
+  try{
+    const r = await fetch('/api/chat?q='+encodeURIComponent(q)); const d = await r.json();
+    if (!d.ok) return;
+    $('#searchTitle').textContent = d.hits.length + ' result' + (d.hits.length===1?'':'s') + ' for “' + q + '”';
+    $('#searchRes').innerHTML = d.hits.map(h=>`
+      <div class="s-hit" data-sid="${h.id}" data-sparent="${h.parent||''}" data-sday="${h.day}"
+           style="display:flex;gap:10px;align-items:baseline;padding:8px 10px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;cursor:pointer;background:var(--glass-strong)">
+        <span style="color:var(--muted);font-size:.72rem;white-space:nowrap;min-width:52px">${dayName(h.day)}</span>
+        <span style="font-weight:700;color:${colorFor(h.author)};font-size:.8rem">${esc(h.author)}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.84rem">${esc(h.text || (h.att?'📎 '+h.att.name:''))}</span>
+        ${h.parent?'<span style="font-size:.68rem;color:var(--muted)">in thread</span>':''}
+      </div>`).join('') || '<div class="empty" style="padding:20px">Nothing found.</div>';
+  }catch(e){ $('#searchTitle').textContent = 'Search failed. Try again.'; }
+});
+$('#searchX').addEventListener('click', ()=>{ $('#searchPanel').hidden = true; $('#searchIn').value=''; });
 document.addEventListener('click', async e=>{
+  const hit = e.target.closest('.s-hit');
+  if (hit){
+    $('#searchPanel').hidden = true;
+    if (hit.dataset.sparent){ openThread(hit.dataset.sparent, hit.dataset.sid); }
+    else { await loadDay(hit.dataset.sday); flash(hit.dataset.sid); }
+    return;
+  }
+  const goto = e.target.closest('.pin-item');
+  if (goto && !e.target.closest('[data-unpin]')){
+    if (goto.dataset.day !== viewDay) await loadDay(goto.dataset.day);
+    flash(goto.dataset.goto);
+    return;
+  }
+  const th = e.target.closest('[data-th]');
+  if (th){ openThread(th.dataset.th); return; }
   const pin = e.target.closest('[data-pin]');
   if (pin){
     const id = pin.dataset.pin;
     const action = pinnedIds.has(id) ? 'unpin' : 'pin';
-    if (action==='pin') pinnedIds.add(id); else pinnedIds.delete(id);
+    if (action==='pin'){ pinnedIds.add(id); const m=msgs.find(x=>x.id===id); if(m) pinnedFull.unshift({...m, day:viewDay}); }
+    else { pinnedIds.delete(id); pinnedFull = pinnedFull.filter(p=>p.id!==id); }
     render(false);
     await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,id})});
     return;
   }
   const unpin = e.target.closest('[data-unpin]');
   if (unpin){
-    pinnedIds.delete(unpin.dataset.unpin); render(false);
+    pinnedIds.delete(unpin.dataset.unpin);
+    pinnedFull = pinnedFull.filter(p=>p.id!==unpin.dataset.unpin);
+    render(false);
     await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'unpin',id:unpin.dataset.unpin})});
     return;
   }
   const del = e.target.closest('[data-del]');
   if (del){
-    const id = del.dataset.del;
-    msgs = msgs.filter(m=>m.id!==id); pinnedIds.delete(id); render(false);
-    await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id})});
+    const id = del.dataset.del, parent = del.dataset.parent||'';
+    if (parent){ await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id,parent})}); refreshThread(false); }
+    else {
+      msgs = msgs.filter(m=>m.id!==id); pinnedIds.delete(id); pinnedFull = pinnedFull.filter(p=>p.id!==id); render(false);
+      await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id})});
+    }
     return;
   }
 });
 $('#pinsHead').addEventListener('click', ()=>$('#pinsBar').classList.toggle('open'));
 
-/* composer */
+/* ---------- day navigation ---------- */
+$('#dayPrev').addEventListener('click', ()=>{ const i=days.indexOf(viewDay); if(i<days.length-1) loadDay(days[i+1]); });
+$('#dayNext').addEventListener('click', ()=>{ const i=days.indexOf(viewDay); if(i>0) loadDay(days[i-1]); });
+$('#dayToday').addEventListener('click', ()=>loadDay(TODAY));
+$('#roToday').addEventListener('click', ()=>loadDay(TODAY));
+
+/* ---------- composer ---------- */
 const ta = $('#text');
 ta.addEventListener('input', ()=>{ ta.style.height='auto'; ta.style.height=Math.min(140, ta.scrollHeight)+'px'; });
 ta.addEventListener('keydown', e=>{ if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); } });
@@ -274,7 +451,7 @@ $('#file').addEventListener('change', async ()=>{
 });
 async function send(){
   const text = ta.value.trim();
-  if (!text && !pendingAtt) return;
+  if ((!text && !pendingAtt) || viewDay!==TODAY) return;
   const btn = $('#send'); btn.disabled = true;
   try{
     const r = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'post', text, att: pendingAtt})});
