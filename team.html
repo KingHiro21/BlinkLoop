@@ -110,6 +110,44 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 #attPrev b{color:var(--ink)}
 #attPrev button{border:none;background:none;color:var(--muted);cursor:pointer}
 .note{ text-align:center;color:var(--muted);font-size:.68rem;padding-top:8px;opacity:.8}
+
+/* ---------- mobile ---------- */
+@media (hover:none){
+  .msg .tools{opacity:1}
+}
+@media (max-width:640px){
+  body{font-size:14px}
+  header{padding:10px 12px;gap:8px;flex-wrap:wrap}
+  .brand{font-size:.9rem}
+  .brand em{display:none}
+  #who{display:none}
+  .hright{gap:6px;font-size:.75rem;flex-wrap:wrap;justify-content:flex-end}
+  .hbtn{padding:5px 10px;font-size:.7rem}
+  #onlineBar{font-size:.72rem;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .daybar .wrap{flex-wrap:wrap;gap:8px;padding:8px 12px !important}
+  #dayLabel{min-width:0 !important;font-size:.8rem !important}
+  #searchIn{width:100% !important;order:9;font-size:16px !important;padding:9px 14px !important}
+  .wrap{padding:0 12px}
+  main{padding:12px 0}
+  .msg{gap:9px;margin-bottom:12px}
+  .av{width:30px;height:30px;font-size:.7rem}
+  .mhead{flex-wrap:wrap;row-gap:2px}
+  .mhead .a{font-size:.8rem}
+  .mtext{font-size:.88rem}
+  .msg .tools{gap:10px}
+  .tools button{font-size:.95rem;padding:4px 6px}
+  .reply-link{padding:6px 0;display:inline-block}
+  .att .nm{max-width:46vw}
+  .att img{max-width:70vw;max-height:220px}
+  .composer{gap:8px}
+  .composer textarea{font-size:16px;padding:10px 12px;min-height:42px}
+  .cbtn{width:42px;height:42px}
+  footer{padding:8px 0 10px}
+  .note{display:none}
+  .drawer .dfoot .composer textarea{font-size:16px}
+  #readonlyBar{font-size:.75rem;padding:8px 10px}
+  .pin-item .t{white-space:normal;max-height:2.6em;overflow:hidden}
+}
 </style>
 </head>
 <body>
@@ -130,7 +168,7 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
     <button class="hbtn" id="dayPrev" title="Previous day">‹</button>
     <b id="dayLabel" style="font-size:.85rem;min-width:90px;text-align:center"></b>
     <button class="hbtn" id="dayNext" title="Next day">›</button>
-    <button class="hbtn" id="dayToday" hidden>Jump to today</button>
+    <button class="hbtn" id="dayToday" hidden>Today</button>
     <span style="flex:1"></span>
     <input id="searchIn" placeholder="Search chats…" style="background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;font-size:.8rem;color:inherit;width:min(260px,40vw)" />
   </div>
