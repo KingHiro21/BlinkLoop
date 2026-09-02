@@ -1,10 +1,6 @@
-// /api/presence — who is online. Session cookie required.
-// POST = heartbeat (marks you online). GET = list of team members seen in
-// the last 2 minutes. Storage: presence/<CLIENT>-<ts> marker blobs (unique
-// names, no overwrites); old markers for the caller are cleaned on each beat.
-
+// /api/presence — who is online, on Supabase. Session cookie required.
+// POST = heartbeat (upsert presence row). GET = clients seen in last 2 min.
 const crypto = require('crypto');
-const { put, list, del } = require('@vercel/blob');
 
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 function b32(buf, len){ let bits=0,v=0,out=''; for(const x of buf){ v=(v<<8)|x; bits+=8; while(bits>=5){ out+=B32[(v>>>(bits-5))&31]; bits-=5; } } return out.slice(0,len); }
@@ -20,50 +16,38 @@ function sessionClient(req, secret){
   if (a.length!==b.length || !crypto.timingSafeEqual(a,b) || ymd < manilaToday()) return null;
   return client;
 }
-
 const WINDOW = 120000;
-
-async function onlineList(){
-  const { blobs } = await list({ prefix: 'presence/', limit: 1000 });
-  const latest = {};
-  for (const b of blobs){
-    const m = b.pathname.match(/^presence\/([A-Z0-9]{2,12})-(\d{10,16})$/);
-    if (!m) continue;
-    const [, client, ts] = m;
-    if (!latest[client] || Number(ts) > latest[client]) latest[client] = Number(ts);
-  }
-  const now = Date.now();
-  return Object.entries(latest)
-    .filter(([, ts]) => now - ts < WINDOW)
-    .map(([client, ts]) => ({ client, ts }))
-    .sort((a,b) => a.client.localeCompare(b.client));
+function sbConf(){
+  const url = (process.env.SUPABASE_URL||'').replace(/\/+$/,'');
+  const key = process.env.SUPABASE_SERVICE_KEY||'';
+  return url && key ? { url, key } : null;
 }
-
-async function beat(me){
-  const now = Date.now();
-  await put(`presence/${me}-${now}`, '1', { access:'public', contentType:'text/plain', addRandomSuffix:false });
-  // clean this user's older markers (best effort)
-  try {
-    const { blobs } = await list({ prefix: `presence/${me}-`, limit: 100 });
-    const old = blobs.filter(b => !b.pathname.endsWith(`-${now}`));
-    await Promise.all(old.map(b => del(b.url).catch(()=>{})));
-  } catch(e){}
+async function sb(pathAndQuery, { method='GET', body, prefer } = {}){
+  const c = sbConf();
+  const headers = { 'apikey': c.key, 'Authorization': `Bearer ${c.key}`, 'Content-Type': 'application/json' };
+  if (prefer) headers['Prefer'] = prefer;
+  const r = await fetch(`${c.url}/rest/v1/${pathAndQuery}`, { method, headers, body: body!==undefined ? JSON.stringify(body) : undefined });
+  if (r.status === 204) return [];
+  const text = await r.text();
+  if (!r.ok) throw new Error(`sb ${r.status}`);
+  try { return JSON.parse(text); } catch { return []; }
 }
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const secret = process.env.LOOP_SECRET;
   if (!secret) return res.status(500).json({ ok:false, reason:'server-config' });
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return res.status(500).json({ ok:false, reason:'no-blob-store' });
+  if (!sbConf()) return res.status(500).json({ ok:false, reason:'no-database' });
   const me = sessionClient(req, secret);
   if (!me) return res.status(401).json({ ok:false, reason:'unauthorized' });
   try {
     if (req.method === 'POST'){
-      await beat(me);
+      await sb(`presence?on_conflict=client`, { method:'POST', body:{ client: me, ts: Date.now() }, prefer:'resolution=merge-duplicates,return=minimal' });
       return res.status(200).json({ ok:true, me });
     }
-    const online = await onlineList();
-    if (!online.some(o => o.client === me)) online.push({ client: me, ts: Date.now() });
+    const rows = await sb(`presence?ts=gt.${Date.now()-WINDOW}&select=client,ts&order=client.asc`);
+    const online = rows.map(r=>({ client:r.client, ts:Number(r.ts) }));
+    if (!online.some(o=>o.client===me)) online.push({ client: me, ts: Date.now() });
     online.sort((a,b)=>a.client.localeCompare(b.client));
     return res.status(200).json({ ok:true, me, online });
   } catch(e){

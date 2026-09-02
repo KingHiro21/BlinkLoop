@@ -1,22 +1,20 @@
-// /api/chat — BlinkLoop team chat: daily pages, threads, pins, files, search.
-// Storage (Vercel Blob):
-//   chat/m/<ts>-<rand>.json        root messages
-//   chat/r/<rootId>/<ts>-<rand>.json  thread replies
-//   chat/p/<rootId>.json           pin markers
-//   chat-files/<ts>-<name>         attachments
-//   presence/<CLIENT>-<ts>         heartbeats
-// GET  ?day=YYYYMMDD&since=ts -> that day's roots (+days list, counts, pins, online)
-// GET  ?thread=<rootId>       -> root + all replies
-// GET  ?q=<query>             -> search across all days (roots + replies)
-// POST post{text,att,parent?} | pin/unpin{id} | del{id,parent?} | file{name,type,data}
+// /api/chat — BlinkLoop team chat on Supabase (Postgres via PostgREST).
+// Tables: messages(id, parent, ts, author, text, att jsonb), pins(id, ts).
+// Attachments still upload to Vercel Blob (rare, cheap ops).
+// GET  ?day=YYYYMMDD&since=ts | ?thread=<rootId> | ?q=<query>
+// POST post{text,att,parent?} | pin/unpin{id} | del{id,parent?} | file{...}
 
 const crypto = require('crypto');
-const { put, list, del } = require('@vercel/blob');
 
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 function b32(buf, len){ let bits=0,v=0,out=''; for(const x of buf){ v=(v<<8)|x; bits+=8; while(bits>=5){ out+=B32[(v>>>(bits-5))&31]; bits-=5; } } return out.slice(0,len); }
 function manilaToday(){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date()).replace(/-/g,''); }
-function dayOf(ts){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date(ts)).replace(/-/g,''); }
+function dayOf(ts){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date(Number(ts))).replace(/-/g,''); }
+function dayRangeUTC(ymd){ // PH is fixed UTC+8
+  const y=+ymd.slice(0,4), m=+ymd.slice(4,6)-1, d=+ymd.slice(6,8);
+  const start = Date.UTC(y,m,d) - 8*3600*1000;
+  return { start, end: start + 24*3600*1000 };
+}
 function sessionClient(req, secret){
   const m = String(req.headers.cookie||'').match(/(?:^|;\s*)bl_session=([^;]+)/);
   if (!m) return null;
@@ -29,111 +27,102 @@ function sessionClient(req, secret){
   return client;
 }
 
-const MAX_TEXT = 2000, MAX_FILE = 3.5*1024*1024, PRESENCE_WINDOW = 120000, SEARCH_SCAN = 600, SEARCH_HITS = 50;
+const MAX_TEXT = 2000, MAX_FILE = 3.5*1024*1024, PRESENCE_WINDOW = 120000, SEARCH_HITS = 50;
 
-async function listAll(prefix){
-  let out = [], cursor;
-  do { const r = await list({ prefix, cursor, limit:1000 }); out = out.concat(r.blobs); cursor = r.hasMore ? r.cursor : null; } while (cursor);
-  return out;
+/* ---------- Supabase REST helpers ---------- */
+function sbConf(){
+  const url = (process.env.SUPABASE_URL||'').replace(/\/+$/,'');
+  const key = process.env.SUPABASE_SERVICE_KEY||'';
+  return url && key ? { url, key } : null;
 }
-const rootId = p => p.replace(/^chat\/m\//,'').replace(/\.json$/,'');
-const replyInfo = p => { const m = p.match(/^chat\/r\/([^/]+)\/(.+)\.json$/); return m ? { parent:m[1], id:m[2] } : null; };
-const tsOf = id => Number(String(id).split('-')[0] || 0);
-async function fetchMsg(b){ try{ const r = await fetch(b.url); return await r.json(); }catch(e){ return null; } }
+async function sb(pathAndQuery, { method='GET', body, prefer } = {}){
+  const c = sbConf();
+  const headers = {
+    'apikey': c.key,
+    'Authorization': `Bearer ${c.key}`,
+    'Content-Type': 'application/json'
+  };
+  if (prefer) headers['Prefer'] = prefer;
+  const r = await fetch(`${c.url}/rest/v1/${pathAndQuery}`, { method, headers, body: body!==undefined ? JSON.stringify(body) : undefined });
+  if (r.status === 204) return [];
+  const text = await r.text();
+  if (!r.ok) throw new Error(`sb ${r.status}: ${text.slice(0,200)}`);
+  try { return JSON.parse(text); } catch { return []; }
+}
+const qsafe = s => String(s||'').toLowerCase().replace(/[^a-z0-9 @._\-\u00c0-\u024f\u4e00-\u9fff\u3040-\u30ff\u0600-\u06ff]/g,'').trim().slice(0,60);
+const idsafe = s => String(s||'').replace(/[^0-9a-f-]/g,'');
 
 async function presenceBeat(me){
-  const now = Date.now();
-  await put(`presence/${me}-${now}`, '1', { access:'public', contentType:'text/plain', addRandomSuffix:false });
-  try{
-    const { blobs } = await list({ prefix:`presence/${me}-`, limit:100 });
-    await Promise.all(blobs.filter(b=>!b.pathname.endsWith(`-${now}`)).map(b=>del(b.url).catch(()=>{})));
-  }catch(e){}
+  await sb(`presence?on_conflict=client`, { method:'POST', body:{ client: me, ts: Date.now() }, prefer:'resolution=merge-duplicates,return=minimal' });
 }
-function onlineFrom(blobs, me){
-  const latest = {};
-  for (const b of blobs){
-    const m = b.pathname.match(/^presence\/([A-Z0-9]{2,12})-(\d{10,16})$/);
-    if (m && (!latest[m[1]] || Number(m[2])>latest[m[1]])) latest[m[1]] = Number(m[2]);
-  }
-  const now = Date.now();
-  const on = Object.entries(latest).filter(([,ts])=>now-ts<PRESENCE_WINDOW).map(([c])=>c);
-  if (!on.includes(me)) on.push(me);
-  return on.sort();
+async function onlineList(me){
+  const rows = await sb(`presence?ts=gt.${Date.now()-PRESENCE_WINDOW}&select=client,ts`);
+  const names = rows.map(r=>r.client);
+  if (!names.includes(me)) names.push(me);
+  return names.sort();
 }
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const secret = process.env.LOOP_SECRET;
   if (!secret) return res.status(500).json({ ok:false, reason:'server-config' });
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return res.status(500).json({ ok:false, reason:'no-blob-store' });
+  if (!sbConf()) return res.status(500).json({ ok:false, reason:'no-database' });
   const me = sessionClient(req, secret);
   if (!me) return res.status(401).json({ ok:false, reason:'unauthorized' });
 
   try {
     if (req.method === 'GET'){
       const url = new URL(req.url, 'http://x');
-      const q = (url.searchParams.get('q')||'').trim().toLowerCase();
-      const thread = (url.searchParams.get('thread')||'').replace(/[^0-9a-f-]/g,'');
+      const q = qsafe(url.searchParams.get('q'));
+      const thread = idsafe(url.searchParams.get('thread'));
 
       /* ---- thread view ---- */
       if (thread){
-        const [roots, replies] = await Promise.all([ listAll('chat/m/'), listAll(`chat/r/${thread}/`) ]);
-        const rootBlob = roots.find(b=>b.pathname===`chat/m/${thread}.json`);
-        if (!rootBlob) return res.status(200).json({ ok:false, reason:'not-found' });
-        const root = { id:thread, ...(await fetchMsg(rootBlob)) };
-        const reps = (await Promise.all(replies.map(async b=>{
-          const info = replyInfo(b.pathname);
-          const d = await fetchMsg(b);
-          return d && info ? { id:info.id, parent:thread, ...d } : null;
-        }))).filter(Boolean).sort((a,b)=>a.ts-b.ts);
-        return res.status(200).json({ ok:true, me, root, replies:reps });
+        const roots = await sb(`messages?id=eq.${thread}&limit=1`);
+        if (!roots.length) return res.status(200).json({ ok:false, reason:'not-found' });
+        const replies = await sb(`messages?parent=eq.${thread}&order=ts.asc&limit=500`);
+        return res.status(200).json({ ok:true, me, root: roots[0], replies });
       }
 
-      /* ---- search ---- */
+      /* ---- search (text, author, attachment name; roots + replies) ---- */
       if (q){
-        const [roots, replies] = await Promise.all([ listAll('chat/m/'), listAll('chat/r/') ]);
-        const all = roots.map(b=>({ b, id:rootId(b.pathname), parent:null }))
-          .concat(replies.map(b=>{ const i=replyInfo(b.pathname); return i?{ b, id:i.id, parent:i.parent }:null; }).filter(Boolean))
-          .sort((a,x)=>tsOf(x.id)-tsOf(a.id)).slice(0, SEARCH_SCAN);
-        const hits = [];
-        const contents = await Promise.all(all.map(e=>fetchMsg(e.b)));
-        for (let i=0;i<all.length && hits.length<SEARCH_HITS;i++){
-          const d = contents[i]; if (!d) continue;
-          const hay = `${d.author||''} ${d.text||''} ${d.att?d.att.name:''}`.toLowerCase();
-          if (hay.includes(q)) hits.push({ id:all[i].id, parent:all[i].parent, day:dayOf(d.ts), ...d });
-        }
+        const pat = `*${q}*`;
+        const hits = await sb(`messages?or=(text.ilike.${encodeURIComponent(pat)},author.ilike.${encodeURIComponent(pat)},att->>name.ilike.${encodeURIComponent(pat)})&order=ts.desc&limit=${SEARCH_HITS}`);
+        hits.forEach(h => h.day = dayOf(h.ts));
         return res.status(200).json({ ok:true, me, q, hits });
       }
 
       /* ---- day feed ---- */
       const today = manilaToday();
-      let day = (url.searchParams.get('day')||today).replace(/[^0-9]/g,'').slice(0,8) || today;
+      const day = (url.searchParams.get('day')||today).replace(/[^0-9]/g,'').slice(0,8) || today;
       const since = Number(url.searchParams.get('since')||0);
-      const [rootBlobs, replyBlobs, pinBlobs, presBlobs] = await Promise.all([
-        listAll('chat/m/'), listAll('chat/r/'), listAll('chat/p/'), listAll('presence/'), presenceBeat(me).catch(()=>{})
+      const { start, end } = dayRangeUTC(day);
+      const lo = Math.max(start, since+1);
+
+      const [messages, tsRows, pinRows] = await Promise.all([
+        sb(`messages?parent=is.null&ts=gte.${lo}&ts=lt.${end}&order=ts.asc&limit=300`),
+        sb(`messages?select=ts&parent=is.null&order=ts.asc&limit=20000`),
+        sb(`pins?select=id&order=ts.desc&limit=100`),
+        presenceBeat(me).catch(()=>{})
       ]);
-      const daysSet = new Set([today]);
-      for (const b of rootBlobs) daysSet.add(dayOf(tsOf(rootId(b.pathname))));
-      const days = [...daysSet].sort().reverse();
-      const counts = {};
-      for (const b of replyBlobs){ const i = replyInfo(b.pathname); if (i) counts[i.parent] = (counts[i.parent]||0)+1; }
-      const pinnedIds = pinBlobs.map(b=>b.pathname.replace(/^chat\/p\//,'').replace(/\.json$/,''));
+      const days = [...new Set([today, ...tsRows.map(r=>dayOf(r.ts))])].sort().reverse();
+      const pinnedIds = pinRows.map(r=>r.id);
 
-      let dayRoots = rootBlobs.map(b=>({ b, id:rootId(b.pathname), ts:tsOf(rootId(b.pathname)) }))
-        .filter(e=>dayOf(e.ts)===day && e.ts>since).sort((a,x)=>a.ts-x.ts);
-      if (!since) dayRoots = dayRoots.slice(-200);
-      const messages = (await Promise.all(dayRoots.map(async e=>{
-        const d = await fetchMsg(e.b); return d ? { id:e.id, ...d } : null;
-      }))).filter(Boolean);
-
-      /* pinned messages content (any day) */
-      const pinned = (await Promise.all(pinnedIds.map(async id=>{
-        const hit = rootBlobs.find(b=>b.pathname===`chat/m/${id}.json`);
-        if (!hit) return null;
-        const d = await fetchMsg(hit); return d ? { id, day:dayOf(d.ts), ...d } : null;
-      }))).filter(Boolean).sort((a,b)=>b.ts-a.ts);
-
-      return res.status(200).json({ ok:true, me, now:Date.now(), today, day, days, counts, pinnedIds, pinned, messages, online: onlineFrom(presBlobs, me) });
+      /* reply counts for this page's roots */
+      let counts = {};
+      if (messages.length){
+        const idList = messages.map(m=>m.id).join(',');
+        const reps = await sb(`messages?select=parent&parent=in.(${idList})&limit=5000`);
+        for (const r of reps) counts[r.parent] = (counts[r.parent]||0)+1;
+      }
+      /* pinned message bodies (any day) */
+      let pinned = [];
+      if (pinnedIds.length){
+        pinned = await sb(`messages?id=in.(${pinnedIds.join(',')})&order=ts.desc&limit=100`);
+        pinned.forEach(p => p.day = dayOf(p.ts));
+      }
+      const online = await onlineList(me);
+      return res.status(200).json({ ok:true, me, now:Date.now(), today, day, days, counts, pinnedIds, pinned, messages, online });
     }
 
     if (req.method !== 'POST') return res.status(405).json({ ok:false, reason:'method' });
@@ -146,42 +135,45 @@ module.exports = async (req, res) => {
       const text = String(body.text||'').slice(0,MAX_TEXT).trim();
       const att = body.att && body.att.url ? { name:String(body.att.name||'file').slice(0,80), url:String(body.att.url), size:Number(body.att.size)||0, type:String(body.att.type||'').slice(0,60) } : null;
       if (!text && !att) return res.status(200).json({ ok:false, reason:'empty' });
-      const parent = String(body.parent||'').replace(/[^0-9a-f-]/g,'');
+      const parent = idsafe(body.parent) || null;
+      if (parent){
+        const p = await sb(`messages?id=eq.${parent}&select=id,parent&limit=1`);
+        if (!p.length || p[0].parent) return res.status(200).json({ ok:false, reason:'bad-parent' });
+      }
       const ts = Date.now();
       const id = `${ts}-${crypto.randomBytes(3).toString('hex')}`;
-      const msg = { ts, author:me, text, att };
-      const path = parent ? `chat/r/${parent}/${id}.json` : `chat/m/${id}.json`;
-      await put(path, JSON.stringify(msg), { access:'public', contentType:'application/json', addRandomSuffix:false });
-      return res.status(200).json({ ok:true, message:{ id, parent: parent||null, ...msg } });
+      const msg = { id, parent, ts, author: me, text, att };
+      await sb('messages', { method:'POST', body: msg, prefer:'return=minimal' });
+      return res.status(200).json({ ok:true, message: msg });
     }
 
     if (action === 'pin' || action === 'unpin'){
-      const id = String(body.id||'').replace(/[^0-9a-f-]/g,'');
+      const id = idsafe(body.id);
       if (!id) return res.status(200).json({ ok:false, reason:'bad-id' });
-      if (action === 'pin') await put(`chat/p/${id}.json`,'1',{ access:'public', contentType:'text/plain', addRandomSuffix:false });
-      else { const pins = await listAll('chat/p/'); const hit = pins.find(b=>b.pathname===`chat/p/${id}.json`); if (hit) await del(hit.url); }
-      return res.status(200).json({ ok:true, id, pinned:action==='pin' });
+      if (action === 'pin') await sb(`pins?on_conflict=id`, { method:'POST', body:{ id, ts: Date.now() }, prefer:'resolution=merge-duplicates,return=minimal' });
+      else await sb(`pins?id=eq.${id}`, { method:'DELETE' });
+      return res.status(200).json({ ok:true, id, pinned: action==='pin' });
     }
 
     if (action === 'del'){
-      const id = String(body.id||'').replace(/[^0-9a-f-]/g,'');
-      const parent = String(body.parent||'').replace(/[^0-9a-f-]/g,'');
-      const prefix = parent ? `chat/r/${parent}/` : 'chat/m/';
-      const blobs = await listAll(prefix);
-      const hit = blobs.find(b=>b.pathname===`${prefix}${id}.json`);
-      if (!hit) return res.status(200).json({ ok:false, reason:'not-found' });
-      const d = await fetchMsg(hit);
-      if (!d || d.author !== me) return res.status(403).json({ ok:false, reason:'not-yours' });
-      await del(hit.url);
-      if (!parent){
-        const [pins, reps] = await Promise.all([ listAll('chat/p/'), listAll(`chat/r/${id}/`) ]);
-        const pinHit = pins.find(b=>b.pathname===`chat/p/${id}.json`);
-        await Promise.all([ pinHit?del(pinHit.url):null, ...reps.map(b=>del(b.url).catch(()=>{})) ]);
+      const id = idsafe(body.id);
+      if (!id) return res.status(200).json({ ok:false, reason:'bad-id' });
+      const rows = await sb(`messages?id=eq.${id}&select=id,author,parent&limit=1`);
+      if (!rows.length) return res.status(200).json({ ok:false, reason:'not-found' });
+      if (rows[0].author !== me) return res.status(403).json({ ok:false, reason:'not-yours' });
+      await sb(`messages?id=eq.${id}`, { method:'DELETE' });
+      if (!rows[0].parent){
+        await Promise.all([
+          sb(`messages?parent=eq.${id}`, { method:'DELETE' }).catch(()=>{}),
+          sb(`pins?id=eq.${id}`, { method:'DELETE' }).catch(()=>{})
+        ]);
       }
       return res.status(200).json({ ok:true, id });
     }
 
     if (action === 'file'){
+      if (!process.env.BLOB_READ_WRITE_TOKEN) return res.status(200).json({ ok:false, reason:'no-blob-store' });
+      const { put } = require('@vercel/blob');
       let buf; try{ buf = Buffer.from(String(body.data||''),'base64'); }catch{ buf = null; }
       if (!buf || buf.length < 10) return res.status(200).json({ ok:false, reason:'bad-data' });
       if (buf.length > MAX_FILE) return res.status(200).json({ ok:false, reason:'too-large' });
