@@ -775,6 +775,7 @@ body.has-glow .glow{opacity:1}
 .cform textarea{resize:vertical;min-height:120px}
 .cform input:focus,.cform select:focus,.cform textarea:focus{outline:none;border-color:var(--rust);box-shadow:0 0 0 4px rgba(244,93,42,.14)}
 .cform input.bad,.cform textarea.bad{border-color:#c0392b}
+.cform input:-webkit-autofill,.cform input:-webkit-autofill:focus{-webkit-text-fill-color:var(--ink);-webkit-box-shadow:0 0 0 1000px var(--bg) inset;box-shadow:0 0 0 1000px var(--bg) inset;transition:background-color 9999s ease-out}
 .cf-row{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
 .cf-trap{position:absolute !important;left:-9999px;width:1px;height:1px;overflow:hidden}
 .cf-foot{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:6px}
@@ -1482,7 +1483,8 @@ body.has-glow .glow{opacity:1}
   var f = document.getElementById('cform'); if(!f) return;
   var msg = document.getElementById('cfMsg'), btn = document.getElementById('cfSend');
   var MAIL = 'info@blinkloopph.com';
-  var ENDPOINT = 'https://formsubmit.co/ajax/' + MAIL;
+  /* Google Apps Script web app URL (ends in /exec). See blinkloop-form.gs for setup. */
+  var FORM_ENDPOINT = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
   function bad(el){ el.classList.add('bad'); el.addEventListener('input', function h(){ el.classList.remove('bad'); el.removeEventListener('input', h); }); }
   function mailtoFallback(d){
     var subject = 'Website inquiry from ' + d.name.trim();
@@ -1502,23 +1504,28 @@ body.has-glow .glow{opacity:1}
     if (d.website){ f.classList.add('sent'); msg.className='cf-msg ok'; msg.textContent='Got it. We reply within one business day.'; return; }
     btn.disabled = true; var old = btn.innerHTML; btn.textContent = 'Sending\u2026';
     try{
-      var payload = {
-        name: d.name.trim(), email: d.email.trim(), business: (d.business||'').trim(), needs: d.service, message: d.message.trim(),
-        _subject: 'New inquiry: ' + d.name.trim() + (d.business ? ' (' + d.business.trim() + ')' : '') + ' \u00b7 ' + d.service,
-        _replyto: d.email.trim(), _template: 'table', _captcha: 'false'
-      };
-      var r = await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify(payload) });
-      var j = await r.json().catch(function(){ return {}; });
-      if (r.ok && (j.success === true || j.success === 'true')){
+      if (!/^https:\/\/script\.google\.com\//.test(FORM_ENDPOINT)) throw new Error('not-configured');
+      var payload = { name: d.name.trim(), email: d.email.trim(), business: (d.business||'').trim(), service: d.service, message: d.message.trim(), website: d.website || '' };
+      /* text/plain keeps this a "simple" request (no CORS preflight), which is what Apps Script needs */
+      var r = await fetch(FORM_ENDPOINT, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload), redirect:'follow' });
+      var j = {};
+      try { j = await r.json(); } catch(e2){ j = { ok: r.ok || r.type === 'opaque' }; }
+      if (j.ok === true){
         f.classList.add('sent');
         msg.className = 'cf-msg ok';
         msg.textContent = 'Got it, ' + d.name.trim().split(' ')[0] + '. We reply within one business day.';
         return;
       }
-      throw new Error(j.message || 'failed');
+      throw new Error(j.reason ? (j.reason + (j.detail ? ': ' + j.detail : '')) : ('HTTP ' + r.status));
     }catch(err){
+      var reason = String(err && err.message || '');
+      try{ console.warn('[BlinkLoop form]', reason); }catch(e){}
       msg.className = 'cf-msg err';
-      msg.innerHTML = 'That didn\u2019t send. <a href="' + mailtoFallback(d) + '">Open your email app</a> with your message ready, or write to ' + MAIL + '.';
+      if (reason === 'not-configured'){
+        msg.innerHTML = 'Direct sending isn\u2019t switched on yet. <a href="' + mailtoFallback(d) + '">Open your email app</a> with your message ready, or write to ' + MAIL + '.';
+      } else {
+        msg.innerHTML = 'That didn\u2019t send' + (reason && !/^HTTP/i.test(reason) ? ' (' + reason.replace(/[<>]/g,'') + ')' : '') + '. <a href="' + mailtoFallback(d) + '">Open your email app</a> with your message ready, or write to ' + MAIL + '.';
+      }
     }finally{
       btn.disabled = false; btn.innerHTML = old;
     }
