@@ -917,7 +917,7 @@ body.has-glow .glow{opacity:1}
           </div>
           <div class="idea-card" style="left:6%;bottom:12%;animation-delay:-7s">
             <span class="tag t-rose">Shared</span>
-            <b>Mia joined the loop</b>
+            <b>Queen joined the loop</b>
             <div class="sub">collaborating live</div>
           </div>
           <div class="idea-card" style="right:6%;bottom:0;animation-delay:-3.8s">
@@ -1519,7 +1519,7 @@ body.has-glow .glow{opacity:1}
     msg.className = 'cf-msg'; msg.textContent = '';
     var ok = true;
     if (!d.name || d.name.trim().length < 2){ bad(f.name); ok = false; }
-    if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())){ bad(f.email); ok = false; }
+    if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())){ bad(f.email); ok = false; }
     if (!d.message || d.message.trim().length < 5){ bad(f.message); ok = false; }
     if (!ok){ msg.className = 'cf-msg err'; msg.textContent = 'Fill in your name, a working email, and a short message.'; return; }
     if (d.website){ f.classList.add('sent'); msg.className='cf-msg ok'; msg.textContent='Got it. We reply within one business day.'; return; }
@@ -1530,7 +1530,13 @@ body.has-glow .glow{opacity:1}
       /* text/plain keeps this a "simple" request (no CORS preflight), which is what Apps Script needs */
       var r = await fetch(FORM_ENDPOINT, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload), redirect:'follow' });
       var j = {};
-      try { j = await r.json(); } catch(e2){ j = { ok: r.ok || r.type === 'opaque' }; }
+      var raw = '';
+      try { raw = await r.text(); j = JSON.parse(raw); }
+      catch(e2){
+        if (r.type === 'opaque') j = { ok: true };
+        else if (/<html|accounts\.google|Sign in/i.test(raw)) j = { ok:false, reason:'access', detail:'the script deployment must be set to Anyone' };
+        else j = { ok: r.ok };
+      }
       if (j.ok === true){
         f.classList.add('sent');
         msg.className = 'cf-msg ok';

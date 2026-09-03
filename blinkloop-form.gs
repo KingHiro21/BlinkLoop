@@ -13,7 +13,10 @@
  *  4. Copy the "Web app URL" (ends in /exec) and paste it into the website's
  *     FORM_ENDPOINT constant (or send it to Jose/Claude to wire in).
  *
- *  To update later: edit here, then Deploy -> Manage deployments -> pencil -> New version.
+ *  IMPORTANT: "Who has access" must be exactly "Anyone" (NOT "Anyone with Google account").
+ *  Otherwise the form only works for visitors who happen to be signed in to Google.
+ *
+ *  To update later: edit here, then Deploy -> Manage deployments -> pencil -> Version: New version -> Deploy.
  */
 
 var TO = 'info@blinkloopph.com';
@@ -39,7 +42,8 @@ function doPost(e) {
     var message  = String(d.message || '').replace(/\r\n?/g, '\n').trim().slice(0, 3000);
 
     if (name.length < 2)  return json({ ok: false, reason: 'name' });
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return json({ ok: false, reason: 'email' });
+    // Any mailbox on any domain: Gmail, Yahoo, company domains, .com.ph, subdomains, plus-addresses.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, reason: 'email' });
     if (message.length < 5) return json({ ok: false, reason: 'message' });
 
     var when = Utilities.formatDate(new Date(), 'Asia/Manila', 'MMM d, yyyy h:mm a');
@@ -75,14 +79,14 @@ function doPost(e) {
       '<p style="margin-top:18px;font-size:12px;color:#7E5D4C">Reply directly to this email to answer ' + esc(name) + '.</p>' +
       '</div>';
 
-    MailApp.sendEmail({
-      to: TO,
-      replyTo: email,
-      name: 'BlinkLoop Website',
-      subject: subject,
-      body: text,
-      htmlBody: html
-    });
+    var mail = { to: TO, name: 'BlinkLoop Website', subject: subject, body: text, htmlBody: html };
+    try {
+      MailApp.sendEmail(Object.assign({ replyTo: email }, mail));
+    } catch (err1) {
+      // If Google rejects the visitor's address as a reply-to, still deliver the inquiry.
+      // The visitor's email is in the body, so nothing is lost.
+      MailApp.sendEmail(mail);
+    }
     out = { ok: true };
   } catch (err) {
     out = { ok: false, reason: 'mail-failed', detail: String(err).slice(0, 200) };
