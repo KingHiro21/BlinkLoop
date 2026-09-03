@@ -774,6 +774,29 @@ body.has-glow .glow{opacity:1}
   .glow{display:none}
   .whisper{display:none}
 }
+
+/* ---------- contact form ---------- */
+.cform{max-width:640px;margin:0 auto;text-align:left;position:relative;z-index:1}
+.cform label{display:block;font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:14px}
+.cform label span{font-weight:500;opacity:.75}
+.cform input,.cform select,.cform textarea{
+  display:block;width:100%;margin-top:6px;padding:13px 16px;border-radius:14px;
+  border:1px solid var(--line);background:color-mix(in srgb, var(--bg) 70%, transparent);
+  color:var(--ink);font:inherit;font-size:16px;transition:border-color .2s, box-shadow .2s;
+}
+.cform textarea{resize:vertical;min-height:120px}
+.cform input:focus,.cform select:focus,.cform textarea:focus{outline:none;border-color:var(--rust);box-shadow:0 0 0 4px rgba(244,93,42,.14)}
+.cform input.bad,.cform textarea.bad{border-color:#c0392b}
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.cf-trap{position:absolute !important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.cf-foot{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:6px}
+.cf-alt{font-size:.85rem;color:var(--muted)}
+.cf-alt a{color:var(--rust-ink);font-weight:600;border-bottom:1px solid currentColor}
+.cf-msg{min-height:1.4em;margin:14px 0 0;font-size:.9rem;color:var(--muted)}
+.cf-msg.ok{color:#2E7D5B;font-weight:600}
+.cf-msg.err{color:#c0392b}
+.cform.sent .cf-row,.cform.sent > label,.cform.sent .cf-foot{display:none}
+@media (max-width:640px){ .cf-row{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -1116,11 +1139,29 @@ body.has-glow .glow{opacity:1}
         <span class="ring r1" aria-hidden="true"></span>
         <span class="ring r2" aria-hidden="true"></span>
         <h2>Build once. Stay online for years.</h2>
-        <p>Start with a one-time website project, then let BlinkLoop keep it running with an annual hosting plan. One partner for the whole journey.</p>
-        <div class="cta-row" style="justify-content:center">
-          <a class="btn btn-primary" href="#build">Start Your Project <span class="arrow" aria-hidden="true">&rarr;</span></a>
-          <a class="btn btn-ghost" href="#hosting">Get Hosting</a>
-        </div>
+        <p>Start with a one-time website project, then let BlinkLoop keep it running. Tell us what you need and we reply with a plan and a quote.</p>
+        <form class="cform" id="cform" novalidate>
+          <div class="cf-row">
+            <label>Your name<input name="name" type="text" autocomplete="name" placeholder="Maria Santos" required maxlength="80" /></label>
+            <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@business.com" required maxlength="120" /></label>
+          </div>
+          <div class="cf-row">
+            <label>Business or brand <span>(optional)</span><input name="business" type="text" autocomplete="organization" placeholder="Maria's Catering" maxlength="120" /></label>
+            <label>What do you need?<select name="service">
+              <option>Website build</option>
+              <option>Hosting and care</option>
+              <option>Build plus hosting</option>
+              <option>Something else</option>
+            </select></label>
+          </div>
+          <label>Tell us about it<textarea name="message" rows="4" placeholder="What does your business do, and what should the website do for you?" required maxlength="3000"></textarea></label>
+          <label class="cf-trap" aria-hidden="true">Website<input name="website" type="text" tabindex="-1" autocomplete="off" /></label>
+          <div class="cf-foot">
+            <button class="btn btn-primary" type="submit" id="cfSend">Send it <span class="arrow" aria-hidden="true">&rarr;</span></button>
+            <span class="cf-alt">or email <a href="mailto:info@blinkloopph.com">info@blinkloopph.com</a></span>
+          </div>
+          <p class="cf-msg" id="cfMsg" role="status" aria-live="polite"></p>
+        </form>
       </div>
     </div>
   </section>
@@ -1139,6 +1180,7 @@ body.has-glow .glow{opacity:1}
       <a href="/#services">Services</a>
       <a href="/hosting" class="active">Pricing</a>
       <a href="/privacy">Privacy</a>
+      <a href="mailto:info@blinkloopph.com">info@blinkloopph.com</a>
     </nav>
     <div class="foot-right">
       <a class="addr" href="https://www.google.com/maps/search/?api=1&query=BLOQ+SOHO+Lofts,+Mandaue,+Cebu" target="_blank" rel="noopener">
@@ -1451,5 +1493,53 @@ body.has-glow .glow{opacity:1}
   function refresh(){ try{ fetch('/api/presence').then(function(r){return r.json();}).then(function(d){ if(d && d.ok) draw(d); }).catch(function(){}); }catch(e){} }
   beat(); refresh(); setInterval(function(){ beat(); refresh(); }, 60000);
 })();</script>
+<script>
+(function(){
+  var f = document.getElementById('cform'); if(!f) return;
+  var msg = document.getElementById('cfMsg'), btn = document.getElementById('cfSend');
+  var MAIL = 'info@blinkloopph.com';
+  var ENDPOINT = 'https://formsubmit.co/ajax/' + MAIL;
+  function bad(el){ el.classList.add('bad'); el.addEventListener('input', function h(){ el.classList.remove('bad'); el.removeEventListener('input', h); }); }
+  function mailtoFallback(d){
+    var subject = 'Website inquiry from ' + d.name.trim();
+    var body = 'Name: ' + d.name.trim() + '\nEmail: ' + d.email.trim() + '\nBusiness: ' + (d.business||'').trim() + '\nNeeds: ' + d.service + '\n\n' + d.message.trim();
+    return 'mailto:' + MAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  }
+  f.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var d = {};
+    Array.prototype.forEach.call(f.elements, function(el){ if(el.name) d[el.name] = el.value; });
+    msg.className = 'cf-msg'; msg.textContent = '';
+    var ok = true;
+    if (!d.name || d.name.trim().length < 2){ bad(f.name); ok = false; }
+    if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())){ bad(f.email); ok = false; }
+    if (!d.message || d.message.trim().length < 5){ bad(f.message); ok = false; }
+    if (!ok){ msg.className = 'cf-msg err'; msg.textContent = 'Fill in your name, a working email, and a short message.'; return; }
+    if (d.website){ f.classList.add('sent'); msg.className='cf-msg ok'; msg.textContent='Got it. We reply within one business day.'; return; }
+    btn.disabled = true; var old = btn.innerHTML; btn.textContent = 'Sending\u2026';
+    try{
+      var payload = {
+        name: d.name.trim(), email: d.email.trim(), business: (d.business||'').trim(), needs: d.service, message: d.message.trim(),
+        _subject: 'New inquiry: ' + d.name.trim() + (d.business ? ' (' + d.business.trim() + ')' : '') + ' \u00b7 ' + d.service,
+        _replyto: d.email.trim(), _template: 'table', _captcha: 'false'
+      };
+      var r = await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify(payload) });
+      var j = await r.json().catch(function(){ return {}; });
+      if (r.ok && (j.success === true || j.success === 'true')){
+        f.classList.add('sent');
+        msg.className = 'cf-msg ok';
+        msg.textContent = 'Got it, ' + d.name.trim().split(' ')[0] + '. We reply within one business day.';
+        return;
+      }
+      throw new Error(j.message || 'failed');
+    }catch(err){
+      msg.className = 'cf-msg err';
+      msg.innerHTML = 'That didn\u2019t send. <a href="' + mailtoFallback(d) + '">Open your email app</a> with your message ready, or write to ' + MAIL + '.';
+    }finally{
+      btn.disabled = false; btn.innerHTML = old;
+    }
+  });
+})();
+</script>
 </body>
 </html>
