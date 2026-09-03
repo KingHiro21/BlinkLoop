@@ -1500,7 +1500,7 @@ body.has-glow .glow{opacity:1}
   var msg = document.getElementById('cfMsg'), btn = document.getElementById('cfSend');
   var MAIL = 'info@blinkloopph.com';
   /* Google Apps Script web app URL (ends in /exec). See blinkloop-form.gs for setup. */
-  var FORM_ENDPOINT = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+  var FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwx-J8d-zI2hFkrNYOrO0pjN9OlA0ZlY5uP-fo3LV-K9Ceb0seho_wxYuZFJrDsE65hXg/exec';
   function bad(el){ el.classList.add('bad'); el.addEventListener('input', function h(){ el.classList.remove('bad'); el.removeEventListener('input', h); }); }
   function mailtoFallback(d){
     var subject = 'Website inquiry from ' + d.name.trim();
