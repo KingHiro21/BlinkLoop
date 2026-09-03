@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /builder
+Disallow: /admin
+Disallow: /team
+Disallow: /login
+Disallow: /api/
+Disallow: /loop-projects/
+
+Sitemap: https://blink-loop.vercel.app/sitemap.xml
