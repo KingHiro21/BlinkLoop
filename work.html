@@ -127,7 +127,7 @@ header.scrolled{
 .brand-word{height:26px;width:auto}
 .brand-word-sm{height:20px}
 .brand .lp{color:var(--rust)}
-.nav-links{display:flex;align-items:center;gap:34px;font-size:.92rem;color:var(--muted)}
+.nav-links{display:flex;align-items:center;gap:34px;font-size:.92rem;color:var(--muted);white-space:nowrap}
 .nav-links a{transition:color .25s;position:relative}
 .nav-links a.active:not(.nav-cta){color:var(--ink)}
 .nav-links a.active:not(.nav-cta)::after{
@@ -875,6 +875,19 @@ body{overflow-x:clip}
   .hero-meta > *{min-width:0}
   .fab-col{bottom:16px}
   footer{padding-bottom:90px}
+}
+
+@media (max-width:1040px){
+  .nav{height:64px}
+  .nav-links{
+    position:fixed;inset:64px 0 auto 0;flex-direction:column;align-items:flex-start;
+    background:rgba(237,223,198,.98);backdrop-filter:blur(20px);
+    padding:28px;gap:22px;border-bottom:1px solid var(--line);
+    transform:translateY(-130%);transition:transform .4s var(--ease);
+  }
+  .nav-links.open{transform:none}
+  .menu-btn{display:flex}
+  [data-theme="dark"] .nav-links{background:rgba(20,8,6,.97)}
 }
 </style>
 </head>
