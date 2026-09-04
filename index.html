@@ -807,6 +807,31 @@ body.has-glow .glow{opacity:1}
 .cf-msg.err{color:#c0392b}
 .cform.sent .cf-row,.cform.sent > label,.cform.sent .cf-foot{display:none}
 @media (max-width:640px){ .cf-row{grid-template-columns:1fr} }
+
+/* ---------- chat bubbles ---------- */
+.fab-col{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;flex-direction:column;gap:12px}
+.chat-fab{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.22);transition:transform .25s;position:relative}
+.chat-fab:hover{transform:scale(1.08)}
+.chat-fab svg{width:28px;height:28px;fill:#fff}
+.chat-fab::after{content:attr(aria-label);position:absolute;right:64px;top:50%;transform:translateY(-50%);background:var(--ink);color:var(--bg);font-size:.75rem;font-weight:600;padding:6px 10px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s}
+.chat-fab:hover::after{opacity:1}
+.cf-wa{background:#25D366}.cf-ms{background:#0084FF}.cf-vb{background:#7360F2}.cf-bl{background:var(--rust)}
+@media (max-width:640px){ .fab-col{right:14px;bottom:14px;gap:10px} .chat-fab{width:50px;height:50px} .chat-fab::after{display:none} }
+
+/* ---------- mobile foundation: never let decorative elements widen the page ---------- */
+html{overflow-x:hidden}
+body{overflow-x:clip}
+.final{overflow:hidden}
+.marquee{overflow:hidden}
+
+@media (max-width:640px){
+  .foot-links{flex-wrap:wrap;gap:10px 18px;row-gap:10px}
+  .foot-links a{white-space:nowrap}
+  .hero-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .hero-meta > *{min-width:0}
+  .fab-col{bottom:16px}
+  footer{padding-bottom:90px}
+}
 </style>
 </head>
 <body>
@@ -827,6 +852,7 @@ body.has-glow .glow{opacity:1}
       <a href="#features">Features</a>
       <a href="#services">Services</a>
       <a href="/hosting">Pricing</a>
+      <a href="/work">Work</a>
       <a href="/builder" class="staff-link" hidden>Builder</a>
       <a href="/team" class="staff-link" hidden>Team</a>
       <a href="#start" class="nav-cta">Start your loop</a>
@@ -1185,6 +1211,7 @@ body.has-glow .glow{opacity:1}
       <a href="#features">Features</a>
       <a href="#services">Services</a>
       <a href="/hosting">Pricing</a>
+      <a href="/work">Work</a>
       <a href="/privacy">Privacy</a>
       <a href="mailto:info@blinkloopph.com">info@blinkloopph.com</a>
     </nav>
@@ -1557,6 +1584,27 @@ body.has-glow .glow{opacity:1}
       btn.disabled = false; btn.innerHTML = old;
     }
   });
+})();
+</script>
+<script>
+/* Chat bubbles. Fill these in and the matching buttons appear (leave blank to hide):
+   messenger: your Facebook Page username (the part after facebook.com/), e.g. 'blinkloopph'
+   whatsapp:  number with country code, digits only, e.g. '639171234567'
+   viber:     number with country code, digits only, e.g. '639171234567'            */
+window.BL_CHAT = window.BL_CHAT || { messenger: '', whatsapp: '', viber: '' };
+(function(){
+  var C = window.BL_CHAT, fabs = [];
+  var WA = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C8.8 3 3 8.8 3 16c0 2.3.6 4.5 1.7 6.5L3 29l6.7-1.8c1.9 1 4.1 1.6 6.3 1.6 7.2 0 13-5.8 13-13S23.2 3 16 3zm0 23.6c-2 0-3.9-.5-5.6-1.5l-.4-.2-4 1.1 1.1-3.9-.3-.4C5.7 20 5.1 18 5.1 16 5.1 10 10 5.1 16 5.1S26.9 10 26.9 16 22 26.6 16 26.6zm6-8.1c-.3-.2-1.9-1-2.2-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.3-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.4.3-.6.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.6h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.8s1.2 3.3 1.4 3.5c.2.2 2.4 3.7 5.9 5.2 2.9 1.2 3.5 1 4.1.9.6-.1 1.9-.8 2.2-1.6.3-.8.3-1.4.2-1.6-.1-.2-.3-.3-.6-.4z"/></svg>';
+  var MS = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C8.8 3 3 8.4 3 15c0 3.7 1.8 7 4.7 9.2V29l4.4-2.4c1.2.3 2.5.5 3.9.5 7.2 0 13-5.4 13-12S23.2 3 16 3zm1.4 16.1-3.3-3.5-6.5 3.5 7.1-7.6 3.4 3.5 6.4-3.5-7.1 7.6z"/></svg>';
+  var VB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>';
+  var BL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm3 5v2h10V9H7zm0 3.5v2h7v-2H7z"/></svg>';
+  var digits = function(v){ return String(v||'').replace(/[^0-9]/g,''); };
+  if (C.whatsapp && digits(C.whatsapp)) fabs.push('<a class="chat-fab cf-wa" href="https://wa.me/'+digits(C.whatsapp)+'?text='+encodeURIComponent('Hi BlinkLoop! I saw your website.')+'" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">'+WA+'</a>');
+  if (C.messenger){ var u = String(C.messenger).trim().replace(/^https?:\/\/(www\.)?(m\.me|facebook\.com)\//i,'').replace(/\/+$/,'').split(/[/?#]/)[0]; if (u) fabs.push('<a class="chat-fab cf-ms" href="https://m.me/'+encodeURIComponent(u)+'" target="_blank" rel="noopener" aria-label="Chat on Messenger">'+MS+'</a>'); }
+  if (C.viber && digits(C.viber)) fabs.push('<a class="chat-fab cf-vb" href="viber://chat?number=%2B'+digits(C.viber)+'" aria-label="Chat on Viber">'+VB+'</a>');
+  if (!fabs.length) fabs.push('<a class="chat-fab cf-bl" href="#start" aria-label="Message us">'+BL+'</a>');
+  var col = document.createElement('div'); col.className = 'fab-col'; col.innerHTML = fabs.join('');
+  document.body.appendChild(col);
 })();
 </script>
 </body>
