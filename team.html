@@ -112,6 +112,11 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 #attPrev button{border:none;background:none;color:var(--muted);cursor:pointer}
 .note{ text-align:center;color:var(--muted);font-size:.68rem;padding-top:8px;opacity:.8}
 
+.msg.pending{opacity:.55}
+.mtext a{color:var(--rust);text-decoration:underline;text-underline-offset:2px;word-break:break-all}
+.jump{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:60;border:1px solid var(--rust);background:var(--rust);color:#FFF7EC;border-radius:999px;padding:8px 16px;font:inherit;font-size:.8rem;font-weight:600;cursor:pointer;box-shadow:0 10px 26px rgba(217,78,31,.35)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;z-index:90;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.82rem;box-shadow:0 10px 26px rgba(0,0,0,.25);max-width:min(92vw,420px);text-align:center}
+
 /* ---------- mobile ---------- */
 @media (hover:none){
   .msg .tools{opacity:1}
@@ -205,6 +210,8 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
     </div>
   </div>
 </div>
+<button class="jump" id="jump" hidden>↓ New messages</button>
+<div class="toast" id="toast" hidden></div>
 <footer><div class="wrap">
   <div id="attPrev">📎 <b id="attName"></b> <span id="attSize"></span> <button id="attX" title="Remove">✕</button></div>
   <div class="composer">
@@ -213,56 +220,124 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
     <textarea id="text" placeholder="Message the team…" rows="1"></textarea>
     <button class="cbtn send" id="send" title="Send">➤</button>
   </div>
-  <div class="note">Files up to 3.5 MB. Enter sends, Shift+Enter for a new line. Hover a message to pin 📌 or delete your own.</div>
+  <div class="note">Files up to 3.5 MB. Enter sends, Shift+Enter for a new line. Hover a message to pin 📌 or delete your own. Links open in a new tab.</div>
 </div></footer>
 
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
-let ME='', TODAY='', viewDay='', days=[], msgs=[], counts={}, pinnedIds=new Set(), pinnedFull=[], since=0, pendingAtt=null, openTh=null;
+let ME='', TODAY='', viewDay='', days=[], msgs=[], counts={}, pinnedIds=new Set(), pinnedFull=[], onlineNames=[], since=0, pendingAtt=null, openTh=null;
+let pollTimer=null, inflight=false, quietSince=Date.now(), unread=0, lastSig='', lastThreadSig='';
+const POLL_FAST=3000, POLL_SLOW=10000, POLL_HIDDEN=30000, QUIET_AFTER=90000;
+const CACHE_KEY='bl-team-cache', DRAFT_KEY='bl-team-draft', BASE_TITLE=document.title;
 const COLORS = ['#F45D2A','#7F2027','#2E7D5B','#0E7CD1','#7360F2','#B8860B','#C2185B'];
 const colorFor = a => COLORS[[...a].reduce((n,c)=>n+c.charCodeAt(0),0) % COLORS.length];
 const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* runs on already-escaped text, so the URL is safe to drop into an attribute */
+const linkify = s => s.replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]])/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+const renderText = t => linkify(esc(t));
 const fmtSize = n => n>1048576 ? (n/1048576).toFixed(1)+' MB' : n>1024 ? (n/1024|0)+' KB' : n+' B';
 const fmtTime = ts => new Date(ts).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Manila'});
+const dayFromTs = ts => new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date(ts)).replace(/-/g,'');
 const dayName = y => y===TODAY ? 'Today' : new Date(Date.UTC(+y.slice(0,4),+y.slice(4,6)-1,+y.slice(6,8))).toLocaleDateString('en-PH',{month:'short',day:'numeric'});
+const toLogin = () => { location.href = '/login?next=%2Fteam'; };
+const atBottom = () => { const m=$('#main'); return m.scrollHeight - m.scrollTop - m.clientHeight < 80; };
+
+/* ---------- instant paint: last known feed for today, then the network ---------- */
+function readCache(){
+  try{
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+    return c && c.day===c.today && c.today===dayFromTs(Date.now()) ? c : null;
+  }catch(e){ return null; }
+}
+function writeCache(){
+  if (viewDay!==TODAY) return;
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ me:ME, today:TODAY, day:viewDay, days, counts, pinnedIds:[...pinnedIds], pinned:pinnedFull, messages:msgs.filter(m=>!m.pending), online:onlineNames })); }catch(e){}
+}
+function saveDraft(v){ try{ v ? localStorage.setItem(DRAFT_KEY, v) : localStorage.removeItem(DRAFT_KEY); }catch(e){} }
+let toastTimer=null;
+function toast(text){
+  const t = $('#toast'); t.textContent = text; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>{ t.hidden = true; }, 3200);
+}
 
 async function boot(){
-  try{
-    const r = await fetch('/api/me'); const d = await r.json();
-    if (!d.ok){ location.href='/login?next=%2Fteam'; return; }
-    $('#who').innerHTML = 'Signed in as <b>'+esc(d.client)+'</b>';
-  }catch(e){ location.href='/login?next=%2Fteam'; return; }
+  const c = readCache();
+  if (c){
+    applyFeedData(c); msgs = c.messages||[];
+    since = msgs.length ? Math.max(...msgs.map(m=>m.ts)) : 0;
+    render(true); renderBar();
+  }
+  try{ const d = localStorage.getItem(DRAFT_KEY); if (d){ ta.value = d; ta.dispatchEvent(new Event('input')); } }catch(e){}
   await loadDay('');
-  setInterval(()=>{ if(document.hidden) return; if(viewDay===TODAY) pollToday(); if(openTh) refreshThread(false); }, 4000);
+  schedule(POLL_FAST);
+  document.addEventListener('visibilitychange', ()=>{
+    if (document.hidden) return;
+    unread = 0; document.title = BASE_TITLE; quietSince = Date.now();
+    pollNow();
+  });
 }
 
+/* the API answers 401 without a valid session, so no separate /api/me round trip */
 function applyFeedData(d){
-  ME=d.me; TODAY=d.today; viewDay=d.day; days=d.days; counts=d.counts||{};
-  pinnedIds = new Set(d.pinnedIds); pinnedFull = d.pinned||[];
-  if (d.online) $('#onlineBar').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22)"></span>'+d.online.map(esc).join(', ')+'</span>';
+  ME=d.me; TODAY=d.today; viewDay=d.day; counts=d.counts||{};
+  if (d.days) days = d.days;
+  pinnedIds = new Set(d.pinnedIds||[]);
+  if (d.pinned) pinnedFull = d.pinned;            /* omitted by the server when nothing changed */
+  else pinnedFull = pinnedFull.filter(p=>pinnedIds.has(p.id));
+  if (d.online){
+    onlineNames = d.online;
+    $('#onlineBar').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22)"></span>'+onlineNames.map(esc).join(', ')+'</span>';
+  }
+  $('#who').innerHTML = 'Signed in as <b>'+esc(ME)+'</b>';
 }
 async function loadDay(day){
-  const r = await fetch('/api/chat'+(day?'?day='+day:'')); const d = await r.json();
+  let r;
+  try{ r = await fetch('/api/chat'+(day?'?day='+day:'')); }catch(e){ return; }
+  if (r.status===401){ toLogin(); return; }
+  const d = await r.json();
   if (!d.ok) return;
   applyFeedData(d);
   msgs = d.messages;
   since = msgs.length ? Math.max(...msgs.map(m=>m.ts)) : 0;
-  render(true); renderBar();
+  lastSig = ''; render(true); renderBar(); writeCache();
 }
 async function pollToday(){
+  if (inflight || viewDay!==TODAY || !TODAY) return;
+  inflight = true;
   try{
-    const r = await fetch('/api/chat?day='+TODAY+'&since='+since); const d = await r.json();
+    const r = await fetch('/api/chat?day='+TODAY+'&since='+since+'&pins='+[...pinnedIds].join(','));
+    if (r.status===401){ toLogin(); return; }
+    const d = await r.json();
     if (!d.ok) return;
     applyFeedData(d);
-    if (d.messages.length){
-      const known = new Set(msgs.map(m=>m.id));
-      const fresh = d.messages.filter(m=>!known.has(m.id));
-      if (fresh.length){ msgs = msgs.concat(fresh).sort((a,b)=>a.ts-b.ts); since = Math.max(since, ...fresh.map(m=>m.ts)); }
+    const wasAtBottom = atBottom();
+    const known = new Set(msgs.map(m=>m.id));
+    const fresh = d.messages.filter(m=>!known.has(m.id));
+    if (fresh.length){
+      /* drop optimistic copies the server has now confirmed */
+      msgs = msgs.filter(m=>!(m.pending && fresh.some(f=>f.author===m.author && f.text===m.text)));
+      msgs = msgs.concat(fresh).sort((a,b)=>a.ts-b.ts);
+      since = Math.max(since, ...fresh.map(m=>m.ts));
+      quietSince = Date.now();
+      const others = fresh.filter(m=>m.author!==ME).length;
+      if (document.hidden && others){ unread += others; document.title = '('+unread+') '+BASE_TITLE; }
     }
-    render(false); renderBar();
+    render(false); renderBar(); writeCache();
+    if (fresh.length && !wasAtBottom && !document.hidden){ const j=$('#jump'); j.textContent = '↓ New message'+(fresh.length>1?'s':''); j.hidden = false; }
   }catch(e){}
+  finally{ inflight = false; }
 }
+/* polling cadence: quick while the room is active, relaxed when quiet, slow while the tab is hidden */
+function schedule(ms){ clearTimeout(pollTimer); pollTimer = setTimeout(tick, ms); }
+async function tick(){
+  await pollToday();
+  if (openTh) await refreshThread(false);
+  const quiet = Date.now() - quietSince > QUIET_AFTER;
+  schedule(document.hidden ? POLL_HIDDEN : quiet ? POLL_SLOW : POLL_FAST);
+}
+function pollNow(){ clearTimeout(pollTimer); tick(); }
+
 function renderBar(){
   $('#dayLabel').textContent = dayName(viewDay);
   const i = days.indexOf(viewDay);
@@ -273,37 +348,42 @@ function renderBar(){
   $('#readonlyBar').hidden = !archived;
   document.querySelector('footer').style.display = archived ? 'none' : '';
 }
+function attHTML(att, lazy){
+  if (!att) return '';
+  const isImg = /^image\//.test(att.type||'');
+  return isImg
+    ? `<a class="att imgatt" href="${esc(att.url)}" target="_blank" rel="noopener"><img src="${esc(att.url)}" alt="${esc(att.name)}"${lazy?' loading="lazy"':''} /></a>`
+    : `<a class="att" href="${esc(att.url)}" target="_blank" rel="noopener" download><span class="ic">📄</span><span class="nm">${esc(att.name)}</span><span class="sz">${fmtSize(att.size)}</span></a>`;
+}
+/* only touch the DOM when something visible changed; a poll that finds nothing new leaves images and scroll alone */
+const feedSig = () => msgs.map(m=>m.id+(m.pending?'p':'')).join('|')+'#'+JSON.stringify(counts)+'#'+[...pinnedIds].join(',')+'#'+pinnedFull.length+'#'+ME;
 function render(scroll){
-  const atBottom = $('#main').scrollHeight - $('#main').scrollTop - $('#main').clientHeight < 80;
+  const s = feedSig();
+  if (!scroll && s===lastSig) return;
+  lastSig = s;
+  const stick = scroll || atBottom();
   let html = '';
   for (const m of msgs){
     const pinned = pinnedIds.has(m.id);
-    let attHtml = '';
-    if (m.att){
-      const isImg = /^image\//.test(m.att.type||'');
-      attHtml = isImg
-        ? `<a class="att imgatt" href="${esc(m.att.url)}" target="_blank" rel="noopener"><img src="${esc(m.att.url)}" alt="${esc(m.att.name)}" loading="lazy" /></a>`
-        : `<a class="att" href="${esc(m.att.url)}" target="_blank" rel="noopener" download><span class="ic">📄</span><span class="nm">${esc(m.att.name)}</span><span class="sz">${fmtSize(m.att.size)}</span></a>`;
-    }
     const n = counts[m.id]||0;
-    html += `<div class="msg ${pinned?'pinned-msg':''}" data-id="${m.id}">
+    html += `<div class="msg ${pinned?'pinned-msg':''} ${m.pending?'pending':''}" data-id="${m.id}">
       <div class="av" style="background:${colorFor(m.author)}">${esc(m.author.slice(0,2))}</div>
       <div class="body">
-        <div class="mhead"><span class="a" style="color:${colorFor(m.author)}">${esc(m.author)}</span><span class="tm">${fmtTime(m.ts)}${pinned?' · 📌':''}</span>
-          <span class="tools">
+        <div class="mhead"><span class="a" style="color:${colorFor(m.author)}">${esc(m.author)}</span><span class="tm">${m.pending?'Sending…':fmtTime(m.ts)}${pinned?' · 📌':''}</span>
+          ${m.pending?'':`<span class="tools">
             <button data-pin="${m.id}" class="${pinned?'pinned':''}" title="${pinned?'Unpin':'Pin'}">📌</button>
             ${m.author===ME?`<button data-del="${m.id}" title="Delete">✕</button>`:''}
-          </span>
+          </span>`}
         </div>
-        ${m.text?`<div class="mtext">${esc(m.text)}</div>`:''}
-        ${attHtml}
-        <button class="reply-link" data-th="${m.id}">💬 ${n? n+(n===1?' reply':' replies') : 'Reply'}</button>
+        ${m.text?`<div class="mtext">${renderText(m.text)}</div>`:''}
+        ${attHTML(m.att, true)}
+        ${m.pending?'':`<button class="reply-link" data-th="${m.id}">💬 ${n? n+(n===1?' reply':' replies') : 'Reply'}</button>`}
       </div>
     </div>`;
   }
   $('#feed').innerHTML = html || '<div class="empty">No messages on this day.</div>';
   renderPins();
-  if (scroll || atBottom) $('#main').scrollTop = $('#main').scrollHeight;
+  if (stick){ $('#main').scrollTop = $('#main').scrollHeight; $('#jump').hidden = true; }
 }
 function renderPins(){
   const bar = $('#pinsBar');
@@ -323,48 +403,48 @@ function flash(id, root){
   el.scrollIntoView({block:'center'});
   el.classList.remove('hl'); void el.offsetWidth; el.classList.add('hl');
 }
+$('#jump').addEventListener('click', ()=>{ $('#main').scrollTop = $('#main').scrollHeight; $('#jump').hidden = true; });
+$('#main').addEventListener('scroll', ()=>{ if (atBottom()) $('#jump').hidden = true; }, {passive:true});
 
 /* ---------- threads ---------- */
 async function openThread(id, hlId){
-  openTh = id;
+  openTh = id; lastThreadSig = '';
   $('#drawer').classList.add('open');
   $('#drawerBody').innerHTML = '<div class="empty">Loading…</div>';
   await refreshThread(true, hlId);
+  $('#tText').focus();
 }
 function threadMsgHTML(m, isRoot){
-  let attHtml = '';
-  if (m.att){
-    const isImg = /^image\//.test(m.att.type||'');
-    attHtml = isImg
-      ? `<a class="att imgatt" href="${esc(m.att.url)}" target="_blank" rel="noopener"><img src="${esc(m.att.url)}" alt="${esc(m.att.name)}" /></a>`
-      : `<a class="att" href="${esc(m.att.url)}" target="_blank" rel="noopener" download><span class="ic">📄</span><span class="nm">${esc(m.att.name)}</span><span class="sz">${fmtSize(m.att.size)}</span></a>`;
-  }
   return `<div class="msg" data-id="${m.id}" style="${isRoot?'padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px':''}">
     <div class="av" style="background:${colorFor(m.author)}">${esc(m.author.slice(0,2))}</div>
     <div class="body">
       <div class="mhead"><span class="a" style="color:${colorFor(m.author)}">${esc(m.author)}</span><span class="tm">${fmtTime(m.ts)} · ${dayName(m.day||dayFromTs(m.ts))}</span>
         <span class="tools">${!isRoot && m.author===ME?`<button data-del="${m.id}" data-parent="${openTh}" title="Delete">✕</button>`:''}</span>
       </div>
-      ${m.text?`<div class="mtext">${esc(m.text)}</div>`:''}
-      ${attHtml}
+      ${m.text?`<div class="mtext">${renderText(m.text)}</div>`:''}
+      ${attHTML(m.att, false)}
     </div>
   </div>`;
 }
-const dayFromTs = ts => new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila'}).format(new Date(ts)).replace(/-/g,'');
 async function refreshThread(scroll, hlId){
   if (!openTh) return;
   try{
     const r = await fetch('/api/chat?thread='+openTh); const d = await r.json();
     if (!d.ok){ closeThread(); return; }
     counts[openTh] = d.replies.length;
-    $('#drawerBody').innerHTML = threadMsgHTML(d.root, true) + d.replies.map(m=>threadMsgHTML(m,false)).join('');
-    if (scroll) $('#drawerBody').scrollTop = $('#drawerBody').scrollHeight;
-    if (hlId) flash(hlId, $('#drawerBody'));
+    const tsig = d.root.id+'|'+d.replies.map(m=>m.id).join(',');
+    if (scroll || tsig!==lastThreadSig){
+      lastThreadSig = tsig;
+      $('#drawerBody').innerHTML = threadMsgHTML(d.root, true) + d.replies.map(m=>threadMsgHTML(m,false)).join('');
+      if (scroll) $('#drawerBody').scrollTop = $('#drawerBody').scrollHeight;
+      if (hlId) flash(hlId, $('#drawerBody'));
+    }
     render(false);
   }catch(e){}
 }
 function closeThread(){ openTh=null; $('#drawer').classList.remove('open'); }
 $('#drawerX').addEventListener('click', closeThread);
+document.addEventListener('keydown', e=>{ if (e.key==='Escape' && openTh) closeThread(); });
 $('#tSend').addEventListener('click', sendReply);
 $('#tText').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendReply(); } });
 async function sendReply(){
@@ -375,7 +455,8 @@ async function sendReply(){
     const r = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'post', text, parent: openTh})});
     const d = await r.json();
     if (d.ok){ $('#tText').value=''; await refreshThread(true); }
-  }catch(e){}
+    else toast('Reply not sent. Try again.');
+  }catch(e){ toast('Reply not sent. Check your connection.'); }
   finally{ btn.disabled = false; }
 }
 
@@ -441,7 +522,7 @@ document.addEventListener('click', async e=>{
     const id = del.dataset.del, parent = del.dataset.parent||'';
     if (parent){ await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id,parent})}); refreshThread(false); }
     else {
-      msgs = msgs.filter(m=>m.id!==id); pinnedIds.delete(id); pinnedFull = pinnedFull.filter(p=>p.id!==id); render(false);
+      msgs = msgs.filter(m=>m.id!==id); pinnedIds.delete(id); pinnedFull = pinnedFull.filter(p=>p.id!==id); render(false); writeCache();
       await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'del',id})});
     }
     return;
@@ -457,7 +538,7 @@ $('#roToday').addEventListener('click', ()=>loadDay(TODAY));
 
 /* ---------- composer ---------- */
 const ta = $('#text');
-ta.addEventListener('input', ()=>{ ta.style.height='auto'; ta.style.height=Math.min(140, ta.scrollHeight)+'px'; });
+ta.addEventListener('input', ()=>{ ta.style.height='auto'; ta.style.height=Math.min(140, ta.scrollHeight)+'px'; saveDraft(ta.value); });
 ta.addEventListener('keydown', e=>{ if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); } });
 $('#send').addEventListener('click', send);
 $('#attach').addEventListener('click', ()=>$('#file').click());
@@ -465,7 +546,7 @@ $('#attX').addEventListener('click', ()=>{ pendingAtt=null; $('#attPrev').classL
 $('#file').addEventListener('change', async ()=>{
   const f = $('#file').files[0]; $('#file').value='';
   if (!f) return;
-  if (f.size > 3.5*1024*1024 && !/^image\//.test(f.type)) { alert('Files up to 3.5 MB only.'); return; }
+  if (f.size > 3.5*1024*1024 && !/^image\//.test(f.type)) { toast('Files up to 3.5 MB only.'); return; }
   const btn = $('#attach'); btn.disabled = true;
   try{
     let blob = f, type = f.type || 'application/octet-stream';
@@ -479,31 +560,46 @@ $('#file').addEventListener('change', async ()=>{
       type = 'image/jpeg';
       URL.revokeObjectURL(url);
     }
-    if (blob.size > 3.5*1024*1024){ alert('That file is too large even after compression.'); return; }
+    if (blob.size > 3.5*1024*1024){ toast('That file is too large even after compression.'); return; }
     const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); });
     const r = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'file',name:f.name,type,data:b64})});
     const d = await r.json();
     if (d.ok){ pendingAtt = d.att; $('#attName').textContent = d.att.name; $('#attSize').textContent = fmtSize(d.att.size); $('#attPrev').classList.add('has'); }
-    else alert(d.reason==='too-large' ? 'That file is too large (max 3.5 MB).' : 'Upload failed. Try again.');
-  }catch(e){ alert('Upload failed. Try again.'); }
+    else toast(d.reason==='too-large' ? 'That file is too large (max 3.5 MB).' : 'Upload failed. Try again.');
+  }catch(e){ toast('Upload failed. Try again.'); }
   finally{ btn.disabled = false; }
 });
+/* optimistic send: the message shows at once, the server confirms in the background */
 async function send(){
   const text = ta.value.trim();
-  if ((!text && !pendingAtt) || viewDay!==TODAY) return;
-  const btn = $('#send'); btn.disabled = true;
+  if ((!text && !pendingAtt) || viewDay!==TODAY || !ME) return;
+  const att = pendingAtt;
+  const tmp = { id:'tmp-'+Date.now(), parent:null, ts:Date.now(), author:ME, text, att, pending:true };
+  msgs.push(tmp);
+  ta.value=''; ta.style.height='auto'; saveDraft('');
+  pendingAtt=null; $('#attPrev').classList.remove('has');
+  render(true);
   try{
-    const r = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'post', text, att: pendingAtt})});
+    const r = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'post', text, att})});
+    if (r.status===401){ toLogin(); return; }
     const d = await r.json();
-    if (d.ok){
-      ta.value=''; ta.style.height='auto'; pendingAtt=null; $('#attPrev').classList.remove('has');
-      msgs.push(d.message); since = Math.max(since, d.message.ts); render(true);
-    }
-  }catch(e){}
-  finally{ btn.disabled = false; }
+    if (!d.ok) throw new Error(d.reason||'failed');
+    const i = msgs.findIndex(m=>m.id===tmp.id);
+    if (i>-1) msgs[i] = d.message;
+    else if (!msgs.some(m=>m.id===d.message.id)) msgs.push(d.message);
+    since = Math.max(since, d.message.ts); quietSince = Date.now();
+    render(false); writeCache();
+  }catch(e){
+    msgs = msgs.filter(m=>m.id!==tmp.id);
+    ta.value = text; ta.dispatchEvent(new Event('input'));
+    pendingAtt = att; if (att) $('#attPrev').classList.add('has');
+    render(false);
+    toast('Not sent. Check your connection and try again.');
+  }
 }
 $('#logout').addEventListener('click', async ()=>{
   try{ await fetch('/api/logout',{method:'POST'}); }catch(e){}
+  try{ localStorage.removeItem(CACHE_KEY); localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('lb-access'); }catch(e){}
   location.href = '/login';
 });
 boot();

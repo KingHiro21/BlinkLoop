@@ -55,12 +55,6 @@ const idsafe = s => String(s||'').replace(/[^0-9a-f-]/g,'');
 async function presenceBeat(me){
   await sb(`presence?on_conflict=client`, { method:'POST', body:{ client: me, ts: Date.now() }, prefer:'resolution=merge-duplicates,return=minimal' });
 }
-async function onlineList(me){
-  const rows = await sb(`presence?ts=gt.${Date.now()-PRESENCE_WINDOW}&select=client,ts`);
-  const names = rows.map(r=>r.client);
-  if (!names.includes(me)) names.push(me);
-  return names.sort();
-}
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -92,37 +86,44 @@ module.exports = async (req, res) => {
         return res.status(200).json({ ok:true, me, q, hits });
       }
 
-      /* ---- day feed ---- */
+      /* ---- day feed ----
+         Full load: everything. Poll (since>0): only what can change between polls,
+         all queries in one parallel batch, so a poll is one Supabase round trip. */
       const today = manilaToday();
       const day = (url.searchParams.get('day')||today).replace(/[^0-9]/g,'').slice(0,8) || today;
       const since = Number(url.searchParams.get('since')||0);
+      const poll = since > 0;
+      const knownPins = String(url.searchParams.get('pins')||'').split(',').map(idsafe).filter(Boolean);
       const { start, end } = dayRangeUTC(day);
       const lo = Math.max(start, since+1);
 
-      const [messages, tsRows, pinRows] = await Promise.all([
+      const [messages, tsRows, pinRows, , presenceRows, repRows] = await Promise.all([
         sb(`messages?parent=is.null&ts=gte.${lo}&ts=lt.${end}&order=ts.asc&limit=300`),
-        sb(`messages?select=ts&parent=is.null&order=ts.asc&limit=20000`),
+        poll ? [] : sb(`messages?select=ts&parent=is.null&order=ts.desc&limit=20000`),
         sb(`pins?select=id&order=ts.desc&limit=100`),
-        presenceBeat(me).catch(()=>{})
+        presenceBeat(me).catch(()=>{}),
+        sb(`presence?ts=gt.${Date.now()-PRESENCE_WINDOW}&select=client`),
+        /* every reply posted since this day started covers every reply to this day's roots
+           (a reply is always newer than its root), so reply counts stay fresh without a second pass */
+        sb(`messages?select=parent&parent=not.is.null&ts=gte.${start}&limit=5000`)
       ]);
-      const days = [...new Set([today, ...tsRows.map(r=>dayOf(r.ts))])].sort().reverse();
       const pinnedIds = pinRows.map(r=>r.id);
+      const counts = {};
+      for (const r of repRows) counts[r.parent] = (counts[r.parent]||0)+1;
+      const online = [...new Set([me, ...presenceRows.map(r=>r.client)])].sort();
 
-      /* reply counts for this page's roots */
-      let counts = {};
-      if (messages.length){
-        const idList = messages.map(m=>m.id).join(',');
-        const reps = await sb(`messages?select=parent&parent=in.(${idList})&limit=5000`);
-        for (const r of reps) counts[r.parent] = (counts[r.parent]||0)+1;
+      const out = { ok:true, me, now:Date.now(), today, day, counts, pinnedIds, messages, online };
+      if (!poll) out.days = [...new Set([today, ...tsRows.map(r=>dayOf(r.ts))])].sort().reverse();
+
+      /* pinned message bodies (any day): skipped on a poll when the client already has the same set */
+      const samePins = poll && knownPins.length === pinnedIds.length && knownPins.every(id => pinnedIds.includes(id));
+      if (pinnedIds.length && !samePins){
+        out.pinned = await sb(`messages?id=in.(${pinnedIds.join(',')})&order=ts.desc&limit=100`);
+        out.pinned.forEach(p => p.day = dayOf(p.ts));
+      } else if (!pinnedIds.length){
+        out.pinned = [];
       }
-      /* pinned message bodies (any day) */
-      let pinned = [];
-      if (pinnedIds.length){
-        pinned = await sb(`messages?id=in.(${pinnedIds.join(',')})&order=ts.desc&limit=100`);
-        pinned.forEach(p => p.day = dayOf(p.ts));
-      }
-      const online = await onlineList(me);
-      return res.status(200).json({ ok:true, me, now:Date.now(), today, day, days, counts, pinnedIds, pinned, messages, online });
+      return res.status(200).json(out);
     }
 
     if (req.method !== 'POST') return res.status(405).json({ ok:false, reason:'method' });

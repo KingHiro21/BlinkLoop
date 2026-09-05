@@ -46,6 +46,14 @@ Tables: `messages(id, parent, ts, author, text, att jsonb)`, `pins(id, ts)`, `pr
 (`chat-files/`) because uploads are rare; it was 4-second polling that threatened the free Blob quota — keep
 hot-path storage off Blob.
 
+How `/api/chat` GET stays cheap: a full load (no `since`) returns everything including `days` and pinned
+bodies. A poll (`since>0`, plus `pins=<ids the client has>`) runs one parallel batch of five small queries and
+omits `days` and pinned bodies unless the pin set changed. Reply counts come from one query (all replies posted
+since the day started), so they never reset between polls. `team.html` paints the last feed from
+localStorage first, polls at 3s (10s after 90s of quiet, 30s while the tab is hidden), re-renders only when
+something changed, and sends optimistically. `supabase/indexes.sql` has the indexes those queries need; run it
+once in the Supabase SQL editor.
+
 ## Contact form
 
 Posts JSON (as `text/plain` to avoid a CORS preflight) to a Google Apps Script web app URL — the
