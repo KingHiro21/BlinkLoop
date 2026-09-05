@@ -38,9 +38,18 @@ h1 em{font-style:normal;font-weight:500;font-size:.68rem;letter-spacing:.14em;co
 .sub{color:var(--muted);font-size:.88rem;margin-bottom:20px}
 input{
   width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;
-  padding:12px 14px;font:inherit;color:inherit;text-align:center;letter-spacing:.04em;
+  padding:12px 14px;font:inherit;font-size:16px;color:inherit;text-align:center;letter-spacing:.04em;
 }
 input:focus{outline:none;border-color:var(--rust)}
+input:-webkit-autofill,input:-webkit-autofill:focus{-webkit-text-fill-color:var(--ink);caret-color:var(--ink);transition:background-color 999999s ease-in-out 0s}
+.vh{position:absolute;width:1px;height:1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.field{position:relative}
+.field input{padding-right:64px}
+.field #peek{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);width:auto;margin:0;padding:6px 10px;
+  border-radius:999px;background:transparent;border:1px solid var(--line);color:var(--muted);font-size:.75rem;font-weight:600;
+}
+.field #peek:hover{transform:translateY(-50%);box-shadow:none;color:var(--ink)}
 button{
   width:100%;margin-top:14px;padding:13px;border:none;border-radius:999px;cursor:pointer;
   background:var(--rust);color:#FFF7EC;font:inherit;font-weight:600;font-size:.95rem;
@@ -67,10 +76,17 @@ a.btnlike.ghost{background:transparent;border:1px solid var(--line);color:var(--
 
   <div id="formBox">
     <p class="sub">Sign in with your team code to open the builder.</p>
-    <input id="code" placeholder="LOOP-NAME-DATE-CODE" autocomplete="off" />
-    <label class="remember"><input type="checkbox" id="remember" checked /> Remember me on this device</label>
-    <button id="go">Sign in</button>
-    <div class="err" id="err"></div>
+    <form id="loginForm" method="post" action="/api/login">
+      <!-- Filled from the code's NAME part so the browser's password manager labels the saved entry. -->
+      <input id="user" name="username" type="text" autocomplete="username" class="vh" tabindex="-1" aria-hidden="true" />
+      <div class="field">
+        <input id="code" name="password" type="password" autocomplete="current-password" placeholder="LOOP-NAME-DATE-CODE" required />
+        <button type="button" id="peek" aria-label="Show code">Show</button>
+      </div>
+      <label class="remember"><input type="checkbox" id="remember" checked /> Remember me on this device</label>
+      <button id="go" type="submit">Sign in</button>
+      <div class="err" id="err"></div>
+    </form>
   </div>
 
   <div id="inBox" class="hide">
@@ -126,6 +142,11 @@ boot();
 async function signIn(auto){
   const code = $('#code').value.trim();
   if (!code) return false;
+  // Give the browser's password manager a proper credential pair: the NAME part
+  // of the code as the username, and the code itself in a password field.
+  const nm = code.toUpperCase().match(/^LOOP-([A-Z0-9]{2,12})-/);
+  $('#user').value = nm ? nm[1] : 'STAFF';
+  setPeek(false);
   const btn = $('#go'); btn.disabled = true; btn.textContent = 'Checking\u2026';
   if (!auto) $('#err').textContent='';
   try{
@@ -149,8 +170,14 @@ async function signIn(auto){
   }
   return false;
 }
-$('#go').addEventListener('click', ()=>signIn(false));
-$('#code').addEventListener('keydown', e=>{ if(e.key==='Enter') signIn(false); });
+// A real form submit is what makes Chrome, Safari and Firefox offer to save the code.
+$('#loginForm').addEventListener('submit', e=>{ e.preventDefault(); signIn(false); });
+function setPeek(show){
+  $('#code').type = show ? 'text' : 'password';
+  $('#peek').textContent = show ? 'Hide' : 'Show';
+  $('#peek').setAttribute('aria-label', show ? 'Hide code' : 'Show code');
+}
+$('#peek').addEventListener('click', ()=> setPeek($('#code').type === 'password'));
 $('#out').addEventListener('click', async ()=>{
   try{ await fetch('/api/logout', { method:'POST' }); }catch(e){}
   try{ localStorage.removeItem('lb-access'); }catch(e){}
