@@ -49,7 +49,10 @@ button{
 button:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(217,78,31,.4)}
 button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
 button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.remember{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-size:.85rem;color:var(--muted);cursor:pointer;user-select:none}
+.remember input{width:16px;height:16px;margin:0;accent-color:var(--rust);cursor:pointer}
 .err{color:#c0392b;font-size:.82rem;margin-top:12px;min-height:1.2em}
+.err.soft{color:var(--muted)}
 .who{font-weight:600;margin-bottom:4px}
 .meta{color:var(--muted);font-size:.8rem;margin-bottom:16px}
 .note{color:var(--muted);font-size:.72rem;margin-top:18px;opacity:.85}
@@ -65,6 +68,7 @@ a.btnlike.ghost{background:transparent;border:1px solid var(--line);color:var(--
   <div id="formBox">
     <p class="sub">Sign in with your team code to open the builder.</p>
     <input id="code" placeholder="LOOP-NAME-DATE-CODE" autocomplete="off" />
+    <label class="remember"><input type="checkbox" id="remember" checked /> Remember me on this device</label>
     <button id="go">Sign in</button>
     <div class="err" id="err"></div>
   </div>
@@ -96,38 +100,57 @@ function showIn(d){
   $('#who').textContent = 'Signed in as ' + d.client;
   $('#until').textContent = 'Access until end of ' + d.expires + ' (PH time)';
 }
+// "Remember me" keeps the code in localStorage under the same key the
+// builder's lock screen uses, so a lost cookie (cleared storage, new browser
+// session, middleware redirect) signs you back in without retyping.
+const REMEMBER_KEY = 'lb-access';
+const remembered = () => { try{ return localStorage.getItem(REMEMBER_KEY) || ''; }catch(e){ return ''; } };
+const remember = code => { try{ localStorage.setItem(REMEMBER_KEY, code); }catch(e){} };
+const forget = () => { try{ localStorage.removeItem(REMEMBER_KEY); }catch(e){} };
+
 async function boot(){
   try{
     const r = await fetch('/api/me');
     const d = await r.json();
-    if (d.ok) showIn(d);
+    if (d.ok){ showIn(d); return; }
   }catch(e){}
+  const saved = remembered();
+  if (!saved) return;
+  $('#code').value = saved;
+  const err = $('#err'); err.classList.add('soft'); err.textContent = 'Signing you back in\u2026';
+  const ok = await signIn(true);
+  err.classList.remove('soft');
+  if (!ok && !remembered()) $('#code').value = ''; // keep it prefilled if the server was merely unreachable
 }
 boot();
-async function signIn(){
+async function signIn(auto){
   const code = $('#code').value.trim();
-  if (!code) return;
-  const btn = $('#go'); btn.disabled = true; btn.textContent = 'Checking\u2026'; $('#err').textContent='';
+  if (!code) return false;
+  const btn = $('#go'); btn.disabled = true; btn.textContent = 'Checking\u2026';
+  if (!auto) $('#err').textContent='';
   try{
     const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
     const d = await r.json();
     if (d.ok){
+      if ($('#remember').checked) remember(code); else forget();
       const next = nextUrl();
-      if (next){ location.href = next; return; }
+      if (next){ location.href = next; return true; }
       showIn(d); // stay here: show the staff hub instead of jumping to the builder
-      return;
+      return true;
     }
+    forget(); // a saved code that no longer works should not be retried on every visit
     $('#err').textContent = d.reason==='expired'
-      ? 'That code has expired. Ask for a new one.'
-      : 'That code didn\u2019t match. Check it and try again.';
+      ? (auto ? 'Your saved code has expired. Ask for a new one.' : 'That code has expired. Ask for a new one.')
+      : (auto ? 'Your saved code no longer works. Sign in again.' : 'That code didn\u2019t match. Check it and try again.');
   }catch(e){
     $('#err').textContent = 'Couldn\u2019t reach the server. Try again.';
   }finally{
     btn.disabled = false; btn.textContent = 'Sign in';
   }
+  return false;
 }
-$('#go').addEventListener('click', signIn);
-$('#code').addEventListener('keydown', e=>{ if(e.key==='Enter') signIn(); });
+$('#go').addEventListener('click', ()=>signIn(false));
+$('#code').addEventListener('keydown', e=>{ if(e.key==='Enter') signIn(false); });
 $('#out').addEventListener('click', async ()=>{
   try{ await fetch('/api/logout', { method:'POST' }); }catch(e){}
   try{ localStorage.removeItem('lb-access'); }catch(e){}
