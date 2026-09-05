@@ -22,6 +22,7 @@ Static HTML + Vercel serverless functions. No build step, no framework, no bundl
 | `api/` | Serverless functions (CommonJS — do NOT add `"type":"module"` to package.json) |
 | `loop-projects/` | Builder project files (`blinkloop.loop.json`) + a builder-generated homepage |
 | `og.png`, `robots.txt`, `sitemap.xml` | SEO assets. Add every new public page to the sitemap. |
+| `assets/` | Logo files (`blinkloop-icon.png`, wordmarks), hero eye (`hero-core.png`), partner chips in `assets/work/`. Reference these by path; never inline images as base64 in the pages (it was 60 to 230KB of dead weight per page). Served with a one-week cache via `vercel.json`. |
 | `blinkloop-form.gs` | Google Apps Script that receives the contact form and emails info@ (lives in Google, copy here) |
 
 `vercel.json` has `cleanUrls: true` — pages are reachable without `.html`. Never create a folder with the
