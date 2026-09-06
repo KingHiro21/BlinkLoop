@@ -118,6 +118,9 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 #attPrev button{border:none;background:none;color:var(--muted);cursor:pointer}
 .note{ text-align:center;color:var(--muted);font-size:.68rem;padding-top:8px;opacity:.8}
 
+.live{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#2E7D5B;display:inline-flex;align-items:center;gap:5px}
+.live::before{content:"";width:6px;height:6px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22);animation:livePulse 2.4s ease-in-out infinite}
+@keyframes livePulse{50%{opacity:.45}}
 .msg.pending{opacity:.55}
 .mtext a{color:var(--rust);text-decoration:underline;text-underline-offset:2px;word-break:break-all}
 .jump{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:60;border:1px solid var(--rust);background:var(--rust);color:#FFF7EC;border-radius:999px;padding:8px 16px;font:inherit;font-size:.8rem;font-weight:600;cursor:pointer;box-shadow:0 10px 26px rgba(217,78,31,.35)}
@@ -136,6 +139,8 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
   .hright{gap:6px;font-size:.75rem;flex-wrap:wrap;justify-content:flex-end}
   .hbtn{padding:5px 10px;font-size:.7rem}
   #notifyBtn .lbl{display:none}
+  .live{font-size:0;gap:0}
+  .live::before{width:7px;height:7px}
   #notifyBtn{font-size:.85rem;padding:4px 9px}
   #onlineBar{font-size:.72rem;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .daybar .wrap{flex-wrap:wrap;gap:8px;padding:8px 12px !important}
@@ -169,6 +174,7 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
   <div class="brand">Blink<span>Loop</span><em>Team</em></div>
   <div class="hright">
     <span id="onlineBar" title="Online now"></span>
+    <span id="liveDot" class="live" title="Live: new messages appear instantly" hidden>live</span>
     <span id="who"></span>
     <button class="hbtn" id="notifyBtn" hidden>🔔 Notify me</button>
     <a class="hbtn" href="/">Site</a>
@@ -237,7 +243,7 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 const $ = s => document.querySelector(s);
 let ME='', TODAY='', viewDay='', days=[], msgs=[], counts={}, pinnedIds=new Set(), pinnedFull=[], onlineNames=[], since=0, pendingAtt=null, openTh=null;
 let pollTimer=null, inflight=false, quietSince=Date.now(), unread=0, lastSig='', lastThreadSig='';
-const POLL_FAST=3000, POLL_SLOW=10000, POLL_HIDDEN=30000, QUIET_AFTER=90000;
+const POLL_FAST=3000, POLL_SLOW=10000, POLL_HIDDEN=30000, POLL_LIVE=30000, QUIET_AFTER=90000;
 const CACHE_KEY='bl-team-cache', DRAFT_KEY='bl-team-draft', BASE_TITLE=document.title;
 const COLORS = ['#F45D2A','#7F2027','#2E7D5B','#0E7CD1','#7360F2','#B8860B','#C2185B'];
 const colorFor = a => COLORS[[...a].reduce((n,c)=>n+c.charCodeAt(0),0) % COLORS.length];
@@ -280,12 +286,14 @@ async function boot(){
   try{ const d = localStorage.getItem(DRAFT_KEY); if (d){ ta.value = d; ta.dispatchEvent(new Event('input')); } }catch(e){}
   await loadDay('');
   schedule(POLL_FAST);
+  connectRealtime();
   initNotify();
   const th = new URLSearchParams(location.search).get('thread');
   if (th && /^[0-9a-f-]+$/.test(th)){ history.replaceState(null, '', '/team'); openThread(th); }
   document.addEventListener('visibilitychange', ()=>{
     if (document.hidden) return;
     unread = 0; document.title = BASE_TITLE; quietSince = Date.now(); setBadge(0); markSeen();
+    if (!rt.ws) connectRealtime();
     pollNow();
   });
 }
@@ -346,7 +354,7 @@ async function tick(){
   await pollToday();
   if (openTh) await refreshThread(false);
   const quiet = Date.now() - quietSince > QUIET_AFTER;
-  schedule(document.hidden ? POLL_HIDDEN : quiet ? POLL_SLOW : POLL_FAST);
+  schedule(rt.ok ? POLL_LIVE : document.hidden ? POLL_HIDDEN : quiet ? POLL_SLOW : POLL_FAST);
 }
 function pollNow(){ clearTimeout(pollTimer); tick(); }
 
@@ -610,6 +618,66 @@ async function send(){
     toast('Not sent. Check your connection and try again.');
   }
 }
+/* ---------- realtime ----------
+   Supabase Realtime Broadcast, spoken directly (Phoenix v1 JSON frames, no library). The server sends a
+   content-free "change" ping after every post, pin or delete; we fetch through /api/chat on each ping.
+   The anon key only lets a browser hear pings, never read messages. Polling stays as a 30s safety net. */
+const rt = { ws:null, ok:false, tries:0, ref:0, hb:null, hbTimer:null, cfg:null };
+async function connectRealtime(){
+  if (rt.ws || !('WebSocket' in window)) return;
+  if (rt.cfg === null){
+    try{ const r = await fetch('/api/realtime'); const d = await r.json(); rt.cfg = d.ok ? d : false; }catch(e){ rt.cfg = false; }
+  }
+  if (!rt.cfg) return;
+  let ws;
+  try{ ws = new WebSocket(rt.cfg.url.replace(/^http/, 'ws') + '/realtime/v1/websocket?apikey=' + encodeURIComponent(rt.cfg.key) + '&vsn=1.0.0'); }
+  catch(e){ return retryRealtime(); }
+  rt.ws = ws;
+  const topic = 'realtime:' + rt.cfg.topic;
+  const send = o => { try{ ws.send(JSON.stringify(o)); }catch(e){} };
+  ws.onopen = () => {
+    const jr = String(++rt.ref);
+    send({ topic, event:'phx_join', payload:{ config:{ broadcast:{ self:false, ack:false }, presence:{ key:'' }, postgres_changes:[], private:false } }, ref: jr, join_ref: jr });
+    rt.hb = setInterval(() => {
+      send({ topic:'phoenix', event:'heartbeat', payload:{}, ref:String(++rt.ref) });
+      clearTimeout(rt.hbTimer); rt.hbTimer = setTimeout(() => { try{ ws.close(); }catch(e){} }, 10000);
+    }, 25000);
+  };
+  ws.onmessage = ev => {
+    let m; try{ m = JSON.parse(ev.data); }catch(e){ return; }
+    if (m.topic === 'phoenix'){ clearTimeout(rt.hbTimer); return; }
+    if (m.event === 'phx_reply'){
+      if (m.payload && m.payload.status === 'ok' && !rt.ok){ rt.ok = true; rt.tries = 0; $('#liveDot').hidden = false; schedule(POLL_LIVE); }
+      return;
+    }
+    if (m.event === 'phx_error' || m.event === 'phx_close'){ try{ ws.close(); }catch(e){} return; }
+    if (m.event === 'broadcast'){ onChange(m.payload && m.payload.payload || {}); }
+  };
+  ws.onclose = () => {
+    clearInterval(rt.hb); clearTimeout(rt.hbTimer);
+    const wasLive = rt.ok; rt.ok = false; rt.ws = null; $('#liveDot').hidden = true;
+    if (wasLive) schedule(POLL_FAST);
+    retryRealtime();
+  };
+  ws.onerror = () => { try{ ws.close(); }catch(e){} };
+}
+/* a ping says what changed; deletions are applied locally since polls only carry new messages */
+function onChange(p){
+  quietSince = Date.now();
+  if (p.kind === 'del' && p.id){
+    if (!p.parent){ msgs = msgs.filter(m=>m.id!==p.id); pinnedIds.delete(p.id); pinnedFull = pinnedFull.filter(x=>x.id!==p.id); render(false); writeCache(); }
+    else if (counts[p.parent]) counts[p.parent] = Math.max(0, counts[p.parent]-1);
+    if (openTh && openTh === (p.parent || p.id)){ if (p.parent) refreshThread(false); else closeThread(); }
+    render(false);
+  }
+  pollNow();
+}
+function retryRealtime(){
+  const wait = Math.min(30000, 1000 * Math.pow(2, rt.tries++)) + Math.random() * 500;
+  setTimeout(() => { if (!rt.ws) connectRealtime(); }, wait);
+}
+window.addEventListener('online', () => { if (!rt.ws) connectRealtime(); });
+
 /* ---------- notifications ----------
    Three states. 'push': this device is subscribed (service worker shows alerts even when the page is
    closed; on iPhone only after Add to Home Screen). 'local': permission granted but no push, so the page

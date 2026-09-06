@@ -54,6 +54,16 @@ localStorage first, polls at 3s (10s after 90s of quiet, 30s while the tab is hi
 something changed, and sends optimistically. `supabase/indexes.sql` has the indexes those queries need; run it
 once in the Supabase SQL editor.
 
+## Realtime (team chat)
+
+Supabase Realtime Broadcast on channel `team`. `lib/realtime.js` posts a content-free ping
+(`{kind: post|reply|pins|del, ts, ...}`) to `/realtime/v1/api/broadcast` with the service key after every
+change; `team.html` opens the socket itself (Phoenix v1 JSON frames, no client library) using the anon key from
+`/api/realtime` (session-gated; needs env `SUPABASE_ANON_KEY`) and fetches through `/api/chat` on each ping.
+Message text never travels over the socket, so the public anon key cannot read the chat. Polling stays as a
+30s safety net while live, 3s when the socket is down. No Supabase-side setup: Broadcast works without
+publications or RLS policies. Without `SUPABASE_ANON_KEY` the page simply keeps polling.
+
 ## Notifications (team chat)
 
 Web Push: `sw.js` (notifications only, no caching) + `manifest.webmanifest` (installable, start_url /team) +

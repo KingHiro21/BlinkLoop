@@ -6,6 +6,7 @@
 
 const crypto = require('crypto');
 const { vapid, sendAll } = require('../lib/push.js');
+const { broadcast } = require('../lib/realtime.js');
 
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 function b32(buf, len){ let bits=0,v=0,out=''; for(const x of buf){ v=(v<<8)|x; bits+=8; while(bits>=5){ out+=B32[(v>>>(bits-5))&31]; bits-=5; } } return out.slice(0,len); }
@@ -146,7 +147,8 @@ module.exports = async (req, res) => {
       const id = `${ts}-${crypto.randomBytes(3).toString('hex')}`;
       const msg = { id, parent, ts, author: me, text, att };
       await sb('messages', { method:'POST', body: msg, prefer:'return=minimal' });
-      /* push everyone else's devices; capped so a slow push service never holds the reply hostage */
+      /* wake open chat tabs (realtime ping, no content) and push closed ones; both capped */
+      const wake = broadcast({ kind: parent ? 'reply' : 'post', ts, parent });
       try {
         if (vapid()){
           const subs = await sb(`push_subs?client=neq.${me}&select=endpoint,sub`);
@@ -159,6 +161,7 @@ module.exports = async (req, res) => {
           });
         }
       } catch(e){}
+      await wake;
       return res.status(200).json({ ok:true, message: msg });
     }
 
@@ -167,6 +170,7 @@ module.exports = async (req, res) => {
       if (!id) return res.status(200).json({ ok:false, reason:'bad-id' });
       if (action === 'pin') await sb(`pins?on_conflict=id`, { method:'POST', body:{ id, ts: Date.now() }, prefer:'resolution=merge-duplicates,return=minimal' });
       else await sb(`pins?id=eq.${id}`, { method:'DELETE' });
+      await broadcast({ kind:'pins', ts: Date.now() });
       return res.status(200).json({ ok:true, id, pinned: action==='pin' });
     }
 
@@ -183,6 +187,7 @@ module.exports = async (req, res) => {
           sb(`pins?id=eq.${id}`, { method:'DELETE' }).catch(()=>{})
         ]);
       }
+      await broadcast({ kind:'del', id, parent: rows[0].parent || null, ts: Date.now() });
       return res.status(200).json({ ok:true, id });
     }
 
