@@ -4,6 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="icon" type="image/png" href="/assets/blinkloop-icon.png" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#F45D2A" />
+<link rel="apple-touch-icon" href="/assets/icon-180.png" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="BL Team" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Team | BlinkLoop</title>
 <script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
@@ -129,6 +135,8 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
   #who{display:none}
   .hright{gap:6px;font-size:.75rem;flex-wrap:wrap;justify-content:flex-end}
   .hbtn{padding:5px 10px;font-size:.7rem}
+  #notifyBtn .lbl{display:none}
+  #notifyBtn{font-size:.85rem;padding:4px 9px}
   #onlineBar{font-size:.72rem;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .daybar .wrap{flex-wrap:wrap;gap:8px;padding:8px 12px !important}
   #dayLabel{min-width:0 !important;font-size:.8rem !important}
@@ -162,6 +170,7 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
   <div class="hright">
     <span id="onlineBar" title="Online now"></span>
     <span id="who"></span>
+    <button class="hbtn" id="notifyBtn" hidden>🔔 Notify me</button>
     <a class="hbtn" href="/">Site</a>
     <a class="hbtn" href="/builder">Builder</a>
     <a class="hbtn" href="/admin">Codes</a>
@@ -271,9 +280,12 @@ async function boot(){
   try{ const d = localStorage.getItem(DRAFT_KEY); if (d){ ta.value = d; ta.dispatchEvent(new Event('input')); } }catch(e){}
   await loadDay('');
   schedule(POLL_FAST);
+  initNotify();
+  const th = new URLSearchParams(location.search).get('thread');
+  if (th && /^[0-9a-f-]+$/.test(th)){ history.replaceState(null, '', '/team'); openThread(th); }
   document.addEventListener('visibilitychange', ()=>{
     if (document.hidden) return;
-    unread = 0; document.title = BASE_TITLE; quietSince = Date.now();
+    unread = 0; document.title = BASE_TITLE; quietSince = Date.now(); setBadge(0); markSeen();
     pollNow();
   });
 }
@@ -321,7 +333,7 @@ async function pollToday(){
       since = Math.max(since, ...fresh.map(m=>m.ts));
       quietSince = Date.now();
       const others = fresh.filter(m=>m.author!==ME).length;
-      if (document.hidden && others){ unread += others; document.title = '('+unread+') '+BASE_TITLE; }
+      if (document.hidden && others){ unread += others; document.title = '('+unread+') '+BASE_TITLE; setBadge(unread); localNotify(fresh.filter(m=>m.author!==ME)); }
     }
     render(false); renderBar(); writeCache();
     if (fresh.length && !wasAtBottom && !document.hidden){ const j=$('#jump'); j.textContent = '↓ New message'+(fresh.length>1?'s':''); j.hidden = false; }
@@ -384,6 +396,7 @@ function render(scroll){
   $('#feed').innerHTML = html || '<div class="empty">No messages on this day.</div>';
   renderPins();
   if (stick){ $('#main').scrollTop = $('#main').scrollHeight; $('#jump').hidden = true; }
+  markSeen();
 }
 function renderPins(){
   const bar = $('#pinsBar');
@@ -597,9 +610,95 @@ async function send(){
     toast('Not sent. Check your connection and try again.');
   }
 }
+/* ---------- notifications ----------
+   Three states. 'push': this device is subscribed (service worker shows alerts even when the page is
+   closed; on iPhone only after Add to Home Screen). 'local': permission granted but no push, so the page
+   itself alerts while it is open in the background. 'off'. The site nav badge reads bl-team-seen. */
+const NOTIFY_LOCAL_KEY='bl-notify-local', SEEN_KEY='bl-team-seen';
+let swReg=null, pushSub=null, pushInfo=null;
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+const standalone = (matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true;
+const canPush = () => 'serviceWorker' in navigator && 'PushManager' in window;
+function setBadge(n){ try{ if (navigator.setAppBadge){ n>0 ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } }catch(e){} }
+function markSeen(){
+  if (document.hidden || !msgs.length) return;
+  try{ const t = Math.max(...msgs.map(m=>m.ts||0)); if (t) localStorage.setItem(SEEN_KEY, String(t)); }catch(e){}
+}
+async function initNotify(){
+  if (!('Notification' in window)) return;
+  $('#notifyBtn').hidden = false;
+  if ('serviceWorker' in navigator){
+    try{ swReg = await navigator.serviceWorker.register('/sw.js'); pushSub = await swReg.pushManager.getSubscription(); }catch(e){}
+  }
+  try{ pushInfo = await (await fetch('/api/push')).json(); }catch(e){ pushInfo = null; }
+  /* a browser subscription the server no longer knows about (new keys, cleared table) gets re-sent */
+  if (pushSub && pushInfo && pushInfo.configured && Notification.permission==='granted') postSub(pushSub).catch(()=>{});
+  paintNotifyBtn();
+}
+function notifyState(){
+  if (Notification.permission==='denied') return 'denied';
+  if (pushSub) return 'push';
+  let local=false; try{ local = localStorage.getItem(NOTIFY_LOCAL_KEY)==='1'; }catch(e){}
+  if (Notification.permission==='granted' && local) return 'local';
+  return 'off';
+}
+function paintNotifyBtn(){
+  const b = $('#notifyBtn'), st = notifyState();
+  b.innerHTML = (st==='denied' ? '🔕' : '🔔') + '<span class="lbl"> ' + (st==='denied' ? 'Blocked' : st==='off' ? 'Notify me' : 'On') + '</span>';
+  b.setAttribute('aria-label', 'Notifications: ' + (st==='denied' ? 'blocked' : st==='off' ? 'off' : 'on'));
+  b.title = st==='denied' ? 'Notifications are blocked for this site in your browser settings'
+    : st==='push' ? 'Push notifications are on for this device. Click to turn off.'
+    : st==='local' ? 'Alerts while this tab is open. Click to turn off.'
+    : 'Get an alert when someone posts';
+}
+async function postSub(sub){
+  const r = await fetch('/api/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'subscribe', sub: sub.toJSON()})});
+  return (await r.json()).ok;
+}
+function urlB64ToU8(str){ const pad='='.repeat((4-str.length%4)%4); const b=atob((str+pad).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b, c=>c.charCodeAt(0)); }
+async function toggleNotify(){
+  const st = notifyState();
+  if (st==='denied'){ toast('Notifications are blocked. Allow them for this site in your browser settings.'); return; }
+  if (st==='push'){
+    try{ await fetch('/api/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'unsubscribe', endpoint: pushSub.endpoint})}); await pushSub.unsubscribe(); }catch(e){}
+    pushSub = null; try{ localStorage.removeItem(NOTIFY_LOCAL_KEY); }catch(e){}
+    paintNotifyBtn(); toast('Notifications are off for this device.'); return;
+  }
+  if (st==='local'){ try{ localStorage.removeItem(NOTIFY_LOCAL_KEY); }catch(e){} paintNotifyBtn(); toast('Notifications are off.'); return; }
+  let perm = Notification.permission;
+  if (perm!=='granted'){ try{ perm = await Notification.requestPermission(); }catch(e){} }
+  if (perm!=='granted'){ paintNotifyBtn(); if (perm==='denied') toast('Notifications are blocked for this site.'); return; }
+  try{ localStorage.setItem(NOTIFY_LOCAL_KEY,'1'); }catch(e){}
+  if (canPush() && swReg && pushInfo && pushInfo.configured){
+    try{
+      pushSub = await swReg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlB64ToU8(pushInfo.publicKey) });
+      if (!(await postSub(pushSub))) throw new Error('server');
+      paintNotifyBtn(); toast('Push notifications are on for this device.');
+      fetch('/api/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'test'})}).catch(()=>{});
+      return;
+    }catch(e){ pushSub = null; }
+  }
+  paintNotifyBtn();
+  toast(isIOS && !standalone
+    ? 'Alerts work while this tab is open. For alerts when Safari is closed, add this page to your Home Screen first.'
+    : 'Alerts are on while this tab is open in the background.');
+}
+$('#notifyBtn').addEventListener('click', toggleNotify);
+function localNotify(list){
+  if (!list.length || notifyState()!=='local') return;   /* push devices hear it from the service worker */
+  try{
+    const m = list[list.length-1];
+    const n = new Notification(m.author+' · BlinkLoop Team', {
+      body: list.length>1 ? list.length+' new messages' : (m.text ? m.text.slice(0,120) : '📎 '+(m.att ? m.att.name : 'attachment')),
+      icon:'/assets/icon-192.png', tag:'bl-team'
+    });
+    n.onclick = ()=>{ window.focus(); n.close(); };
+  }catch(e){}
+}
+
 $('#logout').addEventListener('click', async ()=>{
   try{ await fetch('/api/logout',{method:'POST'}); }catch(e){}
-  try{ localStorage.removeItem(CACHE_KEY); localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('lb-access'); }catch(e){}
+  try{ localStorage.removeItem(CACHE_KEY); localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('lb-access'); localStorage.removeItem(SEEN_KEY); }catch(e){}
   location.href = '/login';
 });
 boot();

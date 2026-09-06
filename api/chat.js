@@ -5,6 +5,7 @@
 // POST post{text,att,parent?} | pin/unpin{id} | del{id,parent?} | file{...}
 
 const crypto = require('crypto');
+const { vapid, sendAll } = require('../lib/push.js');
 
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 function b32(buf, len){ let bits=0,v=0,out=''; for(const x of buf){ v=(v<<8)|x; bits+=8; while(bits>=5){ out+=B32[(v>>>(bits-5))&31]; bits-=5; } } return out.slice(0,len); }
@@ -145,6 +146,19 @@ module.exports = async (req, res) => {
       const id = `${ts}-${crypto.randomBytes(3).toString('hex')}`;
       const msg = { id, parent, ts, author: me, text, att };
       await sb('messages', { method:'POST', body: msg, prefer:'return=minimal' });
+      /* push everyone else's devices; capped so a slow push service never holds the reply hostage */
+      try {
+        if (vapid()){
+          const subs = await sb(`push_subs?client=neq.${me}&select=endpoint,sub`);
+          const preview = text ? text.slice(0,120) : ('📎 ' + (att ? att.name : 'attachment'));
+          await sendAll(sb, subs, {
+            title: me + (parent ? ' replied' : '') + ' · BlinkLoop Team',
+            body: preview,
+            url: parent ? `/team?thread=${parent}` : '/team',
+            tag: parent ? 'bl-thread-' + parent : 'bl-team'
+          });
+        }
+      } catch(e){}
       return res.status(200).json({ ok:true, message: msg });
     }
 

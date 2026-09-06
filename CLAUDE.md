@@ -54,6 +54,17 @@ localStorage first, polls at 3s (10s after 90s of quiet, 30s while the tab is hi
 something changed, and sends optimistically. `supabase/indexes.sql` has the indexes those queries need; run it
 once in the Supabase SQL editor.
 
+## Notifications (team chat)
+
+Web Push: `sw.js` (notifications only, no caching) + `manifest.webmanifest` (installable, start_url /team) +
+`api/push.js` (subscribe / unsubscribe / test) + `lib/push.js` (shared sender, `web-push` package). Subscriptions
+live in Supabase `push_subs` (`supabase/push.sql`). `api/chat.js` pushes to everyone except the author after a
+post, capped at 4s. Env vars: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (`npx web-push generate-vapid-keys`),
+`VAPID_SUBJECT` (mailto:info@blinkloopph.com). Without them the bell falls back to in-page alerts while the tab
+is open. iPhone gets push only after Add to Home Screen. Unread: tab title, app badge, and the site nav pill
+(`/api/presence?seen=<ts>`, ts from localStorage `bl-team-seen`). PWA icons: `assets/icon-192.png`,
+`icon-512.png`, `icon-512-maskable.png`, `icon-180.png`, `badge-96.png`.
+
 ## Contact form
 
 Posts JSON (as `text/plain` to avoid a CORS preflight) to a Google Apps Script web app URL — the

@@ -45,11 +45,19 @@ module.exports = async (req, res) => {
       await sb(`presence?on_conflict=client`, { method:'POST', body:{ client: me, ts: Date.now() }, prefer:'resolution=merge-duplicates,return=minimal' });
       return res.status(200).json({ ok:true, me });
     }
-    const rows = await sb(`presence?ts=gt.${Date.now()-WINDOW}&select=client,ts&order=client.asc`);
+    /* ?seen=<ts> adds an unread count (messages from others newer than ts) for the site nav badge */
+    const url = new URL(req.url, 'http://x');
+    const seen = Number(url.searchParams.get('seen')||0);
+    const [rows, fresh] = await Promise.all([
+      sb(`presence?ts=gt.${Date.now()-WINDOW}&select=client,ts&order=client.asc`),
+      seen > 0 ? sb(`messages?select=author&ts=gt.${seen}&author=neq.${me}&order=ts.desc&limit=50`) : []
+    ]);
     const online = rows.map(r=>({ client:r.client, ts:Number(r.ts) }));
     if (!online.some(o=>o.client===me)) online.push({ client: me, ts: Date.now() });
     online.sort((a,b)=>a.client.localeCompare(b.client));
-    return res.status(200).json({ ok:true, me, online });
+    const out = { ok:true, me, online };
+    if (seen > 0) out.unread = fresh.length;
+    return res.status(200).json(out);
   } catch(e){
     return res.status(200).json({ ok:false, reason:'store-failed' });
   }
