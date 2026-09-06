@@ -26,6 +26,7 @@
   --glass:rgba(250,244,234,.06); --glass-strong:rgba(250,244,234,.09); --line:rgba(250,244,234,.13);
 }
 *{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none !important}   /* the hidden attribute must win over display:flex on pickers, banners, badges */
 html,body{height:100%}
 body{
   display:flex;flex-direction:column;
@@ -61,6 +62,7 @@ header{
 .brand em{font-style:normal;font-weight:500;font-size:.62rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-left:6px}
 .hright{display:flex;align-items:center;gap:14px;font-size:.82rem;color:var(--muted)}
 .hright b{color:var(--ink)}
+#who{display:none}   /* your name is already first in the online list */
 .hbtn{border:1px solid var(--line);border-radius:999px;padding:6px 14px;background:transparent;color:var(--ink);font:inherit;font-size:.78rem;font-weight:600;cursor:pointer}
 .hbtn:hover{border-color:var(--rust);color:var(--rust)}
 
@@ -307,7 +309,7 @@ function readCache(){
 }
 function writeCache(){
   if (viewDay!==TODAY) return;
-  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ me:ME, today:TODAY, day:viewDay, days, counts, pinnedIds:[...pinnedIds], pinned:pinnedFull, messages:msgs.filter(m=>!m.pending), online:onlineNames })); }catch(e){}
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ me:ME, today:TODAY, day:viewDay, days, counts, pinnedIds:[...pinnedIds], pinned:pinnedFull, messages:msgs.filter(m=>!m.pending), online:onlineNames, reactions })); }catch(e){}
 }
 function saveDraft(v){ try{ v ? localStorage.setItem(DRAFT_KEY, v) : localStorage.removeItem(DRAFT_KEY); }catch(e){} }
 let toastTimer=null;
@@ -348,9 +350,11 @@ function applyFeedData(d){
   else pinnedFull = pinnedFull.filter(p=>pinnedIds.has(p.id));
   if (d.online){
     onlineNames = d.online; rememberNames(onlineNames);
-    $('#onlineBar').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22)"></span>'+onlineNames.map(esc).join(', ')+'</span>';
+    /* me first and bold, then everyone else online; this replaces a separate "Signed in as" label */
+    const names = [ME, ...onlineNames.filter(n=>n!==ME)].map(n => n===ME ? '<b title="You">'+esc(n)+'</b>' : esc(n));
+    $('#onlineBar').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22)"></span>'+names.join(', ')+'</span>';
   }
-  $('#who').innerHTML = 'Signed in as <b>'+esc(ME)+'</b>';
+  $('#who').textContent = ME;
 }
 async function loadDay(day){
   let r;
@@ -363,8 +367,10 @@ async function loadDay(day){
   since = msgs.length ? Math.max(...msgs.map(m=>m.ts)) : 0;
   lastSig = ''; render(true); renderBar(); writeCache();
 }
+let pollAgain = false;
 async function pollToday(){
-  if (inflight || viewDay!==TODAY || !TODAY) return;
+  if (viewDay!==TODAY || !TODAY) return;
+  if (inflight){ pollAgain = true; return; }   /* a realtime ping during a poll must not be dropped */
   inflight = true;
   try{
     const r = await fetch('/api/chat?day='+TODAY+'&since='+since+'&pins='+[...pinnedIds].join(','));
@@ -388,7 +394,7 @@ async function pollToday(){
     render(false); renderBar(); writeCache();
     if (fresh.length && !wasAtBottom && !document.hidden){ const j=$('#jump'); j.textContent = '↓ New message'+(fresh.length>1?'s':''); j.hidden = false; }
   }catch(e){}
-  finally{ inflight = false; }
+  finally{ inflight = false; if (pollAgain){ pollAgain = false; pollToday(); } }
 }
 /* polling cadence: quick while the room is active, relaxed when quiet, slow while the tab is hidden */
 function schedule(ms){ clearTimeout(pollTimer); pollTimer = setTimeout(tick, ms); }
@@ -512,7 +518,14 @@ async function refreshThread(scroll, hlId){
 }
 function closeThread(){ openTh=null; $('#drawer').classList.remove('open'); }
 $('#drawerX').addEventListener('click', closeThread);
-document.addEventListener('keydown', e=>{ if (e.key==='Escape' && openTh) closeThread(); });
+document.addEventListener('keydown', e=>{
+  if (e.key!=='Escape') return;
+  if (!$('#rxpick').hidden){ closePicker(); return; }
+  if (!$('#mentionPick').hidden){ closeMentionPick(); return; }
+  if (openTh) closeThread();
+});
+/* a floating picker must not stay behind when the feed scrolls away from its button */
+$('#main').addEventListener('scroll', ()=>{ if (!$('#rxpick').hidden) closePicker(); }, {passive:true});
 $('#tSend').addEventListener('click', sendReply);
 $('#tText').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendReply(); } });
 async function sendReply(){
