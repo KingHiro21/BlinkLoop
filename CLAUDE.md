@@ -54,6 +54,17 @@ localStorage first, polls at 3s (10s after 90s of quiet, 30s while the tab is hi
 something changed, and sends optimistically. `supabase/indexes.sql` has the indexes those queries need; run it
 once in the Supabase SQL editor.
 
+## Mentions, reactions, install (team chat)
+
+- `@NAME` in a message: highlighted for everyone, left-bar highlight for the named person, autocomplete in both
+  composers (names from presence, the day's authors, and a remembered roster in localStorage `bl-team-roster`).
+  The named person's push says "X mentioned you" with its own tag; `mentionsIn()` in `api/chat.js` parses.
+- Reactions: fixed set 👍 ❤️ ✅ 😂 🎉 👀, table `reactions` (`supabase/reactions.sql`, run once). POST
+  `{action:'react', id, emoji}` toggles; the day feed and thread responses carry `reactions[msgId][emoji] = [names]`.
+  Queries are wrapped so a missing table never breaks the chat. Realtime ping kind `react`.
+- Install banner under the day bar: holds `beforeinstallprompt`, iPhone Safari gets the Add to Home Screen hint,
+  "Later" is remembered in `bl-install-dismissed`.
+
 ## Realtime (team chat)
 
 Supabase Realtime Broadcast on channel `team`. `lib/realtime.js` posts a content-free ping

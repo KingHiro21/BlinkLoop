@@ -30,6 +30,11 @@ function sessionClient(req, secret){
 }
 
 const MAX_TEXT = 2000, MAX_FILE = 3.5*1024*1024, PRESENCE_WINDOW = 120000, SEARCH_HITS = 50;
+const EMOJI = new Set(['👍','❤️','✅','😂','🎉','👀']);
+/* @NAME mentions: 2 to 12 letters/digits, not part of an email */
+const mentionsIn = text => [...new Set((String(text||'').match(/(?:^|[^\w@])@([A-Za-z0-9]{2,12})(?![\w@])/g)||[]).map(m => m.replace(/^[^@]*@/,'').toUpperCase()))];
+const reactId = (msg, client, emoji) => crypto.createHash('sha1').update(`${msg}|${client}|${emoji}`).digest('hex').slice(0,24);
+function groupReactions(rows){ const out = {}; for (const r of rows){ (out[r.msg] ||= {}); (out[r.msg][r.emoji] ||= []).push(r.client); } return out; }
 
 /* ---------- Supabase REST helpers ---------- */
 function sbConf(){
@@ -77,7 +82,9 @@ module.exports = async (req, res) => {
         const roots = await sb(`messages?id=eq.${thread}&limit=1`);
         if (!roots.length) return res.status(200).json({ ok:false, reason:'not-found' });
         const replies = await sb(`messages?parent=eq.${thread}&order=ts.asc&limit=500`);
-        return res.status(200).json({ ok:true, me, root: roots[0], replies });
+        const ids = [thread, ...replies.map(r=>r.id)].join(',');
+        const rx = await sb(`reactions?select=msg,client,emoji&msg=in.(${ids})&limit=5000`).catch(()=>[]);
+        return res.status(200).json({ ok:true, me, root: roots[0], replies, reactions: groupReactions(rx) });
       }
 
       /* ---- search (text, author, attachment name; roots + replies) ---- */
@@ -99,7 +106,7 @@ module.exports = async (req, res) => {
       const { start, end } = dayRangeUTC(day);
       const lo = Math.max(start, since+1);
 
-      const [messages, tsRows, pinRows, , presenceRows, repRows] = await Promise.all([
+      const [messages, tsRows, pinRows, , presenceRows, repRows, rxRows] = await Promise.all([
         sb(`messages?parent=is.null&ts=gte.${lo}&ts=lt.${end}&order=ts.asc&limit=300`),
         poll ? [] : sb(`messages?select=ts&parent=is.null&order=ts.desc&limit=20000`),
         sb(`pins?select=id&order=ts.desc&limit=100`),
@@ -107,14 +114,16 @@ module.exports = async (req, res) => {
         sb(`presence?ts=gt.${Date.now()-PRESENCE_WINDOW}&select=client`),
         /* every reply posted since this day started covers every reply to this day's roots
            (a reply is always newer than its root), so reply counts stay fresh without a second pass */
-        sb(`messages?select=parent&parent=not.is.null&ts=gte.${start}&limit=5000`)
+        sb(`messages?select=parent&parent=not.is.null&ts=gte.${start}&limit=5000`),
+        /* reactions on this day's messages; tolerant of the table not existing yet */
+        sb(`reactions?select=msg,client,emoji&mts=gte.${start}&mts=lt.${end}&limit=5000`).catch(()=>[])
       ]);
       const pinnedIds = pinRows.map(r=>r.id);
       const counts = {};
       for (const r of repRows) counts[r.parent] = (counts[r.parent]||0)+1;
       const online = [...new Set([me, ...presenceRows.map(r=>r.client)])].sort();
 
-      const out = { ok:true, me, now:Date.now(), today, day, counts, pinnedIds, messages, online };
+      const out = { ok:true, me, now:Date.now(), today, day, counts, pinnedIds, messages, online, reactions: groupReactions(rxRows) };
       if (!poll) out.days = [...new Set([today, ...tsRows.map(r=>dayOf(r.ts))])].sort().reverse();
 
       /* pinned message bodies (any day): skipped on a poll when the client already has the same set */
@@ -151,14 +160,21 @@ module.exports = async (req, res) => {
       const wake = broadcast({ kind: parent ? 'reply' : 'post', ts, parent });
       try {
         if (vapid()){
-          const subs = await sb(`push_subs?client=neq.${me}&select=endpoint,sub`);
+          const subs = await sb(`push_subs?client=neq.${me}&select=client,endpoint,sub`);
           const preview = text ? text.slice(0,120) : ('📎 ' + (att ? att.name : 'attachment'));
-          await sendAll(sb, subs, {
-            title: me + (parent ? ' replied' : '') + ' · BlinkLoop Team',
-            body: preview,
-            url: parent ? `/team?thread=${parent}` : '/team',
-            tag: parent ? 'bl-thread-' + parent : 'bl-team'
-          });
+          const url = parent ? `/team?thread=${parent}` : '/team';
+          const named = new Set(mentionsIn(text));
+          /* people named with @ get their own wording (and their own tag, so it is not collapsed into the room ping) */
+          await Promise.all([
+            sendAll(sb, subs.filter(s => !named.has(s.client)), {
+              title: me + (parent ? ' replied' : '') + ' · BlinkLoop Team',
+              body: preview, url, tag: parent ? 'bl-thread-' + parent : 'bl-team'
+            }),
+            sendAll(sb, subs.filter(s => named.has(s.client)), {
+              title: me + ' mentioned you · BlinkLoop Team',
+              body: preview, url, tag: 'bl-mention-' + id
+            })
+          ]);
         }
       } catch(e){}
       await wake;
@@ -172,6 +188,19 @@ module.exports = async (req, res) => {
       else await sb(`pins?id=eq.${id}`, { method:'DELETE' });
       await broadcast({ kind:'pins', ts: Date.now() });
       return res.status(200).json({ ok:true, id, pinned: action==='pin' });
+    }
+
+    if (action === 'react'){
+      const id = idsafe(body.id), emoji = String(body.emoji||'');
+      if (!id || !EMOJI.has(emoji)) return res.status(200).json({ ok:false, reason:'bad-reaction' });
+      const rows = await sb(`messages?id=eq.${id}&select=id,ts&limit=1`);
+      if (!rows.length) return res.status(200).json({ ok:false, reason:'not-found' });
+      const rid = reactId(id, me, emoji);
+      const have = await sb(`reactions?id=eq.${rid}&select=id&limit=1`);
+      if (have.length) await sb(`reactions?id=eq.${rid}`, { method:'DELETE' });
+      else await sb('reactions', { method:'POST', body:{ id: rid, msg: id, mts: Number(rows[0].ts), client: me, emoji, ts: Date.now() }, prefer:'return=minimal' });
+      await broadcast({ kind:'react', id, ts: Date.now() });
+      return res.status(200).json({ ok:true, id, emoji, on: !have.length });
     }
 
     if (action === 'del'){
