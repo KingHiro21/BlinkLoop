@@ -2,6 +2,9 @@
 // so a deploy is always what people see.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+// Pass-through fetch handler: older Android Chrome only offers "Install app" when the
+// service worker has one. It never intercepts, so every request still goes to the network.
+self.addEventListener('fetch', () => {});
 
 self.addEventListener('push', e => {
   let d = {};

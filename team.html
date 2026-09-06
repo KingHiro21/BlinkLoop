@@ -315,7 +315,7 @@ function saveDraft(v){ try{ v ? localStorage.setItem(DRAFT_KEY, v) : localStorag
 let toastTimer=null;
 function toast(text){
   const t = $('#toast'); t.textContent = text; t.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(()=>{ t.hidden = true; }, 3200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>{ t.hidden = true; }, Math.max(3200, text.length * 55)); /* longer hints stay longer */
 }
 
 async function boot(){
@@ -923,17 +923,36 @@ function localNotify(list){
    Chrome/Edge/Android fire beforeinstallprompt; we hold it and show a banner. iPhone has no prompt API,
    so Safari users get the Share / Add to Home Screen hint. Dismissal is remembered. */
 let installEvt = null; const INSTALL_DISMISS = 'bl-install-dismissed';
+const UA = navigator.userAgent;
+const isAndroid = /Android/i.test(UA);
+/* step-by-step wording per browser, used when there is no native prompt to call */
+function installHint(){
+  if (isIOS) return /CriOS|FxiOS|EdgiOS/.test(UA) ? 'On iPhone, open this page in Safari, then tap Share and Add to Home Screen.' : 'In Safari: tap Share (the square with an arrow), then Add to Home Screen.';
+  if (isAndroid){
+    if (/SamsungBrowser/i.test(UA)) return 'Tap the menu (three lines) at the bottom right, then Add page to, then Home screen.';
+    if (/Firefox/i.test(UA)) return 'Tap the menu (three dots), then Install, or Add to Home screen.';
+    return 'Tap the menu (three dots, top right), then Add to Home screen or Install app.';
+  }
+  return 'Use your browser menu: Install app, or Add to Home screen.';
+}
 function maybeShowInstall(){
   if (standalone) return;
   let dismissed = false; try{ dismissed = localStorage.getItem(INSTALL_DISMISS)==='1'; }catch(e){}
   if (dismissed) return;
-  if (installEvt || (isIOS && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS/.test(navigator.userAgent))) $('#installBar').hidden = false;
+  /* phones always get the banner; desktop only when the browser offers a native prompt */
+  if (installEvt || isIOS || isAndroid) $('#installBar').hidden = false;
 }
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; maybeShowInstall(); });
-window.addEventListener('appinstalled', () => { $('#installBar').hidden = true; toast('Installed. Open BL Team from your home screen.'); });
+window.addEventListener('appinstalled', () => { $('#installBar').hidden = true; try{ localStorage.setItem(INSTALL_DISMISS,'1'); }catch(e){} toast('Installed. Open BL Team from your home screen.'); });
 $('#installGo').addEventListener('click', async () => {
-  if (installEvt){ installEvt.prompt(); try{ await installEvt.userChoice; }catch(e){} installEvt = null; $('#installBar').hidden = true; return; }
-  toast(isIOS ? 'In Safari: tap Share, then Add to Home Screen.' : 'Use your browser menu: Install app, or Add to Home screen.');
+  if (installEvt){
+    let choice = null;
+    try{ installEvt.prompt(); choice = await installEvt.userChoice; }catch(e){}
+    installEvt = null;
+    if (choice && choice.outcome === 'accepted'){ $('#installBar').hidden = true; return; }
+    toast(installHint()); return;
+  }
+  toast(installHint());
 });
 $('#installLater').addEventListener('click', () => { try{ localStorage.setItem(INSTALL_DISMISS,'1'); }catch(e){} $('#installBar').hidden = true; });
 maybeShowInstall();

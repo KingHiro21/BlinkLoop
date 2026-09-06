@@ -1,10 +1,13 @@
 {
+  "id": "/team",
   "name": "BlinkLoop Team",
   "short_name": "BL Team",
   "description": "BlinkLoop staff chat.",
   "start_url": "/team",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "prefer_related_applications": false,
   "background_color": "#FFFCF7",
   "theme_color": "#F45D2A",
   "icons": [
