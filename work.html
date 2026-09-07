@@ -29,9 +29,9 @@
 <script type="application/ld+json">[{"@context": "https://schema.org", "@type": ["Organization", "ProfessionalService"], "@id": "https://www.blinkloop-ph.com/#org", "name": "BlinkLoop", "alternateName": ["Blink Loop", "BlinkLoop PH", "BlinkLoop Creative Studio"], "url": "https://www.blinkloop-ph.com/", "logo": "https://www.blinkloop-ph.com/og.png", "image": "https://www.blinkloop-ph.com/og.png", "description": "BlinkLoop designs, builds, and hosts websites for small businesses in Cebu and across the Philippines. One-time build fee, optional managed hosting and care, and you own the site.", "email": "info@blinkloopph.com", "address": {"@type": "PostalAddress", "addressLocality": "Cebu City", "addressRegion": "Central Visayas", "addressCountry": "PH"}, "areaServed": [{"@type": "City", "name": "Cebu City"}, {"@type": "Country", "name": "Philippines"}], "knowsAbout": ["web design", "web development", "website hosting", "landing pages", "small business websites", "website maintenance", "SEO"], "priceRange": "₱15,000 - ₱60,000+", "hasOfferCatalog": {"@type": "OfferCatalog", "name": "BlinkLoop services", "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Starter website build", "description": "Custom design, up to 5 pages, contact form, SSL setup and deployment."}, "price": "15000", "priceCurrency": "PHP", "priceSpecification": {"@type": "PriceSpecification", "price": "15000", "priceCurrency": "PHP", "minPrice": "15000"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Business website build", "description": "Up to 10 pages, CMS and analytics, performance optimization."}, "price": "30000", "priceCurrency": "PHP"}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom website build", "description": "Custom features and integrations, advanced SEO, built around your requirements."}, "price": "60000", "priceCurrency": "PHP"}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Managed website hosting and care", "description": "Annual hosting, updates, backups, and support for sites built by BlinkLoop."}}]}, "contactPoint": {"@type": "ContactPoint", "contactType": "sales", "email": "info@blinkloopph.com", "availableLanguage": ["English", "Filipino"]}}, {"@context": "https://schema.org", "@type": "WebSite", "@id": "https://www.blinkloop-ph.com/#website", "url": "https://www.blinkloop-ph.com/", "name": "BlinkLoop", "publisher": {"@id": "https://www.blinkloop-ph.com/#org"}, "inLanguage": "en-PH"}]</script>
 <link rel="icon" type="image/png" href="/assets/blinkloop-icon.png" />
 <script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="preload" href="/assets/fonts/unbounded-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/assets/fonts/sora-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/assets/fonts.css" />
 <style>
 :root{
   /* Brand palette sampled from the BlinkLoop logo */
@@ -45,7 +45,8 @@
   --amber-ink:#A16310;
   --rose-ink:#B4543B;
   --maroon-ink:#7F2027;
-  --rust-ink:#D94E1F;
+  --rust-ink:#BD4218;      /* 5.2:1 on the cream background (was #D94E1F, 4.1:1) */
+  --on-rust:#2B140E;       /* text on rust buttons and badges: 5.3:1 (light text was 3.1:1) */
   --bg:#FFFCF7;
   --bg-2:#FFF7EF;
   --ink:#2B140E;
@@ -87,7 +88,15 @@ h1,h2,h3{font-family:'Unbounded',sans-serif;line-height:1.12;font-weight:600;let
 img{max-width:100%;display:block}
 a{color:inherit;text-decoration:none}
 button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
-:focus-visible{outline:2px solid var(--rust-deep);outline-offset:3px;border-radius:6px}
+:focus-visible{outline:3px solid var(--rust-deep);outline-offset:3px;border-radius:6px}
+.skip{position:absolute;left:12px;top:-70px;z-index:120;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
+.req{color:var(--rust-ink);font-weight:700}
+.cf-note{font-size:.8rem;color:var(--muted);margin:0 0 14px}
+.cform label.cf-consent{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:.85rem;color:var(--muted);margin:2px 0 18px;line-height:1.5}
+.cform .cf-consent input{display:inline-block;width:18px;height:18px;min-width:18px;margin:2px 0 0;padding:0;accent-color:var(--rust);border-radius:4px}
+.cform .cf-consent input.bad{outline:2px solid #c0392b;outline-offset:2px}
+.cf-consent a{color:var(--rust-ink);font-weight:600;border-bottom:1px solid currentColor}
 
 /* ---------- atmosphere ---------- */
 .atmo{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
@@ -136,10 +145,10 @@ header.scrolled{
 }
 .nav-links a:hover{color:var(--ink)}
 .nav-cta{
-  padding:10px 22px;border-radius:999px;background:var(--rust);color:#FFF7EC;
+  padding:10px 22px;border-radius:999px;background:var(--rust);color:var(--on-rust);
   font-weight:600;font-size:.9rem;transition:transform .3s var(--ease), box-shadow .3s, background .3s;
 }
-.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(217,78,31,.38);background:#DD5322}
+.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(217,78,31,.38);background:#F0783A}
 .menu-btn{display:none;flex-direction:column;gap:5px;padding:8px}
 .menu-btn span{width:22px;height:2px;background:var(--ink);border-radius:2px;transition:.3s var(--ease)}
 .menu-btn[aria-expanded="true"] span:nth-child(1){transform:translateY(7px) rotate(45deg)}
@@ -177,7 +186,7 @@ header.scrolled{
   transition:translate .35s var(--ease), scale .35s var(--ease), transform .25s var(--ease), box-shadow .35s var(--ease), background .3s;
   will-change:transform;
 }
-.btn-primary{background:linear-gradient(120deg,var(--rust-deep),var(--rust) 55%,#E8813A);color:#FFF7EC;box-shadow:0 6px 24px rgba(217,78,31,.32)}
+.btn-primary{background:linear-gradient(120deg,var(--rust),#F0783A);color:var(--on-rust);box-shadow:0 6px 24px rgba(217,78,31,.32)}
 .btn-primary:hover{translate:0 -3px;scale:1.02;box-shadow:0 14px 40px rgba(217,78,31,.42)}
 .btn-primary::after{
   content:"";position:absolute;inset:0;pointer-events:none;
@@ -423,7 +432,7 @@ section{padding:120px 0;position:relative}
 [data-theme="dark"] .p-biz{box-shadow:0 24px 60px rgba(0,0,0,.45)}
 .plan-badge{
   position:absolute;top:-13px;left:50%;translate:-50% 0;
-  background:linear-gradient(120deg,var(--rust-deep),var(--rust));color:#FFF7EC;
+  background:var(--rust);color:var(--on-rust);
   padding:6px 16px;border-radius:999px;white-space:nowrap;
   font-family:'Unbounded',sans-serif;font-size:.62rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
   box-shadow:0 6px 18px rgba(217,78,31,.35);
@@ -741,7 +750,7 @@ body.has-glow .glow{opacity:1}
 .tp.hot{border-color:color-mix(in srgb, var(--rust) 55%, transparent);background:var(--glass-strong)}
 .tp-tag{
   position:absolute;top:-9px;right:16px;
-  background:linear-gradient(120deg,var(--rust-deep),var(--rust));color:#FFF7EC;
+  background:var(--rust);color:var(--on-rust);
   padding:3px 11px;border-radius:999px;
   font-family:'Unbounded',sans-serif;font-size:.56rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
 }
@@ -897,7 +906,7 @@ body{overflow-x:clip}
   }
   .nav-links::-webkit-scrollbar{display:none}
   .nav-links a:not(.nav-cta){flex:none;font-size:.84rem;line-height:1;padding:9px 14px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:transparent}
-  .nav-links a.active:not(.nav-cta){color:#FFF7EC;background:var(--rust);border-color:var(--rust);font-weight:600}
+  .nav-links a.active:not(.nav-cta){color:var(--on-rust);background:var(--rust);border-color:var(--rust);font-weight:600}
   .nav-links a.active:not(.nav-cta)::after{display:none}
   .nav-links a.nav-cta{flex:none;padding:9px 14px;font-size:.84rem;line-height:1;margin-left:2px;box-shadow:none}
   [data-theme="dark"] .nav-links{background:transparent}
@@ -913,6 +922,7 @@ body{overflow-x:clip}
 </style>
 </head>
 <body>
+<a class="skip" href="#top">Skip to content</a>
 
 <div class="atmo" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
@@ -1022,9 +1032,10 @@ body{overflow-x:clip}
         <h2>Build once. Stay online for years.</h2>
         <p>Start with a one-time website project, then let BlinkLoop keep it running. Tell us what you need and we reply with a plan and a quote.</p>
         <form class="cform" id="cform" novalidate>
+          <p class="cf-note">Fields marked <span class="req" aria-hidden="true">*</span> are required.</p>
           <div class="cf-row">
-            <label>Your name<input name="name" type="text" autocomplete="name" placeholder="Maria Santos" required maxlength="80" /></label>
-            <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@business.com" required maxlength="120" /></label>
+            <label>Your name <span class="req" aria-hidden="true">*</span><input name="name" type="text" autocomplete="name" placeholder="Maria Santos" required aria-required="true" aria-describedby="cfMsg" maxlength="80" /></label>
+            <label>Email <span class="req" aria-hidden="true">*</span><input name="email" type="email" autocomplete="email" placeholder="you@business.com" required aria-required="true" aria-describedby="cfMsg" maxlength="120" /></label>
           </div>
           <div class="cf-row">
             <label>Business or brand <span>(optional)</span><input name="business" type="text" autocomplete="organization" placeholder="Maria's Catering" maxlength="120" /></label>
@@ -1035,8 +1046,9 @@ body{overflow-x:clip}
               <option>Something else</option>
             </select></label>
           </div>
-          <label>Tell us about it<textarea name="message" rows="4" placeholder="What does your business do, and what should the website do for you?" required maxlength="3000"></textarea></label>
+          <label>Tell us about it <span class="req" aria-hidden="true">*</span><textarea name="message" rows="4" placeholder="What does your business do, and what should the website do for you?" required aria-required="true" aria-describedby="cfMsg" maxlength="3000"></textarea></label>
           <label class="cf-trap" aria-hidden="true">Website<input name="website" type="text" tabindex="-1" autocomplete="off" /></label>
+          <label class="cf-consent"><input name="consent" type="checkbox" required aria-required="true" aria-describedby="cfMsg" /><span>I agree to the <a href="/privacy">Privacy Policy</a> and to BlinkLoop using these details to reply to my inquiry. <span class="req" aria-hidden="true">*</span></span></label>
           <div class="cf-foot">
             <button class="btn btn-primary" type="submit" id="cfSend">Send it <span class="arrow" aria-hidden="true">&rarr;</span></button>
             <span class="cf-alt">or email <a href="mailto:info@blinkloopph.com">info@blinkloopph.com</a></span>
@@ -1062,6 +1074,10 @@ body{overflow-x:clip}
       <a href="/hosting">Pricing</a>
       <a href="/work" class="active">Work</a>
       <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/cookies">Cookies</a>
+      <a href="/refunds">Refunds</a>
+      <a href="/cookies#4-managing-cookies" data-consent-settings hidden>Cookie settings</a>
       <a href="mailto:info@blinkloopph.com">info@blinkloopph.com</a>
     </nav>
     <div class="foot-right">
@@ -1385,7 +1401,7 @@ body{overflow-x:clip}
   var MAIL = 'info@blinkloopph.com';
   /* Google Apps Script web app URL (ends in /exec). See blinkloop-form.gs for setup. */
   var FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwx-J8d-zI2hFkrNYOrO0pjN9OlA0ZlY5uP-fo3LV-K9Ceb0seho_wxYuZFJrDsE65hXg/exec';
-  function bad(el){ el.classList.add('bad'); el.addEventListener('input', function h(){ el.classList.remove('bad'); el.removeEventListener('input', h); }); }
+  function bad(el){ el.classList.add('bad'); el.setAttribute('aria-invalid','true'); el.addEventListener('input', function h(){ el.classList.remove('bad'); el.removeAttribute('aria-invalid'); el.removeEventListener('input', h); }); }
   function mailtoFallback(d){
     var subject = 'Website inquiry from ' + d.name.trim();
     var body = 'Name: ' + d.name.trim() + '\nEmail: ' + d.email.trim() + '\nBusiness: ' + (d.business||'').trim() + '\nNeeds: ' + d.service + '\n\n' + d.message.trim();
@@ -1394,18 +1410,19 @@ body{overflow-x:clip}
   f.addEventListener('submit', async function(e){
     e.preventDefault();
     var d = {};
-    Array.prototype.forEach.call(f.elements, function(el){ if(el.name) d[el.name] = el.value; });
+    Array.prototype.forEach.call(f.elements, function(el){ if(el.name) d[el.name] = el.type==='checkbox' ? (el.checked ? 'yes' : '') : el.value; });
     msg.className = 'cf-msg'; msg.textContent = '';
     var ok = true;
     if (!d.name || d.name.trim().length < 2){ bad(f.name); ok = false; }
     if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())){ bad(f.email); ok = false; }
     if (!d.message || d.message.trim().length < 5){ bad(f.message); ok = false; }
-    if (!ok){ msg.className = 'cf-msg err'; msg.textContent = 'Fill in your name, a working email, and a short message.'; return; }
+    if (!d.consent){ bad(f.consent); ok = false; }
+    if (!ok){ msg.className = 'cf-msg err'; msg.textContent = d.consent ? 'Fill in your name, a working email, and a short message.' : 'Fill in the required fields and tick the box to agree to the Privacy Policy.'; return; }
     if (d.website){ f.classList.add('sent'); msg.className='cf-msg ok'; msg.textContent='Got it. We reply within one business day.'; return; }
     btn.disabled = true; var old = btn.innerHTML; btn.textContent = 'Sending\u2026';
     try{
       if (!/^https:\/\/script\.google\.com\//.test(FORM_ENDPOINT)) throw new Error('not-configured');
-      var payload = { name: d.name.trim(), email: d.email.trim(), business: (d.business||'').trim(), service: d.service, message: d.message.trim(), website: d.website || '' };
+      var payload = { name: d.name.trim(), email: d.email.trim(), business: (d.business||'').trim(), service: d.service, message: d.message.trim(), website: d.website || '', consent: 'yes', consentAt: new Date().toISOString(), page: location.pathname };
       /* text/plain keeps this a "simple" request (no CORS preflight), which is what Apps Script needs */
       var r = await fetch(FORM_ENDPOINT, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload), redirect:'follow' });
       var j = {};
@@ -1459,5 +1476,7 @@ window.BL_CHAT = window.BL_CHAT || { messenger: '', whatsapp: '', viber: '' };
   document.body.appendChild(col);
 })();
 </script>
+<script>window.BL_ANALYTICS = { ga4: '' }; /* paste a GA4 Measurement ID (G-XXXXXXX) to enable analytics; visitors are asked first */</script>
+<script src="/assets/consent.js" defer></script>
 </body>
 </html>

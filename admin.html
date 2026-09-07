@@ -7,9 +7,9 @@
 <meta name="robots" content="noindex, nofollow" />
 <title>Client Codes | BlinkLoop</title>
 <script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="preload" href="/assets/fonts/unbounded-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/assets/fonts/sora-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/assets/fonts.css" />
 <style>
 :root{
   --rust:#F45D2A; --rust-deep:#D94E1F; --bg:#FFFCF7; --ink:#2B140E; --muted:#7E5D4C;
@@ -41,11 +41,11 @@ input,select{
   width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;
   padding:11px 14px;font:inherit;font-size:16px;color:inherit;
 }
-input:focus,select:focus{outline:none;border-color:var(--rust)}
+input:focus,select:focus{outline:none;border-color:var(--rust);box-shadow:0 0 0 3px rgba(244,93,42,.25)}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 button{
   width:100%;margin-top:22px;padding:13px;border:none;border-radius:999px;cursor:pointer;
-  background:var(--rust);color:#FFF7EC;font:inherit;font-weight:600;font-size:.95rem;
+  background:var(--rust);color:#2B140E;font:inherit;font-weight:600;font-size:.95rem;
   transition:transform .3s var(--ease), box-shadow .3s;
 }
 button:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(217,78,31,.4)}

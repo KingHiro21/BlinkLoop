@@ -1,0 +1,51 @@
+/* Shared stylesheet for the policy pages: privacy, terms, cookies, refunds.
+   Colours meet WCAG AA (4.5:1) in both themes; see CLAUDE.md for the contrast table. */
+:root{
+  --rust:#F45D2A; --rust-ink:#BD4218; --on-rust:#2B140E; --maroon:#7F2027;
+  --bg:#FFFCF7; --ink:#2B140E; --muted:#7E5D4C;
+  --glass:rgba(251,235,221,.5); --line:rgba(127,32,39,.16);
+}
+:root[data-theme="dark"]{
+  --bg:#140806; --ink:#FAF4EA; --muted:#C9A395; --rust-ink:#F08A50;
+  --glass:rgba(250,244,234,.06); --line:rgba(250,244,234,.13);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none !important}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Sora',system-ui,sans-serif;font-size:16px;line-height:1.7}
+a{color:var(--rust-ink);text-decoration:underline;text-underline-offset:2px}
+a:hover{color:var(--rust)}
+:focus-visible{outline:3px solid var(--rust);outline-offset:3px;border-radius:6px}
+.skip{position:absolute;left:8px;top:-60px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:100;text-decoration:none;font-weight:600}
+.skip:focus{top:8px}
+.wrap{max-width:760px;margin:0 auto;padding:0 24px}
+header{padding:22px 0;border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{font-family:'Unbounded',sans-serif;font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none}
+.brand span{color:var(--rust)}
+.legal-nav{display:flex;gap:6px;flex-wrap:wrap}
+.legal-nav a{font-size:.82rem;font-weight:600;text-decoration:none;padding:6px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+.legal-nav a:hover{color:var(--ink);border-color:var(--rust)}
+.legal-nav a[aria-current="page"]{background:var(--rust);color:var(--on-rust);border-color:var(--rust)}
+main{padding:56px 0 96px}
+h1{font-family:'Unbounded',sans-serif;font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.2;margin-bottom:10px}
+.date{color:var(--muted);font-size:.85rem;margin-bottom:36px}
+h2{font-family:'Unbounded',sans-serif;font-size:1.05rem;margin:38px 0 12px}
+h3{font-family:'Unbounded',sans-serif;font-size:.92rem;margin:24px 0 8px}
+p,li{color:var(--muted)}
+p{margin-bottom:14px}
+ul{margin:0 0 14px 20px}
+li{margin-bottom:8px}
+b{color:var(--ink);font-weight:600}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:20px 24px;margin:20px 0}
+.card p:last-child,.card ul:last-child{margin-bottom:0}
+.tbl{overflow-x:auto;margin:0 0 18px}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:520px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--muted)}
+th{color:var(--ink);font-weight:600}
+td b{white-space:nowrap}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted);font-size:.85rem;text-align:center}
+footer nav{margin-bottom:8px}
+footer p{margin:0}
+@media (max-width:560px){ .wrap{padding:0 18px} main{padding:40px 0 72px} h2{margin-top:30px} }
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }

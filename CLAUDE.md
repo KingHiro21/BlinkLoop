@@ -86,6 +86,25 @@ is open. iPhone gets push only after Add to Home Screen. Unread: tab title, app 
 (`/api/presence?seen=<ts>`, ts from localStorage `bl-team-seen`). PWA icons: `assets/icon-192.png`,
 `icon-512.png`, `icon-512-maskable.png`, `icon-180.png`, `badge-96.png`.
 
+## Policies, consent, accessibility
+
+- Policy pages: `privacy.html`, `terms.html`, `cookies.html`, `refunds.html` share `assets/legal.css`. Written for RA 10173
+  (Data Privacy Act), RA 7394 (Consumer Act: refunds must never say "no refund" for defective service), RA 8293
+  (IP Code: copyright in commissioned work must be assigned in writing, Terms §8 does this), RA 8792 (E-Commerce Act).
+  Specifics (deposit, revision rounds, VAT) live in the client's quote on purpose, so the pages never state numbers we
+  do not control. Keep the four footers and the legal nav in sync.
+- Contact form has a required consent checkbox; the payload carries `consent`, `consentAt`, `page` and the Apps
+  Script writes them into the email. Do not remove the checkbox: it is the legal basis for handling an inquiry.
+- Cookie consent: `assets/consent.js`. Nothing is asked or loaded until `window.BL_ANALYTICS.ga4` (set inline at the
+  bottom of index/hosting/work) has a GA4 Measurement ID; then a banner asks once, the choice lives 12 months in
+  localStorage `bl-consent`, Global Privacy Control means "Essential only", and the footer "Cookie settings" link
+  appears. Adding any other third-party script means updating `cookies.html` first.
+- Fonts are self-hosted (`assets/fonts.css`, `assets/fonts/*.woff2`, SIL OFL). Do not reintroduce the Google Fonts
+  `<link>`; the Cookie Policy says fonts come from our own domain.
+- Contrast (WCAG AA 4.5:1, light theme on #FFFCF7): `--rust-ink #BD4218` 5.2, `--muted #7E5D4C` 5.8, ink on rust
+  buttons (`--on-rust #2B140E`) 5.3. Brand rust `#F45D2A` is decorative only; never use it for body text or for
+  light text on rust. Every public page has a skip link; decorative links inside `aria-hidden` get `tabindex="-1"`.
+
 ## Contact form
 
 Posts JSON (as `text/plain` to avoid a CORS preflight) to a Google Apps Script web app URL — the

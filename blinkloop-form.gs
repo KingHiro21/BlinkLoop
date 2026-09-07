@@ -56,6 +56,8 @@ function doPost(e) {
       'Email:     ' + email,
       'Business:  ' + (business || '(not given)'),
       'Needs:     ' + service,
+      'Consent:   ' + (d.consent === 'yes' ? 'Yes, privacy policy accepted at ' + clean(d.consentAt, 40) : 'NOT RECORDED (old form version)'),
+      'Page:      ' + clean(d.page, 60),
       'Received:  ' + when + ' (PH time)',
       '',
       'Message:',
