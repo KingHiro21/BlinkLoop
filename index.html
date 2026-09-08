@@ -561,9 +561,9 @@ section{padding:120px 0;position:relative}
 /* ---------- footer ---------- */
 
 footer{border-top:1px solid var(--line);padding:64px 0 32px;color:var(--muted);font-size:.9rem}
-.foot{display:grid;grid-template-columns:1.6fr 1fr 1fr 1.35fr;gap:36px 40px;align-items:start}
+.foot{display:grid;grid-template-columns:1.35fr 1.1fr .9fr 1fr 1.25fr;gap:36px 28px;align-items:start}
 .foot-brand .brand{font-size:.95rem;margin-bottom:16px}
-.foot-brand p{max-width:34ch;font-size:.9rem;line-height:1.65}
+.foot-brand p{max-width:36ch;font-size:.9rem;line-height:1.65}
 .foot h4{font-family:'Unbounded',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);margin-bottom:16px}
 .foot ul{list-style:none;display:grid;gap:10px}
 .foot li{display:flex;gap:9px;align-items:flex-start}
@@ -578,7 +578,7 @@ footer{border-top:1px solid var(--line);padding:64px 0 32px;color:var(--muted);f
   .p-biz{scale:1.04}
 }
 @media (max-width:980px){
-  .foot{grid-template-columns:1fr 1fr 1.3fr;gap:32px 28px}
+  .foot{grid-template-columns:1fr 1fr;gap:32px 28px}
   .foot-brand{grid-column:1 / -1}
   .hero-grid{grid-template-columns:1fr;gap:24px}
   .plans{grid-template-columns:1fr}
@@ -1309,16 +1309,26 @@ body{overflow-x:clip}
             <img class="brand-word brand-word-sm bw-light" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" loading="lazy" />
             <img class="brand-word brand-word-sm bw-dark" src="/assets/blinkloop-wordmark-dark.png" alt="BlinkLoop" width="481" height="163" loading="lazy" />
           </a>
-        <p>Websites for small businesses in Cebu and across the Philippines. Pay once for the build, own the site, and add hosting and care only if you want it.</p>
+        <p>A creative studio in Cebu. We design and build websites, shape brands and graphics, keep sites hosted and cared for, and help small businesses across the Philippines grow with social media and marketing strategy.</p>
       </div>
-      <nav class="foot-col" aria-label="Explore">
-        <h4>Explore</h4>
+      <nav class="foot-col" aria-label="Services">
+        <h4>Services</h4>
+        <ul>
+          <li><a href="#services">Web design and build</a></li>
+          <li><a href="#services">Branding and graphics</a></li>
+          <li><a href="#services">Content and social media</a></li>
+          <li><a href="#services">Marketing strategy</a></li>
+          <li><a href="/hosting#hosting">Hosting and care</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-label="Company">
+        <h4>Company</h4>
         <ul>
           <li><a href="#how">How it works</a></li>
           <li><a href="#features">Features</a></li>
-          <li><a href="#services">Services</a></li>
           <li><a href="/hosting">Pricing</a></li>
-          <li><a href="/work">Work</a></li>
+          <li><a href="/work">Our work</a></li>
+          <li><a href="#start">Get a quote</a></li>
         </ul>
       </nav>
       <nav class="foot-col" aria-label="Legal">
