@@ -131,12 +131,12 @@ header.scrolled{
   border-bottom-color:var(--line);
 }
 .nav{display:flex;align-items:center;justify-content:space-between;height:76px}
-.brand{display:flex;align-items:center;gap:11px;font-family:'Unbounded',sans-serif;font-weight:600;font-size:1.05rem}
+.brand{display:flex;align-items:center;gap:11px;font-family:'Unbounded',sans-serif;font-weight:600;font-size:1.05rem;flex:none}
 .brand-icon{width:34px;height:auto;filter:drop-shadow(0 2px 8px rgba(127,32,39,.25))}
 .brand-word{height:26px;width:auto}
 .brand-word-sm{height:20px}
 .brand .lp{color:var(--rust)}
-.nav-links{display:flex;align-items:center;gap:clamp(16px,1.6vw,30px);font-size:.9rem;color:var(--muted);white-space:nowrap}
+.nav-links{display:flex;align-items:center;gap:clamp(16px,1.6vw,30px);font-size:.9rem;color:var(--muted);white-space:nowrap;min-width:0;margin:0 16px}
 .nav-links a{transition:color .25s;position:relative}
 .nav-links a.active:not(.nav-cta){color:var(--ink)}
 .nav-links a.active:not(.nav-cta)::after{
@@ -694,7 +694,7 @@ body.has-glow .glow{opacity:1}
 @media (max-width:760px){[data-theme="dark"] .nav-links{background:rgba(20,8,6,.97)}}
 
 /* ---------- theme toggle ---------- */
-.nav-actions{display:flex;align-items:center;gap:12px}
+.nav-actions{display:flex;align-items:center;gap:12px;flex:none}
 .theme-toggle{
   width:40px;height:40px;border-radius:50%;border:1px solid var(--line);
   display:grid;place-items:center;background:var(--glass);color:var(--ink);
