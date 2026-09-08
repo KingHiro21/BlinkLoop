@@ -115,8 +115,10 @@ No FormSubmit, no Resend, no serverless mail. The script must be deployed with a
 
 - **No em dashes anywhere in copy.** Use commas, periods, or colons.
 - Voice: short, declarative, specific. "Pay once, own it." Avoid AI-sounding filler.
-- Mobile first: every layout change must be checked at 390px and ~880px. The nav collapses into a
-  scrollable pill strip (no hamburger) below 1040px. Never let a decorative element be wider than the
+- Mobile first: every layout change must be checked at 320px, 390px, ~880px, 1024px and 1366px. The nav collapses
+  into a scrollable pill strip (no hamburger) at 1180px and below, so the desktop row never has to squeeze the
+  staff links and presence pill. Footer is a grid: brand and address on row one, policy links on row two,
+  stacked on phones. The chat header compacts at 900px and again at 640px. Never let a decorative element be wider than the
   viewport (mobile browsers zoom the whole page out to fit it): `html{overflow-x:hidden}` +
   `body{overflow-x:clip}` are the safety net, but fix the element too.
 - Inputs on mobile: `font-size:16px` (prevents iOS zoom). Hover-only controls must also be visible on touch.

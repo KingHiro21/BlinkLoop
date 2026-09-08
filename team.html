@@ -150,6 +150,17 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 @media (hover:none){
   .msg .tools{opacity:1}
 }
+/* tablet and small laptops: the header must stay on one row, so compact it before the phone rules kick in */
+@media (max-width:900px){
+  .brand em{display:none}
+  .hright{gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .hbtn{padding:5px 11px;font-size:.72rem}
+  #notifyBtn .lbl{display:none}
+  #notifyBtn{font-size:.85rem;padding:4px 9px}
+  .live{font-size:0;gap:0}
+  .live::before{width:7px;height:7px}
+  #onlineBar{max-width:30vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
 @media (max-width:640px){
   body{font-size:14px}
   header{padding:10px 12px;gap:8px;flex-wrap:wrap}
