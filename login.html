@@ -155,6 +155,7 @@ async function signIn(auto){
     const d = await r.json();
     if (d.ok){
       if ($('#remember').checked) remember(code); else forget();
+      try{ localStorage.setItem('bl-staff-name', d.client); }catch(e){}
       const next = nextUrl();
       if (next){ location.href = next; return true; }
       showIn(d); // stay here: show the staff hub instead of jumping to the builder
@@ -181,7 +182,7 @@ function setPeek(show){
 $('#peek').addEventListener('click', ()=> setPeek($('#code').type === 'password'));
 $('#out').addEventListener('click', async ()=>{
   try{ await fetch('/api/logout', { method:'POST' }); }catch(e){}
-  try{ localStorage.removeItem('lb-access'); }catch(e){}
+  try{ localStorage.removeItem('lb-access'); localStorage.removeItem('bl-staff-name'); }catch(e){}
   $('#inBox').classList.add('hide');
   $('#formBox').classList.remove('hide');
 });

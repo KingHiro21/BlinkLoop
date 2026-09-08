@@ -28,7 +28,7 @@
 <meta name="twitter:image" content="https://www.blinkloop-ph.com/og.png" />
 <script type="application/ld+json">[{"@context": "https://schema.org", "@type": ["Organization", "ProfessionalService"], "@id": "https://www.blinkloop-ph.com/#org", "name": "BlinkLoop", "alternateName": ["Blink Loop", "BlinkLoop PH", "BlinkLoop Creative Studio"], "url": "https://www.blinkloop-ph.com/", "logo": "https://www.blinkloop-ph.com/og.png", "image": "https://www.blinkloop-ph.com/og.png", "description": "BlinkLoop designs, builds, and hosts websites for small businesses in Cebu and across the Philippines. One-time build fee, optional managed hosting and care, and you own the site.", "email": "info@blinkloopph.com", "address": {"@type": "PostalAddress", "addressLocality": "Cebu City", "addressRegion": "Central Visayas", "addressCountry": "PH"}, "areaServed": [{"@type": "City", "name": "Cebu City"}, {"@type": "Country", "name": "Philippines"}], "knowsAbout": ["web design", "web development", "website hosting", "landing pages", "small business websites", "website maintenance", "SEO"], "priceRange": "₱15,000 - ₱60,000+", "hasOfferCatalog": {"@type": "OfferCatalog", "name": "BlinkLoop services", "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Starter website build", "description": "Custom design, up to 5 pages, contact form, SSL setup and deployment."}, "price": "15000", "priceCurrency": "PHP", "priceSpecification": {"@type": "PriceSpecification", "price": "15000", "priceCurrency": "PHP", "minPrice": "15000"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Business website build", "description": "Up to 10 pages, CMS and analytics, performance optimization."}, "price": "30000", "priceCurrency": "PHP"}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom website build", "description": "Custom features and integrations, advanced SEO, built around your requirements."}, "price": "60000", "priceCurrency": "PHP"}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Managed website hosting and care", "description": "Annual hosting, updates, backups, and support for sites built by BlinkLoop."}}]}, "contactPoint": {"@type": "ContactPoint", "contactType": "sales", "email": "info@blinkloopph.com", "availableLanguage": ["English", "Filipino"]}}, {"@context": "https://schema.org", "@type": "WebSite", "@id": "https://www.blinkloop-ph.com/#website", "url": "https://www.blinkloop-ph.com/", "name": "BlinkLoop", "publisher": {"@id": "https://www.blinkloop-ph.com/#org"}, "inLanguage": "en-PH"}]</script>
 <link rel="icon" type="image/png" href="/assets/blinkloop-icon.png" />
-<script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
+<script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t);try{if(document.cookie.indexOf('bl_staff=1')>-1)document.documentElement.setAttribute('data-staff','1')}catch(e){}})();</script>
 <link rel="preload" href="/assets/fonts/unbounded-latin.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="/assets/fonts/sora-latin.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="/assets/fonts.css" />
@@ -121,8 +121,9 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 /* ---------- nav ---------- */
 header{
   position:fixed;top:0;left:0;right:0;z-index:50;
-  transition:background .35s var(--ease), border-color .35s var(--ease), backdrop-filter .35s;
+  transition:background .35s var(--ease), border-color .35s var(--ease);
   border-bottom:1px solid transparent;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
 }
 header.scrolled{
   background:rgba(255,252,247,.85);
@@ -138,6 +139,12 @@ header.scrolled{
 .brand .lp{color:var(--rust)}
 .nav-links{display:flex;align-items:center;gap:clamp(16px,1.6vw,30px);font-size:.9rem;color:var(--muted);white-space:nowrap;min-width:0;margin:0 16px}
 .nav-links a{transition:color .25s;position:relative}
+.staff-link{display:none}
+[data-staff="1"] .staff-link{display:inline-block}
+.bw-dark{display:none}
+[data-theme="dark"] .bw-light{display:none}
+[data-theme="dark"] .bw-dark{display:block}
+section[id]{scroll-margin-top:16px}
 .nav-links a.active:not(.nav-cta){color:var(--ink)}
 .nav-links a.active:not(.nav-cta)::after{
   content:"";position:absolute;left:50%;bottom:-9px;width:5px;height:5px;border-radius:50%;
@@ -868,6 +875,7 @@ body{overflow-x:clip}
   .nav-links a.nav-cta{flex:none;padding:9px 14px;font-size:.84rem;line-height:1;margin-left:2px;box-shadow:none}
   [data-theme="dark"] .nav-links{background:transparent}
   body{padding-top:52px}
+  section[id]{scroll-margin-top:72px}
 }
 @media (max-width:640px){
   .foot{grid-template-columns:1fr;grid-template-areas:"brand" "links" "right";gap:18px}
@@ -890,7 +898,8 @@ body{overflow-x:clip}
   <div class="wrap nav">
     <a href="#top" class="brand" aria-label="BlinkLoop home">
       <img class="brand-icon" src="/assets/blinkloop-icon.png" alt="" width="34" height="30" />
-      <img class="brand-word" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" />
+      <img class="brand-word bw-light" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" />
+      <img class="brand-word bw-dark" src="/assets/blinkloop-wordmark-dark.png" alt="BlinkLoop" width="481" height="163" />
     </a>
     <nav class="nav-links" id="navLinks" aria-label="Main">
       <a href="#how">How it works</a>
@@ -898,8 +907,8 @@ body{overflow-x:clip}
       <a href="#services">Services</a>
       <a href="/hosting">Pricing</a>
       <a href="/work">Work</a>
-      <a href="/builder" class="staff-link" hidden>Builder</a>
-      <a href="/team" class="staff-link" hidden>Team</a>
+      <a href="/builder" class="staff-link">Builder</a>
+      <a href="/team" class="staff-link">Team</a>
       <a href="#start" class="nav-cta">Start your loop</a>
     </nav>
     <div class="nav-actions">
@@ -910,10 +919,41 @@ body{overflow-x:clip}
       <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
-      <span id="authSlot" style="display:inline-flex;align-items:center;order:99;margin-left:2px"></span>
+      <span id="authSlot" style="display:inline-flex;align-items:center;justify-content:flex-end;min-width:86px;order:99;margin-left:2px"></span>
     </div>
   </div>
 </header>
+<script>(function(){
+  /* Runs right after the header so the pill is in place on first paint. Staff state comes from the
+     data-staff attribute set in <head>; the name is remembered from the last sign-in, then presence
+     refreshes it. The DOM is only rewritten when the markup actually changes (no 60s flicker). */
+  var staff = document.documentElement.getAttribute('data-staff') === '1';
+  var slot = document.getElementById('authSlot'); if(!slot) return;
+  var last = '';
+  function set(html){ if (html !== last){ last = html; slot.innerHTML = html; } }
+  if (!staff){
+    set('<a href="/login" style="border:1px solid var(--line);border-radius:999px;padding:8px 18px;font-weight:600;font-size:.85rem;color:var(--muted)">Log in</a>');
+    return;
+  }
+  var me = ''; try{ me = localStorage.getItem('bl-staff-name') || ''; }catch(e){}
+  function seenTs(){ try{ return localStorage.getItem('bl-team-seen') || ''; }catch(e){ return ''; } }
+  function pill(name, extra, n){
+    var badge = n ? '<span style="background:#F45D2A;color:#2B140E;border-radius:999px;padding:1px 7px;font-size:.7rem;font-weight:700;line-height:1.5" aria-label="' + n + ' new">' + (n>49?'49+':n) + '</span>' : '';
+    return '<a href="/team" title="' + (n ? n + ' new message' + (n===1?'':'s') + ' in team chat' : 'Open team chat') + '" style="display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:600;font-size:.82rem;color:var(--ink)">'
+      + '<span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.25)"></span>'
+      + name + extra + badge + '</a>';
+  }
+  set(pill(me || 'Team', '', 0));
+  function draw(d){
+    if (d.me && d.me !== me){ me = d.me; try{ localStorage.setItem('bl-staff-name', me); }catch(e){} }
+    var others = (d.online||[]).map(function(o){return o.client;}).filter(function(n){return n!==d.me;});
+    var extra = others.length ? ' · ' + others.slice(0,2).join(', ') + (others.length>2 ? ' +'+(others.length-2) : '') : '';
+    set(pill(d.me, extra, d.unread|0));
+  }
+  function beat(){ try{ fetch('/api/presence',{method:'POST'}).catch(function(){}); }catch(e){} }
+  function refresh(){ try{ fetch('/api/presence' + (seenTs() ? '?seen=' + seenTs() : '')).then(function(r){return r.json();}).then(function(d){ if(d && d.ok) draw(d); }).catch(function(){}); }catch(e){} }
+  beat(); refresh(); setInterval(function(){ beat(); refresh(); }, 60000);
+})();</script>
 
 <main id="top">
 
@@ -1261,7 +1301,8 @@ body{overflow-x:clip}
   <div class="wrap foot">
     <a href="#top" class="brand">
       <img class="brand-icon" src="/assets/blinkloop-icon.png" alt="" width="26" height="23" />
-      <img class="brand-word brand-word-sm" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" loading="lazy" />
+      <img class="brand-word brand-word-sm bw-light" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" loading="lazy" />
+      <img class="brand-word brand-word-sm bw-dark" src="/assets/blinkloop-wordmark-dark.png" alt="BlinkLoop" width="481" height="163" loading="lazy" />
     </a>
     <nav class="foot-links" aria-label="Footer">
       <a href="#how">How it works</a>
@@ -1499,15 +1540,9 @@ body{overflow-x:clip}
   }
 
   /* theme switch: swap tokens + wordmark variant */
-  var WORD_DARK = '/assets/blinkloop-wordmark-dark.png';
-  var wordImgs = document.querySelectorAll('.brand-word');
-  var WORD_LIGHT = wordImgs.length ? wordImgs[0].getAttribute('src') : '';
   var themeBtn = document.getElementById('themeToggle');
   var setTheme = function(t, persist){
     document.documentElement.setAttribute('data-theme', t);
-    for(var i = 0; i < wordImgs.length; i++){
-      wordImgs[i].src = (t === 'dark') ? WORD_DARK : WORD_LIGHT;
-    }
     if(themeBtn) themeBtn.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
     var mt = document.getElementById('metaTheme');
     if(mt) mt.setAttribute('content', t === 'dark' ? '#140806' : '#FFFCF7');
@@ -1569,28 +1604,6 @@ body{overflow-x:clip}
   }
 })();
 </script>
-<script>(function(){
-  var staff=false; try{ staff = document.cookie.indexOf('bl_staff=1')>-1; }catch(e){}
-  if (staff) document.querySelectorAll('.staff-link').forEach(function(a){a.hidden=false;});
-  var slot = document.getElementById('authSlot'); if(!slot) return;
-  if (!staff){
-    slot.innerHTML = '<a href="/login" style="border:1px solid var(--line);border-radius:999px;padding:8px 18px;font-weight:600;font-size:.85rem;color:var(--muted)">Log in</a>';
-    return;
-  }
-  function seenTs(){ try{ return localStorage.getItem('bl-team-seen') || ''; }catch(e){ return ''; } }
-  function draw(d){
-    var n = d.unread|0;
-    var badge = n ? '<span style="background:#F45D2A;color:#FFF7EC;border-radius:999px;padding:1px 7px;font-size:.7rem;font-weight:700;line-height:1.5" aria-label="' + n + ' new">' + (n>49?'49+':n) + '</span>' : '';
-    var others = (d.online||[]).map(function(o){return o.client;}).filter(function(n){return n!==d.me;});
-    var extra = others.length ? ' · ' + others.slice(0,2).join(', ') + (others.length>2 ? ' +'+(others.length-2) : '') : '';
-    slot.innerHTML = '<a href="/team" title="' + (n ? n + ' new message' + (n===1?'':'s') + ' in team chat' : 'Open team chat') + '" style="display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:600;font-size:.82rem;color:var(--ink)">'
-      + '<span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.25)"></span>'
-      + d.me + extra + badge + '</a>';
-  }
-  function beat(){ try{ fetch('/api/presence',{method:'POST'}).catch(function(){}); }catch(e){} }
-  function refresh(){ try{ fetch('/api/presence' + (seenTs() ? '?seen=' + seenTs() : '')).then(function(r){return r.json();}).then(function(d){ if(d && d.ok) draw(d); }).catch(function(){}); }catch(e){} }
-  beat(); refresh(); setInterval(function(){ beat(); refresh(); }, 60000);
-})();</script>
 <script>
 (function(){
   var f = document.getElementById('cform'); if(!f) return;

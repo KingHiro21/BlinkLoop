@@ -366,6 +366,7 @@ function applyFeedData(d){
     $('#onlineBar').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.22)"></span>'+names.join(', ')+'</span>';
   }
   $('#who').textContent = ME;
+  try{ localStorage.setItem('bl-staff-name', ME); }catch(e){}
 }
 async function loadDay(day){
   let r;
@@ -970,7 +971,7 @@ maybeShowInstall();
 
 $('#logout').addEventListener('click', async ()=>{
   try{ await fetch('/api/logout',{method:'POST'}); }catch(e){}
-  try{ localStorage.removeItem(CACHE_KEY); localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('lb-access'); localStorage.removeItem(SEEN_KEY); }catch(e){}
+  try{ localStorage.removeItem(CACHE_KEY); localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('lb-access'); localStorage.removeItem(SEEN_KEY); localStorage.removeItem('bl-staff-name'); }catch(e){}
   location.href = '/login';
 });
 boot();
