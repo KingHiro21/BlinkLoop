@@ -15,7 +15,7 @@ Static HTML + Vercel serverless functions. No build step, no framework, no bundl
 | `work.html` | Portfolio (`/work`): Hwasung Refrigeration, CORE Migration. Screenshots in `assets/work/` |
 | `privacy.html` | Privacy policy (RA 10173 aware) |
 | `login.html` | Staff login → sets session cookie; shows a hub (Builder / Team / Admin / Site) |
-| `builder.html` | **Loop Builder** — internal drag-and-drop site builder (single 500KB+ file, i18n 7 languages) |
+| `builder.html` | **Loop Builder** — internal drag-and-drop site builder (single ~280KB file, i18n 7 languages). 22 blocks in `BLOCKS`, 9 font pairings, 10 palettes plus custom colours. Theme keys: palette, accent, accent2, bg, ink, font, radius, density, btn (pill/soft/sharp), width (narrow/normal/wide), scale (type size), texture (hero: glow/grid/dots/none). Every block gets a Section group (anchor id, spacing, alignment) applied by `decorate()` after render; `DEFAULT_ANCHOR` makes nav links like #pricing work out of the box. `onAccent()` picks readable text on the accent colour. Drafts: several sites per device (`loopbuilder-drafts` index + `loopbuilder-draft-<id>`); the current one still autosaves to `loopbuilder-page`. Exported client sites load Google Fonts by design (the client's site and disclosure). |
 | `team.html` | **Team chat** — daily pages, threads, search, pins, presence |
 | `admin.html` | Mints staff access codes (needs `LOOP_ADMIN_KEY`) |
 | `middleware.js` | Vercel Edge Middleware: `/builder` and `/team` redirect to `/login` without a valid session |

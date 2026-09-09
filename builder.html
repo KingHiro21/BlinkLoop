@@ -60,15 +60,15 @@ a{color:inherit;text-decoration:none}
   font-size:.8rem;font-weight:600;color:var(--muted);transition:all .25s var(--ease);white-space:nowrap;
 }
 .tb-btn:hover{color:var(--ink);background:var(--glass-strong)}
-.tb-btn.on{background:var(--rust);color:#FFF7EC}
+.tb-btn.on{background:var(--rust);color:#2B140E}
 .tb-btn:disabled{opacity:.35;cursor:default}
 .tb-btn:disabled:hover{background:none;color:var(--muted)}
 .tb-btn svg{width:15px;height:15px;flex:none}
 .tb-cta{
-  padding:9px 18px;border-radius:999px;background:var(--rust);color:#FFF7EC;font-weight:600;font-size:.84rem;
+  padding:9px 18px;border-radius:999px;background:var(--rust);color:#2B140E;font-weight:600;font-size:.84rem;
   transition:transform .3s var(--ease), box-shadow .3s, background .3s;display:inline-flex;align-items:center;gap:7px;
 }
-.tb-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(217,78,31,.38);background:#DD5322}
+.tb-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(217,78,31,.38);background:#F0783A}
 .tb-cta svg{width:15px;height:15px}
 
 /* ---------- main ---------- */
@@ -97,7 +97,7 @@ a{color:inherit;text-decoration:none}
 }
 .lib-item:hover{transform:translateY(-2px);border-color:var(--rust);box-shadow:var(--shadow)}
 .lib-item:active{cursor:grabbing}
-.lib-item .ic{font-size:1.05rem;line-height:1}
+.lib-item .ic{font-size:1.25rem;line-height:1}
 .lib-item .nm{font-weight:600;font-size:.79rem}
 .lib-item .ds{font-size:.68rem;color:var(--muted);line-height:1.35}
 
@@ -151,7 +151,7 @@ iframe.frame{
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .seg{display:flex;background:var(--glass-strong);border:1px solid var(--line);border-radius:var(--r-sm);padding:3px;gap:3px}
 .seg button{flex:1;padding:6px 4px;border-radius:7px;font-size:.76rem;font-weight:600;color:var(--muted)}
-.seg button.on{background:var(--rust);color:#FFF7EC}
+.seg button.on{background:var(--rust);color:#2B140E}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0}
 .tg{
   width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;transition:background .25s;flex:none;
@@ -187,7 +187,26 @@ input[type=range]{width:100%;accent-color:var(--rust)}
   font-size:.8rem;font-weight:600;transition:all .25s;
 }
 .add-item:hover{border-color:var(--rust);color:var(--rust)}
-.insp-blockname{display:flex;align-items:center;gap:9px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.insp-blockname{display:flex;align-items:center;gap:9px;margin:-14px -12px 14px;padding:12px 12px;border-bottom:1px solid var(--line);position:sticky;top:-14px;background:var(--bg);z-index:5}
+.panel h4.grp{display:flex;align-items:center;gap:8px;margin-top:22px;padding-top:14px;border-top:1px dashed var(--line)}
+.panel h4.grp::after{content:"";flex:1;height:1px;background:transparent}
+details.item-card{padding:0}
+details.item-card summary{list-style:none;cursor:pointer;padding:10px 11px}
+details.item-card summary::-webkit-details-marker{display:none}
+details.item-card summary .t::before{content:"▸";display:inline-block;margin-right:7px;color:var(--rust);transition:transform .2s}
+details.item-card[open] summary .t::before{transform:rotate(90deg)}
+details.item-card .item-body{padding:0 11px 11px}
+.layer .sub{color:var(--muted);font-weight:400;font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.layer .nm{display:flex;flex-direction:column;min-width:0}
+.draft-list{display:grid;gap:8px;margin:14px 0}
+.draft{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)}
+.draft.on{border-color:var(--rust)}
+.draft .dn{flex:1;min-width:0}
+.draft .dn b{display:block;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draft .dn span{font-size:.72rem;color:var(--muted)}
+.draft button{padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:.74rem;font-weight:600;color:var(--muted)}
+.draft button:hover{color:var(--ink);border-color:var(--rust)}
+.draft button.del:hover{color:#c0392b;border-color:#c0392b}
 .insp-blockname .ic{font-size:1.1rem}
 .insp-blockname .nm{font-family:'Unbounded';font-weight:600;font-size:.88rem;flex:1}
 .no-sel{color:var(--muted);font-size:.82rem;line-height:1.6;padding:8px 4px}
@@ -331,7 +350,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <select id="uiLang" class="tb-btn" aria-label="Language" style="appearance:none;background:transparent;border:none;font-weight:600"></select>
       <button class="tb-btn" id="themeBtn" title="Light / dark editor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
       <button class="tb-btn" id="guideBtn" title="Quick guide">? Guide</button>
-      <button class="tb-btn" id="jsonBtn" title="Save or load a project file">Save / Load</button>
+      <button class="tb-btn" id="jsonBtn" title="Drafts on this device, project files">Projects</button>
       <button class="tb-btn" id="previewBtn" title="Open the finished page in a new tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
     </div>
     <button class="tb-cta" id="exportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Export site</button>
@@ -445,6 +464,9 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     <button class="close-x" data-close aria-label="Close">✕</button>
     <h2 id="pjT">Save or load your project</h2>
     <p class="sub" id="pjS">Your work autosaves in this browser automatically. A project file is for moving between devices, keeping a backup, or sending your draft to us.</p>
+    <h4 style="font-family:'Unbounded';font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 0 0">Drafts on this device</h4>
+    <div class="draft-list" id="draftList"></div>
+    <div class="row" style="margin-bottom:14px"><button class="tb-btn" id="newDraft" style="border:1px solid var(--line)">＋ New draft</button></div>
     <div class="row">
       <button class="tb-cta" id="dlJson">Download project (.json)</button>
       <button class="tb-btn" id="upJson" style="border:1px solid var(--line)">Load project…</button>
@@ -498,7 +520,10 @@ const FONTS = {
   grotesk: { name:'Space Grotesk + IBM Plex Sans', disp:"'Space Grotesk',sans-serif", body:"'IBM Plex Sans',system-ui,sans-serif", url:'family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600' },
   classic: { name:'Playfair Display + Source Sans 3', disp:"'Playfair Display',serif", body:"'Source Sans 3',system-ui,sans-serif", url:'family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700' },
   bold:    { name:'Archivo Black + Archivo', disp:"'Archivo Black',sans-serif", body:"'Archivo',system-ui,sans-serif", url:'family=Archivo+Black&family=Archivo:wght@400;500;600;700' },
-  friendly:{ name:'Baloo 2 + Nunito', disp:"'Baloo 2',sans-serif", body:"'Nunito',system-ui,sans-serif", url:'family=Baloo+2:wght@500;600;700&family=Nunito:wght@400;600;700' }
+  friendly:{ name:'Baloo 2 + Nunito', disp:"'Baloo 2',sans-serif", body:"'Nunito',system-ui,sans-serif", url:'family=Baloo+2:wght@500;600;700&family=Nunito:wght@400;600;700' },
+  modern:  { name:'Manrope (clean, single family)', disp:"'Manrope',sans-serif", body:"'Manrope',system-ui,sans-serif", url:'family=Manrope:wght@400;500;600;700;800' },
+  elegant: { name:'Cormorant Garamond + Lato', disp:"'Cormorant Garamond',serif", body:"'Lato',system-ui,sans-serif", url:'family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700' },
+  warm:    { name:'Lora + Work Sans', disp:"'Lora',serif", body:"'Work Sans',system-ui,sans-serif", url:'family=Lora:wght@500;600;700&family=Work+Sans:wght@400;500;600' }
 };
 const PALETTES = {
   ember: { name:'Ember',  bg:'#FFFCF7', ink:'#3A1B1E', accent:'#F45D2A', accent2:'#7F2027' },
@@ -524,6 +549,16 @@ const themeFromPalette = key => { const p = PALETTES[key]; return { palette:key,
 /* ---------- site CSS (shared by canvas + export) ---------- */
 function fontLink(t){ return `https://fonts.googleapis.com/css2?${FONTS[t.font].url}&display=swap`; }
 
+/* text colour that stays readable on the accent, whatever the client picks */
+function onAccent(hex){
+  const m = String(hex||'').match(/^#([0-9a-f]{6})$/i); if(!m) return '#FFFDF7';
+  const [r,g,b] = [0,2,4].map(i => parseInt(m[1].slice(i,i+2),16)/255).map(v => v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4));
+  const L = 0.2126*r + 0.7152*g + 0.0722*b;
+  return L > 0.42 ? '#1B1410' : '#FFFDF7';
+}
+const BTN_R = { pill:'999px', soft:'12px', sharp:'3px' };
+const WRAP_W = { narrow:'960px', normal:'1140px', wide:'1320px' };
+const T_SCALE = { compact:'0.94', normal:'1', large:'1.08' };
 function siteCSS(t){
   const f = FONTS[t.font];
   return `
@@ -534,23 +569,24 @@ function siteCSS(t){
   --line:color-mix(in srgb, var(--ink) 16%, transparent);
   --card:color-mix(in srgb, var(--ink) 5%, var(--bg));
   --card-2:color-mix(in srgb, var(--ink) 9%, var(--bg));
-  --on-accent:#FFFdf7;
+  --on-accent:${onAccent(t.accent)};
+  --btn-r:${BTN_R[t.btn||'pill']}; --wrapw:${WRAP_W[t.width||'normal']}; --tscale:${T_SCALE[t.scale||'normal']};
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--ink);font-family:${f.body};font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--bg);color:var(--ink);font-family:${f.body};font-size:calc(16.5px * var(--tscale));line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 img{max-width:100%;display:block}
 a{color:inherit;text-decoration:none}
 h1,h2,h3{font-family:${f.disp};line-height:1.14;font-weight:600;letter-spacing:-.01em}
 ::selection{background:var(--accent);color:var(--on-accent)}
-.wrap{max-width:1140px;margin:0 auto;padding:0 26px}
+.wrap{max-width:var(--wrapw);margin:0 auto;padding:0 26px}
 section{padding:var(--secpad) 0}
 .eyebrow{display:inline-block;padding:7px 15px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:.76rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;font-weight:600}
 .sec-head{max-width:640px;margin-bottom:46px}
 .sec-head h2{font-size:clamp(1.7rem,3.4vw,2.5rem);margin:16px 0 12px}
 .sec-head p{color:var(--muted);font-size:1.04rem}
 .sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
-.btn{display:inline-block;padding:13px 28px;border-radius:999px;font-weight:600;font-size:.95rem;transition:transform .3s cubic-bezier(.22,.8,.24,1),box-shadow .3s,background .3s;cursor:pointer;border:none;font-family:inherit}
+.btn{display:inline-block;padding:13px 28px;border-radius:var(--btn-r);font-weight:600;font-size:.95rem;transition:transform .3s cubic-bezier(.22,.8,.24,1),box-shadow .3s,background .3s;cursor:pointer;border:none;font-family:inherit}
 .btn-solid{background:var(--accent);color:var(--on-accent)}
 .btn-solid:hover{transform:translateY(-2px);box-shadow:0 10px 28px color-mix(in srgb, var(--accent) 45%, transparent)}
 .btn-ghost{border:1.5px solid var(--line);background:transparent;color:var(--ink)}
@@ -561,7 +597,9 @@ section{padding:var(--secpad) 0}
 /* nav */
 .nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb, var(--bg) 84%, transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:72px}
-.nav .logo{font-family:${f.disp};font-weight:700;font-size:1.08rem}
+.nav .logo{font-family:${f.disp};font-weight:700;font-size:1.08rem;display:inline-flex;align-items:center;gap:10px}
+.nav .logo img,.foot .logo img{height:34px;width:auto;display:block}
+.foot .logo{display:inline-flex;align-items:center;gap:10px}
 .nav .logo b{color:var(--accent);font-weight:700}
 .nav nav{display:flex;align-items:center;gap:30px;font-size:.9rem;color:var(--muted)}
 .nav nav a:hover{color:var(--ink)}
@@ -723,6 +761,82 @@ section{padding:var(--secpad) 0}
 .chat-fab:hover{transform:scale(1.08)}
 .chat-fab svg{width:30px;height:30px;fill:#fff}
 .cf-wa{background:#25D366}.cf-ms{background:#0084FF}.cf-vb{background:#7360F2}
+
+/* per-section options */
+section.pad-sm{padding:calc(var(--secpad)*.5) 0}
+section.pad-lg{padding:calc(var(--secpad)*1.5) 0}
+.align-c .sec-head{margin-left:auto;margin-right:auto;text-align:center}
+.align-c .soc-row,.align-c .steps-grid,.align-c .team-grid{justify-content:center}
+
+/* hero textures + background image + tall size */
+body.tx-none .hero::before{display:none}
+body.tx-grid .hero::before{background:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(70% 70% at 60% 30%,#000 30%,transparent 100%);mask-image:radial-gradient(70% 70% at 60% 30%,#000 30%,transparent 100%)}
+body.tx-dots .hero::before{background:radial-gradient(color-mix(in srgb,var(--accent) 45%, transparent) 1.4px, transparent 1.8px);background-size:24px 24px;opacity:.7;-webkit-mask-image:radial-gradient(70% 80% at 70% 30%,#000 20%,transparent 100%);mask-image:radial-gradient(70% 80% at 70% 30%,#000 20%,transparent 100%)}
+.hero.tall{min-height:min(88svh,900px);display:flex;align-items:center}
+.hero.has-bg{background:linear-gradient(rgba(10,8,6,var(--hdim,.55)),rgba(10,8,6,var(--hdim,.55))),var(--hbg) center/cover;color:#fff}
+.hero.has-bg::before{display:none}
+.hero.has-bg .lede{color:rgba(255,255,255,.86)}
+.hero.has-bg .eyebrow{border-color:rgba(255,255,255,.35);color:#fff;background:rgba(255,255,255,.12)}
+.hero.has-bg .btn-ghost{border-color:rgba(255,255,255,.55);color:#fff}
+.hero.has-bg .btn-ghost:hover{border-color:#fff;color:#fff}
+.hero.has-bg h1 em{color:color-mix(in srgb, var(--accent) 70%, #fff)}
+
+/* features: icon styles */
+.feat .ic.num{font-family:${f.disp};font-weight:700;color:var(--accent);font-size:1.3rem;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 12%, transparent)}
+
+/* gallery ratios */
+.gal-grid.r-square .gal .ph{aspect-ratio:1/1}
+.gal-grid.r-land .gal .ph{aspect-ratio:16/10}
+.gal-grid.r-port .gal .ph{aspect-ratio:4/5}
+
+/* team */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.member{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px 20px}
+.member .ph{width:96px;height:96px;border-radius:50%;margin:0 auto 14px;font-size:1.6rem}
+.member .ph img{border-radius:50%}
+.member h3{font-size:1rem}
+.member .role{color:var(--accent);font-size:.82rem;font-weight:600;margin:3px 0 10px}
+.member p{color:var(--muted);font-size:.88rem}
+
+/* partner logos */
+.logos-row{display:flex;flex-wrap:wrap;gap:14px 34px;align-items:center;justify-content:center}
+.logos-row .lg{height:44px;display:flex;align-items:center;opacity:.72;transition:opacity .25s}
+.logos-row .lg:hover{opacity:1}
+.logos-row .lg img{max-height:44px;width:auto;max-width:150px;object-fit:contain}
+.logos-row .lg span{font-family:${f.disp};font-weight:700;font-size:1rem;color:var(--muted);padding:8px 16px;border:1px dashed var(--line);border-radius:12px}
+
+/* steps */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;counter-reset:step}
+.step{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px 24px}
+.step .n{font-family:${f.disp};font-weight:700;color:var(--accent);font-size:.8rem;letter-spacing:.14em;margin-bottom:12px}
+.step h3{font-size:1.02rem;margin-bottom:8px}
+.step p{color:var(--muted);font-size:.9rem}
+
+/* map + hours */
+.map-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:start}
+.map-grid.no-hours{grid-template-columns:1fr}
+.mapwrap{position:relative;aspect-ratio:16/10;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:var(--card)}
+.mapwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.hours{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px}
+.hours h3{font-size:1rem;margin-bottom:12px}
+.hours .row{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.92rem}
+.hours .row:last-of-type{border-bottom:none}
+.hours .row span:first-child{color:var(--muted)}
+.hours .addr{color:var(--muted);font-size:.9rem;margin-top:14px;line-height:1.6}
+
+/* rich text */
+.rich{max-width:760px}
+.rich .body{color:var(--muted);font-size:1.04rem;white-space:pre-line}
+.align-c .rich{margin:0 auto;text-align:center}
+
+/* announcement bar */
+.announce{background:var(--accent);color:var(--on-accent);text-align:center;padding:10px 20px;font-size:.9rem;font-weight:600}
+.announce a{text-decoration:underline;text-underline-offset:3px;margin-left:8px}
+
+/* spacer */
+.spacer{height:24px}.spacer.sp-md{height:56px}.spacer.sp-lg{height:112px}
+
+@media (max-width:860px){ .map-grid{grid-template-columns:1fr} .hero.tall{min-height:0} }
 `;
 }
 
@@ -748,14 +862,16 @@ function parseVideo(url){
 const BLOCKS = {
   navbar: {
     name:'Navbar', icon:'🧭', desc:'Sticky top navigation',
-    defaults:{ brand:'Your', brandAccent:'Brand', links:[{label:'Features',href:'#features'},{label:'Pricing',href:'#pricing'},{label:'Contact',href:'#contact'}], cta:'Get started', ctaHref:'#contact' },
+    section:false,
+    defaults:{ brand:'Your', brandAccent:'Brand', logo:'', logoOnly:false, links:[{label:'Features',href:'#features'},{label:'Pricing',href:'#pricing'},{label:'Contact',href:'#contact'}], cta:'Get started', ctaHref:'#contact' },
     fields:[
       {k:'brand',l:'Brand name',t:'text'},{k:'brandAccent',l:'Brand accent word',t:'text'},
+      {k:'logo',l:'Logo image (optional)',t:'text',up:1},{k:'logoOnly',l:'Show the logo image only',t:'toggle'},
       {k:'links',l:'Menu links',t:'items',item:[{k:'label',l:'Label',t:'text'},{k:'href',l:'Link (e.g. #pricing)',t:'text'}],titleKey:'label'},
       {k:'cta',l:'Button label',t:'text'},{k:'ctaHref',l:'Button link',t:'text'}
     ],
     render:p=>`<header class="nav"><div class="wrap">
-      <a href="#" class="logo"><span${ed('brand')}>${esc(p.brand)}</span><b${ed('brandAccent')}>${esc(p.brandAccent)}</b></a>
+      <a href="#" class="logo">${p.logo?`<img src="${escAttr(p.logo)}" alt="${escAttr(p.brand+(p.brandAccent||''))}" />`:''}${p.logo&&p.logoOnly?'':`<span${ed('brand')}>${esc(p.brand)}</span><b${ed('brandAccent')}>${esc(p.brandAccent)}</b>`}</a>
       <button class="mtoggle" aria-label="Menu" onclick="this.nextElementSibling.classList.toggle('open')">☰</button>
       <nav>${p.links.map(l=>`<a href="${escAttr(l.href)}">${esc(l.label)}</a>`).join('')}
       ${p.cta?`<a class="btn btn-solid" href="${escAttr(p.ctaHref)}"${ed('cta')}>${esc(p.cta)}</a>`:''}</nav>
@@ -764,20 +880,24 @@ const BLOCKS = {
 
   hero: {
     name:'Hero', icon:'✨', desc:'Big opening statement',
-    defaults:{ eyebrow:'Welcome', title:'Ideas move faster in a *blink*', sub:'Tell people what you do in one honest sentence. This is the first thing they read. Make it about them, not you.', primary:'Start your project', primaryHref:'#contact', secondary:'See pricing', secondaryHref:'#pricing', img:'', imgLabel:'✦', layout:'split' },
+    defaults:{ eyebrow:'Welcome', title:'Ideas move faster in a *blink*', sub:'Tell people what you do in one honest sentence. This is the first thing they read. Make it about them, not you.', primary:'Start your project', primaryHref:'#contact', secondary:'See pricing', secondaryHref:'#pricing', img:'', imgLabel:'✦', layout:'split', size:'normal', bgImg:'', bgDim:'55' },
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Headline (wrap a word in *stars* to color it)',t:'textarea'},
       {k:'sub',l:'Subheadline',t:'textarea'},
       {k:'primary',l:'Primary button',t:'text'},{k:'primaryHref',l:'Primary link',t:'text'},
       {k:'secondary',l:'Secondary button (blank = hidden)',t:'text'},{k:'secondaryHref',l:'Secondary link',t:'text'},
       {k:'layout',l:'Layout',t:'seg',opts:[['split','Split'],['center','Centered']]},
+      {k:'size',l:'Height',t:'seg',opts:[['normal','Normal'],['tall','Full screen']]},
       {k:'img',l:'Image URL (blank = brand placeholder)',t:'text',up:1},
-      {k:'imgLabel',l:'Image alt text',t:'text'}
+      {k:'imgLabel',l:'Image alt text',t:'text'},
+      {k:'bgImg',l:'Background photo (optional, sits behind the text)',t:'text',up:1},
+      {k:'bgDim',l:'Darken background photo',t:'seg',opts:[['30','Light'],['55','Medium'],['75','Strong']]}
     ],
     render:p=>{
       const title = esc(p.title).replace(/\*(.+?)\*/g,'<em>$1</em>');
       const media = p.layout==='center'?'':ph(p.img,p.imgLabel);
-      return `<section class="hero ${p.layout==='center'?'center':''}"><div class="wrap"><div class="hero-grid"><div>
+      const bg = p.bgImg ? ` style="--hbg:url('${escAttr(p.bgImg)}');--hdim:${(+p.bgDim||55)/100}"` : '';
+      return `<section class="hero ${p.layout==='center'?'center':''} ${p.size==='tall'?'tall':''} ${p.bgImg?'has-bg':''}"${bg}><div class="wrap"><div class="hero-grid"><div>
         ${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}
         <h1${ed('title')}>${title}</h1>
         <p class="lede"${ed('sub')}>${esc(p.sub)}</p>
@@ -790,17 +910,19 @@ const BLOCKS = {
 
   features: {
     name:'Features', icon:'🧩', desc:'Grid of what you offer',
-    defaults:{ eyebrow:'What you get', title:'Built right, kept simple', sub:'Three to six short cards. Lead with the benefit, not the feature.', cols:'3',
+    alignable:true,
+    defaults:{ eyebrow:'What you get', title:'Built right, kept simple', sub:'Three to six short cards. Lead with the benefit, not the feature.', cols:'3', iconStyle:'emoji',
       items:[{icon:'⚡',title:'Lead with a benefit',text:'One sentence on how this helps your customer, not on how it works.'},{icon:'🧭',title:'Keep it scannable',text:'People skim. Short titles, short text, three to six cards at most.'},{icon:'🤝',title:'End with trust',text:'A guarantee, a credential, or the thing customers praise most.'}] },
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'sub',l:'Subtitle',t:'textarea'},
       {k:'cols',l:'Columns',t:'seg',opts:[['2','2'],['3','3'],['4','4']]},
+      {k:'iconStyle',l:'Icons',t:'seg',opts:[['emoji','Emoji'],['number','Numbers'],['none','None']]},
       {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]},
       {k:'items',l:'Cards',t:'items',item:[{k:'icon',l:'Icon (emoji)',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Text',t:'textarea'}],titleKey:'title'}
     ],
     render:p=>`<section id="features" class="${vtc(p)}"><div class="wrap">
       <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2>${p.sub?`<p${ed('sub')}>${esc(p.sub)}</p>`:''}</div>
-      <div class="feat-grid c${esc(p.cols)}">${p.items.map(i=>`<div class="feat"><div class="ic">${esc(i.icon)}</div><h3>${esc(i.title)}</h3><p>${esc(i.text)}</p></div>`).join('')}</div>
+      <div class="feat-grid c${esc(p.cols)}">${p.items.map((i,n)=>`<div class="feat">${p.iconStyle==='none'?'':p.iconStyle==='number'?`<div class="ic num">${n+1}</div>`:`<div class="ic">${esc(i.icon)}</div>`}<h3>${esc(i.title)}</h3><p>${esc(i.text)}</p></div>`).join('')}</div>
     </div></section>`
   },
 
@@ -852,7 +974,7 @@ const BLOCKS = {
   },
 
   quotes: {
-    name:'Testimonials', icon:'💬', desc:'Words from real clients',
+    name:'Testimonials', icon:'💬', desc:'Words from real clients', alignable:true,
     defaults:{ eyebrow:'Kind words', title:'What customers say',
       items:[{quote:'A real quote from a real customer beats anything you could write yourself. Keep it short.',name:'Customer name',role:'Their business or city'},{quote:'Two or three of these are plenty. Pick the ones that mention results.',name:'Another customer',role:'Their role'}] },
     fields:[
@@ -867,15 +989,16 @@ const BLOCKS = {
   },
 
   gallery: {
-    name:'Gallery', icon:'🗂️', desc:'Work, menu, or photos',
-    defaults:{ title:'Recent work', cols:'3', items:[{img:'',caption:'Project one'},{img:'',caption:'Project two'},{img:'',caption:'Project three'}] },
+    name:'Gallery', icon:'🗂️', desc:'Work, menu, or photos', alignable:true,
+    defaults:{ title:'Recent work', cols:'3', ratio:'land', items:[{img:'',caption:'Project one'},{img:'',caption:'Project two'},{img:'',caption:'Project three'}] },
     fields:[
       {k:'title',l:'Title',t:'text'},{k:'cols',l:'Columns',t:'seg',opts:[['2','2'],['3','3'],['4','4']]},
+      {k:'ratio',l:'Image shape',t:'seg',opts:[['square','Square'],['land','Wide'],['port','Tall']]},
       {k:'items',l:'Items',t:'items',item:[{k:'img',l:'Image URL (blank = placeholder)',t:'text',up:1},{k:'caption',l:'Caption',t:'text'}],titleKey:'caption'}
     ],
     render:p=>`<section><div class="wrap">
       <div class="sec-head"><h2${ed('title')}>${esc(p.title)}</h2></div>
-      <div class="gal-grid c${esc(p.cols)}">${p.items.map(i=>`<figure class="gal">${ph(i.img,i.caption?esc(i.caption[0]).toUpperCase():'✦')}${i.caption?`<figcaption>${esc(i.caption)}</figcaption>`:''}</figure>`).join('')}</div>
+      <div class="gal-grid c${esc(p.cols)} r-${esc(p.ratio||'land')}">${p.items.map(i=>`<figure class="gal">${ph(i.img,i.caption?esc(i.caption[0]).toUpperCase():'✦')}${i.caption?`<figcaption>${esc(i.caption)}</figcaption>`:''}</figure>`).join('')}</div>
     </div></section>`
   },
 
@@ -894,7 +1017,7 @@ const BLOCKS = {
   },
 
   payments: {
-    name:'Payments', icon:'💳', desc:'GCash, Maya, or bank details',
+    name:'Payments', icon:'💳', desc:'GCash, Maya, or bank details', alignable:true,
     defaults:{ eyebrow:'Payment', title:'Easy ways to pay', sub:'Pick whichever is easiest for you, then send a screenshot to confirm.',
       qr:'', qrCaption:'Scan to pay via GCash',
       items:[
@@ -922,7 +1045,7 @@ const BLOCKS = {
   },
 
   video: {
-    name:'Video', icon:'🎬', desc:'YouTube or Vimeo embed',
+    name:'Video', icon:'🎬', desc:'YouTube or Vimeo embed', alignable:true,
     defaults:{ eyebrow:'Watch', title:'See it in motion', url:'', variant:'default' },
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},
@@ -942,7 +1065,7 @@ const BLOCKS = {
   },
 
   social: {
-    name:'Social links', icon:'🔗', desc:'Row of profile links',
+    name:'Social links', icon:'🔗', desc:'Row of profile links', alignable:true,
     defaults:{ title:'Find us here',
       items:[{label:'Facebook',url:'#'},{label:'Instagram',url:'#'},{label:'TikTok',url:'#'}] },
     fields:[
@@ -989,26 +1112,133 @@ const BLOCKS = {
 
   footer: {
     name:'Footer', icon:'🦶', desc:'Sign-off + links',
-    defaults:{ brand:'Your', brandAccent:'Brand', tagline:'One honest line about what you do and who you do it for.', links:[{label:'Features',href:'#features'},{label:'Pricing',href:'#pricing'},{label:'Contact',href:'#contact'}], fine:'© 2026 Your Brand. All rights reserved.' },
+    section:false,
+    defaults:{ brand:'Your', brandAccent:'Brand', logo:'', tagline:'One honest line about what you do and who you do it for.', links:[{label:'Features',href:'#features'},{label:'Pricing',href:'#pricing'},{label:'Contact',href:'#contact'}], fine:'© 2026 Your Brand. All rights reserved.' },
     fields:[
-      {k:'brand',l:'Brand',t:'text'},{k:'brandAccent',l:'Brand accent word',t:'text'},{k:'tagline',l:'Tagline',t:'textarea'},
+      {k:'brand',l:'Brand',t:'text'},{k:'brandAccent',l:'Brand accent word',t:'text'},{k:'logo',l:'Logo image (optional)',t:'text',up:1},{k:'tagline',l:'Tagline',t:'textarea'},
       {k:'links',l:'Links',t:'items',item:[{k:'label',l:'Label',t:'text'},{k:'href',l:'Link',t:'text'}],titleKey:'label'},
       {k:'fine',l:'Fine print',t:'text'}
     ],
     render:p=>`<footer class="foot"><div class="wrap">
-      <div class="top"><div><div class="logo"><span${ed('brand')}>${esc(p.brand)}</span><b${ed('brandAccent')}>${esc(p.brandAccent)}</b></div><p class="tag"${ed('tagline')}>${esc(p.tagline)}</p></div>
+      <div class="top"><div><div class="logo">${p.logo?`<img src="${escAttr(p.logo)}" alt="" />`:''}<span${ed('brand')}>${esc(p.brand)}</span><b${ed('brandAccent')}>${esc(p.brandAccent)}</b></div><p class="tag"${ed('tagline')}>${esc(p.tagline)}</p></div>
       <nav>${p.links.map(l=>`<a href="${escAttr(l.href)}">${esc(l.label)}</a>`).join('')}</nav></div>
       <div class="fine"${ed('fine')}>${esc(p.fine)}</div>
     </div></footer>`
+  },
+
+  team: {
+    name:'Team', icon:'🧑‍🤝‍🧑', desc:'The people behind it', alignable:true,
+    defaults:{ eyebrow:'The team', title:'Small team, direct line', sub:'Real names and real faces build trust faster than any slogan.',
+      items:[{img:'',name:'Full name',role:'Founder',bio:'One line about what they own and why clients like working with them.'},{img:'',name:'Full name',role:'Designer',bio:'One line. Keep the tone the same across the team.'},{img:'',name:'Full name',role:'Developer',bio:'One line. Skip the buzzwords.'}] },
+    fields:[
+      {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'sub',l:'Subtitle',t:'textarea'},
+      {k:'items',l:'People',t:'items',item:[{k:'img',l:'Photo URL (blank = initials)',t:'text',up:1},{k:'name',l:'Name',t:'text'},{k:'role',l:'Role',t:'text'},{k:'bio',l:'One line about them',t:'textarea'}],titleKey:'name'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
+    ],
+    render:p=>`<section class="${vtc(p)}"><div class="wrap">
+      <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2>${p.sub?`<p${ed('sub')}>${esc(p.sub)}</p>`:''}</div>
+      <div class="team-grid">${p.items.map(i=>`<div class="member">${ph(i.img, i.img ? i.name : String(i.name||'?').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase())}<h3>${esc(i.name)}</h3><div class="role">${esc(i.role)}</div>${i.bio?`<p>${esc(i.bio)}</p>`:''}</div>`).join('')}</div>
+    </div></section>`
+  },
+
+  logos: {
+    name:'Partner logos', icon:'🤝', desc:'Clients or brands you work with', alignable:true,
+    defaults:{ title:'Trusted by', items:[{img:'',name:'Client one',url:''},{img:'',name:'Client two',url:''},{img:'',name:'Client three',url:''},{img:'',name:'Client four',url:''}] },
+    fields:[
+      {k:'title',l:'Small title above the logos (blank = none)',t:'text'},
+      {k:'items',l:'Logos',t:'items',item:[{k:'img',l:'Logo image URL (blank = name as text)',t:'text',up:1},{k:'name',l:'Name (used as alt text)',t:'text'},{k:'url',l:'Link (optional)',t:'text'}],titleKey:'name'}
+    ],
+    render:p=>`<section class="pad-sm"><div class="wrap">
+      ${p.title?`<div class="sec-head center" style="margin-bottom:26px"><span class="eyebrow"${ed('title')}>${esc(p.title)}</span></div>`:''}
+      <div class="logos-row">${p.items.map(i=>{ const inner = i.img ? `<img src="${escAttr(i.img)}" alt="${escAttr(i.name)}" loading="lazy" />` : `<span>${esc(i.name)}</span>`; return i.url ? `<a class="lg" href="${escAttr(i.url)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="lg">${inner}</div>`; }).join('')}</div>
+    </div></section>`
+  },
+
+  steps: {
+    name:'Steps', icon:'🪜', desc:'How it works, in order', alignable:true,
+    defaults:{ eyebrow:'How it works', title:'Three steps, no surprises', sub:'Walk people through what happens after they say yes.',
+      items:[{title:'Tell us what you need',text:'A short call or message. We listen first, then quote.'},{title:'We build it',text:'You see progress early and often. Change your mind while it is cheap.'},{title:'You own it',text:'Launch, then the files are yours. Stay on a care plan or take it anywhere.'}] },
+    fields:[
+      {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'sub',l:'Subtitle',t:'textarea'},
+      {k:'items',l:'Steps',t:'items',item:[{k:'title',l:'Step title',t:'text'},{k:'text',l:'What happens',t:'textarea'}],titleKey:'title'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
+    ],
+    render:p=>`<section id="how" class="${vtc(p)}"><div class="wrap">
+      <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2>${p.sub?`<p${ed('sub')}>${esc(p.sub)}</p>`:''}</div>
+      <div class="steps-grid">${p.items.map((i,n)=>`<div class="step"><div class="n">STEP ${String(n+1).padStart(2,'0')}</div><h3>${esc(i.title)}</h3><p>${esc(i.text)}</p></div>`).join('')}</div>
+    </div></section>`
+  },
+
+  map: {
+    name:'Map & hours', icon:'📍', desc:'Google map with opening hours', alignable:true,
+    defaults:{ eyebrow:'Visit us', title:'Find us', address:'BLOQ SOHO Lofts, Mandaue City, Cebu', showHours:true, hoursTitle:'Opening hours',
+      hours:[{day:'Monday to Friday',time:'9:00 AM to 6:00 PM'},{day:'Saturday',time:'9:00 AM to 1:00 PM'},{day:'Sunday',time:'Closed'}] },
+    fields:[
+      {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},
+      {k:'address',l:'Address (the map centers on this)',t:'text'},
+      {k:'showHours',l:'Show opening hours',t:'toggle'},{k:'hoursTitle',l:'Hours title',t:'text'},
+      {k:'hours',l:'Hours',t:'items',item:[{k:'day',l:'Day(s)',t:'text'},{k:'time',l:'Time',t:'text'}],titleKey:'day'}
+    ],
+    render:p=>{
+      const q = encodeURIComponent(String(p.address||'').trim());
+      const map = q ? `<iframe src="https://www.google.com/maps?q=${q}&output=embed" title="Map: ${escAttr(p.address)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>` : `<div class="vid-ph"><span class="ic">📍</span><span>Add an address</span></div>`;
+      const hours = p.showHours ? `<div class="hours"><h3${ed('hoursTitle')}>${esc(p.hoursTitle)}</h3>${(p.hours||[]).map(h=>`<div class="row"><span>${esc(h.day)}</span><span>${esc(h.time)}</span></div>`).join('')}${p.address?`<div class="addr">📍 ${esc(p.address)}</div>`:''}</div>` : '';
+      return `<section id="map"><div class="wrap">
+      <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2></div>
+      <div class="map-grid ${p.showHours?'':'no-hours'}"><div class="mapwrap">${map}</div>${hours}</div>
+    </div></section>`;
+    }
+  },
+
+  text: {
+    name:'Text', icon:'📝', desc:'Heading plus paragraphs', alignable:true,
+    defaults:{ eyebrow:'', title:'A heading that earns the next paragraph', body:'Write like you talk to a customer across the counter. Short sentences. One idea per paragraph.\n\nBlank lines become paragraph breaks.' },
+    fields:[{k:'eyebrow',l:'Eyebrow (blank = none)',t:'text'},{k:'title',l:'Title',t:'text'},{k:'body',l:'Body text',t:'textarea'},{k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}],
+    render:p=>`<section class="${vtc(p)}"><div class="wrap"><div class="rich">
+      ${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')} style="font-size:clamp(1.5rem,3vw,2.2rem);margin:14px 0 14px">${esc(p.title)}</h2><p class="body"${ed('body')}>${esc(p.body)}</p>
+    </div></div></section>`
+  },
+
+  banner: {
+    name:'Announcement', icon:'📢', desc:'Thin bar for a promo or notice', section:false,
+    defaults:{ text:'Grand opening this Saturday. First 50 customers get a free drink.', label:'Details', href:'#contact' },
+    fields:[{k:'text',l:'Message',t:'text'},{k:'label',l:'Link label (blank = none)',t:'text'},{k:'href',l:'Link',t:'text'}],
+    render:p=>`<div class="announce"><span${ed('text')}>${esc(p.text)}</span>${p.label?`<a href="${escAttr(p.href)}"${ed('label')}>${esc(p.label)}</a>`:''}</div>`
+  },
+
+  spacer: {
+    name:'Spacer', icon:'↕️', desc:'Breathing room between sections', section:false,
+    defaults:{ size:'md' },
+    fields:[{k:'size',l:'Height',t:'seg',opts:[['sm','Small'],['md','Medium'],['lg','Large']]}],
+    render:p=>`<div class="spacer sp-${esc(p.size||'md')}" aria-hidden="true"></div>`
   }
 };
 
-const BLOCK_ORDER = ['navbar','hero','features','split','stats','pricing','payments','quotes','gallery','video','faq','cta','contact','social','footer'];
+const BLOCK_ORDER = ['navbar','banner','hero','logos','features','steps','split','text','stats','pricing','payments','quotes','team','gallery','video','faq','map','cta','contact','social','spacer','footer'];
+/* default anchor ids, so nav links like #pricing work out of the box; editable per block in the Section group */
+const DEFAULT_ANCHOR = { features:'features', pricing:'pricing', faq:'faq', contact:'contact', payments:'pay', gallery:'gallery', quotes:'testimonials', team:'team', map:'map', steps:'how', video:'video', logos:'partners' };
+
+/* apply the generic Section options (anchor id, spacing, alignment) to a rendered block */
+function decorate(html, b){
+  const p = b.props, def = BLOCKS[b.type];
+  if (!def || def.section === false) return html;
+  const cls = [];
+  if (p.pad === 'sm') cls.push('pad-sm'); else if (p.pad === 'lg') cls.push('pad-lg');
+  if (def.alignable && p.align === 'center') cls.push('align-c');
+  const id = (p.anchor === undefined || p.anchor === null) ? (DEFAULT_ANCHOR[b.type] || '') : String(p.anchor).trim().replace(/^#/, '');
+  return html.replace(/^\s*<(section|header|footer|div)\b([^>]*)>/, (m, tag, attrs) => {
+    let a = attrs;
+    if (cls.length) a = /class="/.test(a) ? a.replace(/class="/, 'class="' + cls.join(' ') + ' ') : a + ' class="' + cls.join(' ') + '"';
+    a = a.replace(/\sid="[^"]*"/, '');
+    if (id) a = ' id="' + escAttr(id) + '"' + a;
+    return '<' + tag + a + '>';
+  });
+}
 
 function renderBlockHTML(b, edit){
   EDIT = !!edit;
   const def = BLOCKS[b.type];
-  const html = def ? def.render(b.props) : '';
+  const html = def ? decorate(def.render(b.props), b) : '';
   EDIT = false;
   return html;
 }
@@ -1074,7 +1304,7 @@ function canvasDoc(){
   return `<!DOCTYPE html><html lang="${plang}"${pdir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="${fontLink(state.theme)}">
 <style>${siteCSS(state.theme)}</style><style>${OVERLAY_CSS}</style></head>
-<body>${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button>${typeof privacySectionHTML==='function'?privacySectionHTML():''}${typeof waFabHTML==='function'?waFabHTML():''}</body></html>`;
+<body class="tx-${state.theme.texture||'glow'}">${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button>${typeof privacySectionHTML==='function'?privacySectionHTML():''}${typeof waFabHTML==='function'?waFabHTML():''}</body></html>`;
 }
 
 let savedScroll = 0;
@@ -1226,8 +1456,9 @@ function renderLibrary(){
 function renderLayers(){
   const wrap = $('#layers');
   if (!state.blocks.length){ wrap.innerHTML = `<div class="empty-note">${t('No blocks yet. Add some from the Blocks tab.')}</div>`; return; }
+  const snippet = b => { const p=b.props; const v = p.title || p.eyebrow || p.text || p.brand || (p.items && p.items[0] && (p.items[0].title||p.items[0].name||p.items[0].label||p.items[0].q)) || ''; return String(v).replace(/\*/g,'').replace(/\s+/g,' ').trim().slice(0,34); };
   wrap.innerHTML = state.blocks.map(b=>`<div class="layer ${b.id===selectedId?'on':''}" draggable="true" data-id="${b.id}">
-    <span class="ic">${BLOCKS[b.type].icon}</span><span class="nm">${t(BLOCKS[b.type].name)}</span><span class="grip">⋮⋮</span></div>`).join('');
+    <span class="ic">${BLOCKS[b.type].icon}</span><span class="nm">${t(BLOCKS[b.type].name)}${snippet(b)?`<span class="sub">${esc(snippet(b))}</span>`:''}</span><span class="grip">⋮⋮</span></div>`).join('');
   $$('.layer', wrap).forEach(el=>{
     el.addEventListener('click', ()=>{ select(el.dataset.id);
       const doc=frame.contentDocument, t=doc && doc.querySelector(`.blk[data-id="${el.dataset.id}"]`);
@@ -1259,6 +1490,13 @@ function renderInspector(){
   let html = `<div class="insp-blockname"><span class="ic">${def.icon}</span><span class="nm">${t(def.name)}</span>
     <button class="mini" title="${t('Duplicate')}" data-ia="dupe">⧉</button><button class="mini danger" title="${t('Delete')}" data-ia="del">✕</button></div>`;
   html += def.fields.map(f=>fieldHTML(f, b.props[f.k], `p.${f.k}`)).join('');
+  if (def.section !== false){
+    const anchor = (b.props.anchor === undefined || b.props.anchor === null) ? (DEFAULT_ANCHOR[b.type] || '') : b.props.anchor;
+    html += `<h4 class="grp">${t('Section')}</h4>`
+      + fieldHTML({k:'anchor',l:'Anchor id (link to it with #id)',t:'text'}, anchor, 'p.anchor')
+      + fieldHTML({k:'pad',l:'Vertical spacing',t:'seg',opts:[['sm','Tight'],['md','Normal'],['lg','Roomy']]}, b.props.pad||'md', 'p.pad')
+      + (def.alignable ? fieldHTML({k:'align',l:'Heading alignment',t:'seg',opts:[['left','Left'],['center','Center']]}, b.props.align||'left', 'p.align') : '');
+  }
   wrap.innerHTML = html;
   wireFields(wrap, b);
   $$('[data-ia]',wrap).forEach(btn=>btn.addEventListener('click',()=>blockAction(btn.dataset.ia, b.id)));
@@ -1276,13 +1514,13 @@ function fieldHTML(f, val, path){
   if (f.t==='items'){
     const items = val||[];
     return `<div class="field"><label>${t(f.l)}</label>
-      ${items.map((it,i)=>`<div class="item-card">
-        <div class="item-head"><span class="t">${esc(it[f.titleKey]||('Item '+(i+1)))}</span>
+      ${items.map((it,i)=>`<details class="item-card" ${(items.length<=3 || i===items.length-1)?'open':''}>
+        <summary class="item-head"><span class="t">${esc(it[f.titleKey]||('Item '+(i+1)))}</span>
           <button class="mini" data-im="up" data-p="${path}" data-i="${i}" title="${t('Move up')}">↑</button>
           <button class="mini" data-im="down" data-p="${path}" data-i="${i}" title="${t('Move down')}">↓</button>
-          <button class="mini danger" data-im="del" data-p="${path}" data-i="${i}" title="${t('Remove')}">✕</button></div>
-        ${f.item.map(sf=>fieldHTML(sf, it[sf.k], `${path}.${i}.${sf.k}`)).join('')}
-      </div>`).join('')}
+          <button class="mini danger" data-im="del" data-p="${path}" data-i="${i}" title="${t('Remove')}">✕</button></summary>
+        <div class="item-body">${f.item.map(sf=>fieldHTML(sf, it[sf.k], `${path}.${i}.${sf.k}`)).join('')}</div>
+      </details>`).join('')}
       <button class="add-item" data-add="${path}" data-f="${f.k}">${t('+ Add item')}</button></div>`;
   }
   return '';
@@ -1439,7 +1677,8 @@ function wireFields(wrap, b){
     tg.classList.toggle('on',o[k]); tg.setAttribute('aria-checked',o[k]);
     renderCanvas(); autosave();
   }));
-  $$('[data-im]', wrap).forEach(btn=>btn.addEventListener('click',()=>{
+  $$('[data-im]', wrap).forEach(btn=>btn.addEventListener('click',(ev)=>{
+    ev.preventDefault(); ev.stopPropagation();
     const arrPath=btn.dataset.p, i=+btn.dataset.i;
     const parts=arrPath.split('.').slice(1); let o=b.props;
     for(const pt of parts) o=o[pt];
@@ -1499,6 +1738,14 @@ function renderDesign(){
     <div class="field"><input type="range" min="0" max="34" value="${th.radius}" data-tk="radius"><label style="margin-top:4px">${t('Radius')}: <span id="radv">${th.radius}</span>px</label></div>
     <h4>${t('Spacing')}</h4>
     <div class="field"><div class="seg" data-density>${[['compact','Compact'],['normal','Normal'],['roomy','Roomy']].map(([v,l])=>`<button data-v="${v}" class="${(th.density||'normal')===v?'on':''}">${t(l)}</button>`).join('')}</div></div>
+    <h4>${t('Buttons')}</h4>
+    <div class="field"><div class="seg" data-tseg="btn">${[['pill','Pill'],['soft','Rounded'],['sharp','Square']].map(([v,l])=>`<button data-v="${v}" class="${(th.btn||'pill')===v?'on':''}">${t(l)}</button>`).join('')}</div></div>
+    <h4>${t('Content width')}</h4>
+    <div class="field"><div class="seg" data-tseg="width">${[['narrow','Narrow'],['normal','Normal'],['wide','Wide']].map(([v,l])=>`<button data-v="${v}" class="${(th.width||'normal')===v?'on':''}">${t(l)}</button>`).join('')}</div></div>
+    <h4>${t('Type size')}</h4>
+    <div class="field"><div class="seg" data-tseg="scale">${[['compact','Compact'],['normal','Normal'],['large','Large']].map(([v,l])=>`<button data-v="${v}" class="${(th.scale||'normal')===v?'on':''}">${t(l)}</button>`).join('')}</div></div>
+    <h4>${t('Hero texture')}</h4>
+    <div class="field"><div class="seg" data-tseg="texture">${[['glow','Glow'],['grid','Grid'],['dots','Dots'],['none','None']].map(([v,l])=>`<button data-v="${v}" class="${(th.texture||'glow')===v?'on':''}">${t(l)}</button>`).join('')}</div></div>
     <h4>${t('Page meta')}</h4>
     <div class="field"><label>${t('Page language')}</label><select data-meta="lang">${Object.entries(LANGS).map(([k,n])=>`<option value="${k}" ${(state.meta.lang||'en')===k?'selected':''}>${n}</option>`).join('')}</select></div>
     <div class="field"><label>${t('Currency')}</label><select data-meta="currency">${Object.entries(CURRENCIES).map(([k,sym])=>`<option value="${k}" ${(state.meta.currency||'PHP')===k?'selected':''}>${sym} ${k}</option>`).join('')}</select></div>
@@ -1533,6 +1780,11 @@ function renderDesign(){
     snapshot(); state.theme.density = btn.dataset.v;
     renderCanvas(); renderDesign(); autosave();
   });
+  $$('[data-tseg]',d).forEach(seg=>seg.addEventListener('click',e=>{
+    const btn = e.target.closest('button[data-v]'); if(!btn) return;
+    snapshot(); state.theme[seg.dataset.tseg] = btn.dataset.v;
+    renderCanvas(); renderDesign(); autosave();
+  }));
   $('[data-meta="lang"]',d).addEventListener('change',e=>{
     snapshot();
     state.meta.lang = e.target.value;
@@ -1564,9 +1816,9 @@ _tplS:'Pick a starting point. Everything is editable: the colors, the type, the 
 _gS:'Four things and you know the whole tool.',
 _g1t:'Add blocks', _g1b:'Click any block in the left panel, drag it onto the page, or use the <b>＋</b> buttons that appear on the page itself.',
 _g2t:'Click text to edit it', _g2b:'Headings, paragraphs, buttons: click them right on the page and type. Lists like pricing plans are edited in the right panel.',
-_g3t:'Make it yours in Design', _g3b:'The Design tab (top right) changes colors, fonts, and corner roundness for the whole site at once.',
+_g3t:'Make it yours in Design', _g3b:'The Design tab (top right) changes colors, fonts, button shape, content width, type size and hero texture for the whole site at once. Each block also has a Section group for its anchor id, spacing and alignment.',
 _g4t:'Export when ready', _g4b:'Export gives you the finished page as one clean, self-contained HTML file, ready to drop into any BlinkLoop repo or client project.',
-_keys:'Handy keys: <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Delete</kbd> removes the selected block · <kbd>Esc</kbd> deselects.',
+_keys:'Handy keys: <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move · <kbd>Delete</kbd> removes the selected block · <kbd>Esc</kbd> deselects.',
 _pickS:'It will be inserted right where you clicked ＋.',
 _exS:'You get one self-contained HTML file, and that file <b>is</b> the website. No plugins, nothing to install.',
 _deploy:'<b>To put it online:</b> name the file <b>index.html</b> and drop it into your hosting. For Vercel, add it to your repo and push, or drag the file into a new Vercel project. It\u2019s live in seconds. Want BlinkLoop to host and maintain it for you? That\u2019s exactly what our <b>care plans</b> are for.',
@@ -2267,7 +2519,7 @@ function applyLang(){
   set('[data-tab="blocks"]','Blocks'); set('[data-tab="layers"]','Layers');
   set('[data-rtab="block"]','Block'); set('[data-rtab="design"]','Design');
   set('[data-rtab="plugins"]','Plugins'); set('[data-rtab="seo"]','SEO');
-  set('#guideBtn','? Guide'); set('#jsonBtn','Save / Load');
+  set('#guideBtn','? Guide'); set('#jsonBtn','Projects');
   $('#previewBtn').innerHTML = $('#previewBtn').querySelector('svg').outerHTML + t('Preview');
   set('#hintBlocks','Click a block to add it, or drag it onto the page.');
   set('#hintLayers','Your page, top to bottom. Drag to reorder, click to jump to a block.');
@@ -2638,7 +2890,7 @@ function exportHTML(){
 <link href="${fontLink(t)}" rel="stylesheet" />
 <style>${siteCSS(t)}</style>
 </head>
-<body>
+<body class="tx-${t.texture||'glow'}">
 ${pageBodyHTML(false)}
 ${navJS}
 <!-- Built with Loop Builder · blinkloop -->
@@ -2689,6 +2941,43 @@ function previewSite(){
 
 /* =============== SAVE / LOAD =============== */
 const LS_KEY = 'loopbuilder-page';
+/* Drafts: the current page autosaves to LS_KEY as before, and an index of every draft on this device lives in
+   DRAFTS_KEY (id, title, updated) with each draft body under DRAFT_PREFIX+id, so several sites can be kept and
+   switched without exporting project files. */
+const DRAFTS_KEY = 'loopbuilder-drafts', DRAFT_PREFIX = 'loopbuilder-draft-';
+function draftsIndex(){ try{ return JSON.parse(localStorage.getItem(DRAFTS_KEY)||'[]'); }catch(e){ return []; } }
+function saveDraftsIndex(list){ try{ localStorage.setItem(DRAFTS_KEY, JSON.stringify(list.slice(0,30))); }catch(e){} }
+function persistDraft(json){
+  if (!state.meta.draftId) state.meta.draftId = uid();
+  const id = state.meta.draftId;
+  try{ localStorage.setItem(DRAFT_PREFIX+id, json); }catch(e){ return; }
+  const list = draftsIndex().filter(d=>d.id!==id);
+  list.unshift({ id, title: state.meta.title || 'Untitled', updated: Date.now(), blocks: state.blocks.length });
+  saveDraftsIndex(list);
+}
+function openDraft(id){
+  let data=null; try{ data = JSON.parse(localStorage.getItem(DRAFT_PREFIX+id)||'null'); }catch(e){}
+  if (!data || !data.blocks){ toast(t('That draft could not be opened')); return; }
+  snapshot(); state = data; selectedId = null; afterStateSwap(); closeModals();
+  toast(t('Draft opened'));
+}
+function deleteDraft(id){
+  try{ localStorage.removeItem(DRAFT_PREFIX+id); }catch(e){}
+  saveDraftsIndex(draftsIndex().filter(d=>d.id!==id));
+  renderDrafts();
+}
+function renderDrafts(){
+  const box = $('#draftList'); if (!box) return;
+  const list = draftsIndex();
+  const when = ts => { const d = Date.now()-ts; return d<60000 ? t('just now') : d<3600000 ? Math.round(d/60000)+' min' : d<86400000 ? Math.round(d/3600000)+' h' : new Date(ts).toLocaleDateString(); };
+  box.innerHTML = list.length ? list.map(d=>`<div class="draft ${d.id===state.meta.draftId?'on':''}">
+      <div class="dn"><b>${esc(d.title||'Untitled')}</b><span>${d.blocks||0} ${t('blocks')} · ${when(d.updated)}${d.id===state.meta.draftId?' · '+t('open now'):''}</span></div>
+      ${d.id===state.meta.draftId?'':`<button data-open="${d.id}">${t('Open')}</button>`}
+      <button class="del" data-delete="${d.id}" title="${t('Delete draft')}">✕</button>
+    </div>`).join('') : `<div class="empty-note">${t('No other drafts on this device yet.')}</div>`;
+  $$('[data-open]',box).forEach(b=>b.addEventListener('click',()=>openDraft(b.dataset.open)));
+  $$('[data-delete]',box).forEach(b=>b.addEventListener('click',()=>{ if(confirm(t('Delete this draft? This cannot be undone.'))) { const wasCurrent = b.dataset.delete===state.meta.draftId; deleteDraft(b.dataset.delete); if (wasCurrent){ state = freshState(); selectedId=null; afterStateSwap(); closeModals(); openTemplates(); } } }));
+}
 let saveT;
 function autosave(){
   const st = $('#saveState');
@@ -2699,6 +2988,7 @@ function autosave(){
       const json = JSON.stringify(state);
       if (json.length > 4500000) throw new Error('big');
       localStorage.setItem(LS_KEY, json);
+      persistDraft(json);
       st.classList.add('saved'); st.querySelector('.t').textContent=t('Saved');
     }
     catch(e){
@@ -2707,7 +2997,8 @@ function autosave(){
     }
   }, 400);
 }
-$('#jsonBtn').addEventListener('click', ()=> openModal('jsonModal'));
+$('#jsonBtn').addEventListener('click', ()=>{ renderDrafts(); openModal('jsonModal'); });
+$('#newDraft').addEventListener('click', ()=>{ closeModals(); state = freshState(); selectedId=null; history=[]; future=[]; afterStateSwap(); openTemplates(); });
 $('#dlJson').addEventListener('click', ()=>{
   download(slug(state.meta.title)+'.loop.json', JSON.stringify(state,null,2), 'application/json');
   toast(t('Project file downloaded'));
@@ -2752,7 +3043,7 @@ function openPicker(idx){
 /* =============== TEMPLATES =============== */
 function freshState(){
   return { meta:{title:'My website',desc:'',lang:'en',currency:'PHP',siteUrl:'',ogImage:''},
-    plugins:{ wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''}, priv:{on:false,email:''} }, theme:{ density:'normal',...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
+    plugins:{ wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''}, priv:{on:false,email:''} }, theme:{ density:'normal', btn:'pill', width:'normal', scale:'normal', texture:'glow', ...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
 }
 function tplBlocks(types, overrides={}){
   return types.map(t=>{
@@ -2787,6 +3078,28 @@ const TEMPLATES = [
       });
       return s; } }
 ];
+TEMPLATES.push(
+  { id:'cafe', em:'☕', name:'Café / Restaurant', desc:'Menu gallery, story, map with hours, easy contact.',
+    make(){ const s=freshState();
+      s.meta.title='Café site';
+      s.theme={...s.theme, ...themeFromPalette('moss'), font:'warm', radius:18, btn:'soft', texture:'dots'};
+      s.blocks=tplBlocks(['navbar','banner','hero','gallery','text','map','quotes','contact','footer'],{
+        hero:{eyebrow:'Open daily', title:'Coffee worth the *detour*', sub:'Say what people come back for, in one warm sentence.', primary:'See the menu', primaryHref:'#gallery', secondary:'Find us', secondaryHref:'#map', layout:'center', size:'tall'},
+        gallery:{title:'From the counter', ratio:'square', cols:'3'},
+        text:{eyebrow:'Our story', title:'Why we opened', body:'Two short paragraphs about the place and the people behind it.\n\nWhat do regulars say when they bring a friend for the first time?'},
+        banner:{text:'New: weekend brunch, 8 to 11 AM.', label:'See the menu', href:'#gallery'}
+      });
+      return s; } },
+  { id:'services', em:'🛠️', name:'Services / Contractor', desc:'Partners, process, proof, and a clear next step.',
+    make(){ const s=freshState();
+      s.meta.title='Services site';
+      s.theme={...s.theme, ...themeFromPalette('ocean'), font:'grotesk', radius:14, btn:'soft', texture:'grid'};
+      s.blocks=tplBlocks(['navbar','hero','logos','steps','features','stats','faq','cta','contact','footer'],{
+        hero:{eyebrow:'Serving Cebu since 1996', title:'Installed right the *first time*', sub:'One sentence on the problem you solve and who you solve it for.', primary:'Book a consultation', primaryHref:'#contact', secondary:'How it works', secondaryHref:'#how'},
+        features:{eyebrow:'Services', title:'What we do', iconStyle:'number'}
+      });
+      return s; } }
+);
 function openTemplates(){
   $('#tplGrid').innerHTML = TEMPLATES.map(tp=>`<button class="tpl" data-tpl="${tp.id}"><span class="em">${tp.em}</span><span class="nm">${t(tp.name)}</span><span class="ds">${t(tp.desc)}</span></button>`).join('');
   $$('#tplGrid .tpl').forEach(b=>b.addEventListener('click',()=>{
@@ -2843,6 +3156,8 @@ document.addEventListener('keydown', e=>{
   if(mod && e.key.toLowerCase()==='z' && !e.shiftKey && !typing){ e.preventDefault(); undo(); }
   else if(mod && (e.key.toLowerCase()==='y' || (e.key.toLowerCase()==='z'&&e.shiftKey)) && !typing){ e.preventDefault(); redo(); }
   else if(mod && e.key.toLowerCase()==='s'){ e.preventDefault(); try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(_){} toast('Saved'); }
+  else if(mod && e.key.toLowerCase()==='d' && selectedId && !typing){ e.preventDefault(); blockAction('dupe', selectedId); toast(t('Duplicated')); }
+  else if(e.altKey && (e.key==='ArrowUp'||e.key==='ArrowDown') && selectedId && !typing){ e.preventDefault(); blockAction(e.key==='ArrowUp'?'up':'down', selectedId); }
   else if((e.key==='Delete'||e.key==='Backspace') && selectedId && !typing){ blockAction('del', selectedId); toast(t('Block removed. Ctrl+Z to undo')); }
   else if(e.key==='Escape'){
     const open = $$('.modal-bg.show').filter(m=>!(m.id==='tplModal' && (!state||!state.blocks.length)));
