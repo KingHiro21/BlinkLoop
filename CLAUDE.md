@@ -22,7 +22,7 @@ Static HTML + Vercel serverless functions. No build step, no framework, no bundl
 | `api/` | Serverless functions (CommonJS — do NOT add `"type":"module"` to package.json) |
 | `loop-projects/` | Builder project files (`blinkloop.loop.json`) + a builder-generated homepage |
 | `og.png`, `robots.txt`, `sitemap.xml` | SEO assets. Add every new public page to the sitemap. |
-| `assets/` | Logo files (`blinkloop-icon.png`, wordmarks), hero eye (`hero-core.png`), partner chips in `assets/work/`. Reference these by path; never inline images as base64 in the pages (it was 60 to 230KB of dead weight per page). Served with a one-week cache via `vercel.json`. |
+| `assets/` | Logo files (`blinkloop-icon.png`, wordmarks as PNG plus 240px WebP), hero eye (`hero-core-328.webp` + PNG fallback, sized 2x its 164px display), partner chips and 1200px portfolio shots (WebP + JPEG) in `assets/work/`. Every raster image is a `<picture>` with a WebP source. Reference by path; never inline images as base64. Assets cache one week, fonts one year (`vercel.json`). |
 | `blinkloop-form.gs` | Google Apps Script that receives the contact form and emails info@ (lives in Google, copy here) |
 
 `vercel.json` has `cleanUrls: true` — pages are reachable without `.html`. Never create a folder with the
@@ -99,8 +99,9 @@ is open. iPhone gets push only after Add to Home Screen. Unread: tab title, app 
   bottom of index/hosting/work) has a GA4 Measurement ID; then a banner asks once, the choice lives 12 months in
   localStorage `bl-consent`, Global Privacy Control means "Essential only", and the footer "Cookie settings" link
   appears. Adding any other third-party script means updating `cookies.html` first.
-- Fonts are self-hosted (`assets/fonts.css`, `assets/fonts/*.woff2`, SIL OFL). Do not reintroduce the Google Fonts
-  `<link>`; the Cookie Policy says fonts come from our own domain.
+- Fonts are self-hosted (`@font-face` inlined in every page head, files in `assets/fonts/`, SIL OFL). Do not reintroduce the
+  Google Fonts `<link>`; the Cookie Policy says fonts come from our own domain. There is deliberately no Unbounded
+  latin-ext face: the peso sign alone pulled a 118KB file, and Sora latin-ext (12KB) renders it instead.
 - Contrast (WCAG AA 4.5:1, light theme on #FFFCF7): `--rust-ink #BD4218` 5.2, `--muted #7E5D4C` 5.8, ink on rust
   buttons (`--on-rust #2B140E`) 5.3. Brand rust `#F45D2A` is decorative only; never use it for body text or for
   light text on rust. Every public page has a skip link; decorative links inside `aria-hidden` get `tabindex="-1"`.

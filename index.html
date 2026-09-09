@@ -29,9 +29,14 @@
 <script type="application/ld+json">[{"@context": "https://schema.org", "@type": ["Organization", "ProfessionalService"], "@id": "https://www.blinkloop-ph.com/#org", "name": "BlinkLoop", "alternateName": ["Blink Loop", "BlinkLoop PH", "BlinkLoop Creative Studio"], "url": "https://www.blinkloop-ph.com/", "logo": "https://www.blinkloop-ph.com/og.png", "image": "https://www.blinkloop-ph.com/og.png", "description": "BlinkLoop designs, builds, and hosts websites for small businesses in Cebu and across the Philippines. One-time build fee, optional managed hosting and care, and you own the site.", "email": "info@blinkloopph.com", "address": {"@type": "PostalAddress", "addressLocality": "Cebu City", "addressRegion": "Central Visayas", "addressCountry": "PH"}, "areaServed": [{"@type": "City", "name": "Cebu City"}, {"@type": "Country", "name": "Philippines"}], "knowsAbout": ["web design", "web development", "website hosting", "landing pages", "small business websites", "website maintenance", "SEO"], "priceRange": "₱15,000 - ₱60,000+", "hasOfferCatalog": {"@type": "OfferCatalog", "name": "BlinkLoop services", "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Starter website build", "description": "Custom design, up to 5 pages, contact form, SSL setup and deployment."}, "price": "15000", "priceCurrency": "PHP", "priceSpecification": {"@type": "PriceSpecification", "price": "15000", "priceCurrency": "PHP", "minPrice": "15000"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Business website build", "description": "Up to 10 pages, CMS and analytics, performance optimization."}, "price": "30000", "priceCurrency": "PHP"}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom website build", "description": "Custom features and integrations, advanced SEO, built around your requirements."}, "price": "60000", "priceCurrency": "PHP"}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Managed website hosting and care", "description": "Annual hosting, updates, backups, and support for sites built by BlinkLoop."}}]}, "contactPoint": {"@type": "ContactPoint", "contactType": "sales", "email": "info@blinkloopph.com", "availableLanguage": ["English", "Filipino"]}}, {"@context": "https://schema.org", "@type": "WebSite", "@id": "https://www.blinkloop-ph.com/#website", "url": "https://www.blinkloop-ph.com/", "name": "BlinkLoop", "publisher": {"@id": "https://www.blinkloop-ph.com/#org"}, "inLanguage": "en-PH"}]</script>
 <link rel="icon" type="image/png" href="/assets/blinkloop-icon.png" />
 <script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t);try{if(document.cookie.indexOf('bl_staff=1')>-1)document.documentElement.setAttribute('data-staff','1')}catch(e){}})();</script>
+<link rel="preload" href="/assets/hero-core-328.webp" as="image" type="image/webp" fetchpriority="high" />
 <link rel="preload" href="/assets/fonts/unbounded-latin.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="/assets/fonts/sora-latin.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/assets/fonts.css" />
+<style>/* self-hosted fonts, inlined so the first render does not wait for a second stylesheet request */
+@font-face{font-family:'Sora';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/fonts/sora-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Sora';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/fonts/sora-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/fonts/unbounded-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
 <style>
 :root{
   /* Brand palette sampled from the BlinkLoop logo */
@@ -142,9 +147,10 @@ header.scrolled{
 .nav-links a{transition:color .25s;position:relative}
 .staff-link{display:none}
 [data-staff="1"] .staff-link{display:inline-block}
-.bw-dark{display:none}
-[data-theme="dark"] .bw-light{display:none}
-[data-theme="dark"] .bw-dark{display:block}
+.brand picture{display:contents}
+.brand .bw-dark{display:none}
+[data-theme="dark"] .brand .bw-light{display:none}
+[data-theme="dark"] .brand .bw-dark{display:contents}
 section[id]{scroll-margin-top:16px}
 .nav-links a.active:not(.nav-cta){color:var(--ink)}
 .nav-links a.active:not(.nav-cta)::after{
@@ -255,6 +261,7 @@ section[id]{scroll-margin-top:16px}
   filter:drop-shadow(0 12px 28px rgba(90,35,20,.3));
 }
 [data-theme="dark"] .orbit-core{filter:drop-shadow(0 0 28px rgba(244,93,42,.45))}
+.orbit-core picture{display:block}
 .orbit-core img{width:100%;height:auto}
 .pupil{
   position:absolute;left:41.9%;top:65.9%;width:21%;aspect-ratio:1;
@@ -901,8 +908,8 @@ body{overflow-x:clip}
   <div class="wrap nav">
     <a href="#top" class="brand" aria-label="BlinkLoop home">
       <img class="brand-icon" src="/assets/blinkloop-icon.png" alt="" width="34" height="30" />
-      <img class="brand-word bw-light" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" />
-      <img class="brand-word bw-dark" src="/assets/blinkloop-wordmark-dark.png" alt="BlinkLoop" width="481" height="163" />
+      <picture class="bw-light"><source type="image/webp" srcset="/assets/blinkloop-wordmark-240.webp" /><img class="brand-word" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" /></picture>
+      <picture class="bw-dark"><source type="image/webp" srcset="/assets/blinkloop-wordmark-dark-240.webp" /><img class="brand-word" src="/assets/blinkloop-wordmark-dark.png" alt="BlinkLoop" width="481" height="163" /></picture>
     </a>
     <nav class="nav-links" id="navLinks" aria-label="Main">
       <a href="#how">How it works</a>
@@ -1017,7 +1024,7 @@ body{overflow-x:clip}
         </svg>
 
         <div class="orbit-core" data-depth="6">
-          <img src="/assets/hero-core.png" alt="" width="720" height="595" fetchpriority="high" decoding="async" />
+          <picture><source type="image/webp" srcset="/assets/hero-core-328.webp" /><img src="/assets/hero-core-328.png" alt="" width="328" height="271" fetchpriority="high" decoding="async" /></picture>
                 <span class="pupil" id="pupil" aria-hidden="true"></span>
 </div>
 
@@ -1306,8 +1313,8 @@ body{overflow-x:clip}
       <div class="foot-brand">
         <a href="#top" class="brand">
             <img class="brand-icon" src="/assets/blinkloop-icon.png" alt="" width="26" height="23" />
-            <img class="brand-word brand-word-sm bw-light" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" loading="lazy" />
-            <img class="brand-word brand-word-sm bw-dark" src="/assets/blinkloop-wordmark-dark.png" alt="BlinkLoop" width="481" height="163" loading="lazy" />
+            <picture class="bw-light"><source type="image/webp" srcset="/assets/blinkloop-wordmark-240.webp" /><img class="brand-word brand-word-sm" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="481" height="163" loading="lazy" /></picture>
+            <picture class="bw-dark"><source type="image/webp" srcset="/assets/blinkloop-wordmark-dark-240.webp" /><img class="brand-word brand-word-sm" src="/assets/blinkloop-wordmark-dark.png" alt="BlinkLoop" width="481" height="163" loading="lazy" /></picture>
           </a>
         <p>A creative studio in Cebu. We design and build websites, shape brands and graphics, keep sites hosted and cared for, and help small businesses across the Philippines grow with social media and marketing strategy.</p>
       </div>
