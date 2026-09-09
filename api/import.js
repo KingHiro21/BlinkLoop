@@ -44,27 +44,35 @@ async function assertPublic(hostname){
   if (!addrs.length) throw new Error('dns');
   if (addrs.some(a => privateIp(a.address))) throw new Error('private-host');
 }
-async function fetchPage(startUrl){
+const UA = 'Mozilla/5.0 (compatible; LoopBuilderImport/1.0; +https://www.blinkloop-ph.com)';
+/* Fetch one public resource with every guard applied. `accept` is a regex the content-type must match. */
+async function fetchResource(startUrl, { accept, maxBytes, timeout = 8000, acceptHeader = '*/*' }){
   let url = new URL(startUrl);
   for (let hop = 0; hop < 4; hop++){
     if (!/^https?:$/.test(url.protocol)) throw new Error('bad-url');
     await assertPublic(url.hostname);
-    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 8000);
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), timeout);
     let r;
     try {
-      r = await fetch(url.href, { redirect: 'manual', signal: ctl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LoopBuilderImport/1.0; +https://www.blinkloop-ph.com)', 'Accept': 'text/html,application/xhtml+xml' } });
+      r = await fetch(url.href, { redirect: 'manual', signal: ctl.signal, headers: { 'User-Agent': UA, 'Accept': acceptHeader } });
     } finally { clearTimeout(timer); }
     if (r.status >= 300 && r.status < 400 && r.headers.get('location')){
       url = new URL(r.headers.get('location'), url); continue;
     }
     if (!r.ok) throw new Error('http-' + r.status);
-    const type = r.headers.get('content-type') || '';
-    if (!/text\/html|application\/xhtml/.test(type)) throw new Error('not-html');
+    const type = (r.headers.get('content-type') || '').toLowerCase();
+    if (accept && !accept.test(type)) throw new Error('wrong-type');
     const reader = r.body.getReader(); const chunks = []; let total = 0;
-    while (true){ const { done, value } = await reader.read(); if (done) break; total += value.length; if (total > 2.5*1024*1024){ reader.cancel(); break; } chunks.push(Buffer.from(value)); }
-    return { html: Buffer.concat(chunks).toString('utf8'), finalUrl: url.href };
+    while (true){ const { done, value } = await reader.read(); if (done) break; total += value.length; if (total > maxBytes){ reader.cancel(); throw new Error('too-large'); } chunks.push(Buffer.from(value)); }
+    return { buf: Buffer.concat(chunks), type, finalUrl: url.href };
   }
   throw new Error('redirects');
+}
+async function fetchPage(startUrl){
+  try {
+    const r = await fetchResource(startUrl, { accept: /text\/html|application\/xhtml/, maxBytes: 2.5*1024*1024, acceptHeader: 'text/html,application/xhtml+xml' });
+    return { html: r.buf.toString('utf8'), finalUrl: r.finalUrl };
+  } catch (e) { if (String(e.message) === 'wrong-type') throw new Error('not-html'); throw e; }
 }
 
 /* ---------- extraction helpers ---------- */
@@ -314,18 +322,206 @@ function buildPage(html, pageUrl){
   };
 }
 
+/* ================= EXACT COPY =================
+   Returns the page as it is: its markup (scripts removed, URLs made absolute) plus every stylesheet it loads,
+   rewritten so each selector only applies inside one wrapper element. The builder shows that wrapper as a
+   single "Imported page" block, so the copy sits alongside normal blocks and exports the same way. */
+const CSS_FILE_MAX = 700*1024, CSS_TOTAL_MAX = 1.6*1024*1024, CSS_FILES_MAX = 14;
+const FONT_HOST = /^https:\/\/fonts\.googleapis\.com\//i;
+
+function cssUrls(css, base){
+  /* url(...) and @import "..." made absolute against the stylesheet's own address */
+  return css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/gi, (m, q, u) => { if (/^(data:|#|blob:)/i.test(u)) return m; const a = abs(base, u); return a ? `url("${a}")` : m; });
+}
+function splitTop(s, sep){
+  /* split on a separator, ignoring separators inside (), [] and quotes */
+  const out = []; let depth = 0, q = null, cur = '';
+  for (const ch of s){
+    if (q){ cur += ch; if (ch === q) q = null; continue; }
+    if (ch === '"' || ch === "'") { q = ch; cur += ch; continue; }
+    if (ch === '(' || ch === '[') depth++; else if (ch === ')' || ch === ']') depth--;
+    if (ch === sep && depth === 0){ out.push(cur); cur = ''; } else cur += ch;
+  }
+  out.push(cur); return out;
+}
+function scopeSelector(sel, scope){
+  sel = sel.trim(); if (!sel) return '';
+  if (/^(from|to|\d+%)$/.test(sel)) return sel; // keyframe steps that slipped through
+  /* html / :root / body (with their own classes) all become the wrapper; everything else is nested under it */
+  const m = sel.match(/^(?:html|:root)([^\s>+~,]*)(?:\s+body([^\s>+~,]*))?(.*)$/i);
+  if (m) return scope + (m[2] !== undefined ? m[2] : m[1]) + m[3];
+  const b = sel.match(/^body([^\s>+~,]*)(.*)$/i);
+  if (b) return scope + b[1] + b[2];
+  return scope + ' ' + sel;
+}
+function scopeCSS(css, scope){
+  css = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*@charset[^;]*;/i, '');
+  let i = 0, out = '';
+  const n = css.length;
+  const readBlock = () => { // returns raw text up to the matching close brace, consuming it
+    let depth = 1, start = i;
+    while (i < n && depth){ if (css[i] === '{') depth++; else if (css[i] === '}') depth--; i++; }
+    return css.slice(start, i - 1);
+  };
+  const walk = () => {
+    let res = '';
+    while (i < n){
+      const rel = css.slice(i).search(/[{};]/); if (rel < 0) break;
+      const ch = css[i + rel]; const head = css.slice(i, i + rel).trim(); i += rel + 1;
+      if (ch === '}') return res;               // end of the enclosing conditional block
+      if (ch === ';'){ if (head && !/^@import/i.test(head)) res += head + ';'; continue; }
+      if (/^@(media|supports|container|layer|document)/i.test(head)){ res += head + '{' + walk() + '}'; continue; }
+      if (head.startsWith('@')){ res += head + '{' + readBlock() + '}'; continue; } // @font-face, @keyframes, @page…
+      const body = readBlock();
+      const sels = splitTop(head, ',').map(s => scopeSelector(s, scope)).filter(Boolean);
+      if (sels.length) res += sels.join(',') + '{' + body + '}';
+    }
+    return res;
+  };
+  out = walk();
+  return out;
+}
+function rootFontPx(css){
+  /* sites that set html{font-size:62.5%} expect 1rem = 10px; the wrapper cannot change the real root, so rem gets converted */
+  const m = css.match(/(?:^|[},\s])(?:html|:root)[^{]*\{[^}]*?font-size\s*:\s*([\d.]+)(px|%|rem|em)/i);
+  if (!m) return 16;
+  const v = parseFloat(m[1]); return m[2] === 'px' ? v : m[2] === '%' ? 16 * v / 100 : 16 * v;
+}
+async function buildExact(html, pageUrl){
+  const doc = parse(html, { comment: false });
+  const found = []; const warn = [];
+  const meta = name => { const el = doc.querySelector(`meta[name="${name}"]`) || doc.querySelector(`meta[property="${name}"]`); return el ? clean(el.getAttribute('content')) : ''; };
+  const title = clean(doc.querySelector('title')?.text || '');
+  const desc = meta('description') || meta('og:description');
+  const base = doc.querySelector('base[href]') ? abs(pageUrl, doc.querySelector('base[href]').getAttribute('href')) || pageUrl : pageUrl;
+
+  /* stylesheets in document order: <link rel=stylesheet> and <style>, fonts from Google kept as imports */
+  const sheets = []; const fonts = [];
+  for (const el of doc.querySelectorAll('link[rel], style')){
+    if (String(el.tagName).toUpperCase() === 'STYLE'){ sheets.push({ css: el.text || el.innerHTML || '', base }); continue; }
+    if (!/stylesheet/i.test(el.getAttribute('rel') || '')) continue;
+    const media = el.getAttribute('media'); if (media && /print/i.test(media) && !/all|screen/i.test(media)) continue;
+    const href = abs(base, el.getAttribute('href')); if (!href) continue;
+    if (FONT_HOST.test(href)){ fonts.push(href); continue; }
+    if (sheets.filter(s => s.href).length < CSS_FILES_MAX) sheets.push({ href, media: media && !/^(all|screen)/i.test(media) ? media : '' });
+  }
+  let total = 0;
+  await Promise.all(sheets.filter(s => s.href).map(async s => {
+    try { const r = await fetchResource(s.href, { accept: /text\/css|text\/plain|application\/octet-stream/, maxBytes: CSS_FILE_MAX, timeout: 6000, acceptHeader: 'text/css,*/*;q=0.1' }); s.css = r.buf.toString('utf8'); s.base = r.finalUrl; }
+    catch (e) { s.css = ''; s.failed = true; }
+  }));
+  /* one level of @import inside fetched CSS (themes sometimes chain files) */
+  for (const s of sheets){
+    if (!s.css) continue;
+    const imports = [...s.css.matchAll(/@import\s+(?:url\()?\s*['"]?([^'")\s;]+)['"]?\s*\)?[^;]*;/gi)];
+    for (const im of imports){
+      const u = abs(s.base, im[1]); if (!u) continue;
+      if (FONT_HOST.test(u)){ fonts.push(u); continue; }
+      if (total > CSS_TOTAL_MAX) break;
+      try { const r = await fetchResource(u, { accept: /text\/css|text\/plain|application\/octet-stream/, maxBytes: CSS_FILE_MAX, timeout: 5000, acceptHeader: 'text/css,*/*;q=0.1' }); const c = r.buf.toString('utf8'); total += c.length; s.css = cssUrls(c, r.finalUrl) + '\n' + s.css; } catch {}
+    }
+  }
+  const scopeId = 'imp-' + crypto.randomBytes(3).toString('hex');
+  const scope = '#' + scopeId;
+  let css = '';
+  for (const s of sheets){
+    if (!s.css) continue;
+    total += s.css.length; if (total > CSS_TOTAL_MAX){ warn.push('Some stylesheets were skipped (size limit).'); break; }
+    let c = cssUrls(s.css, s.base || base);
+    c = s.media ? `@media ${s.media}{${c}}` : c;
+    css += c + '\n';
+  }
+  const rootPx = rootFontPx(css);
+  if (rootPx && Math.abs(rootPx - 16) > 0.5){
+    css = css.replace(/(-?[\d.]+)rem\b/g, (m, v) => (Math.round(parseFloat(v) * rootPx * 100) / 100) + 'px');
+    css = css.replace(/((?:^|[},\s])(?:html|:root)[^{]*\{[^}]*?)font-size\s*:[^;}]*;?/i, '$1');
+  }
+  css = scopeCSS(css, scope);
+  /* things that only appear once the original site's scripts run */
+  css += `\n${scope} [data-aos],${scope} .aos-init,${scope} .elementor-invisible,${scope} .wow,${scope} .animate__animated,${scope} .fade-in,${scope} .reveal{opacity:1!important;visibility:visible!important;transform:none!important;animation:none!important}`;
+  css = css.replace(/<\/style/gi, '<\\/style');
+
+  /* body: drop what cannot run or would leak, make every address absolute */
+  const body = doc.querySelector('body') || doc;
+  const dropSel = 'script, noscript, template, link, meta, style, base, title, object, embed, applet';
+  body.querySelectorAll(dropSel).forEach(n => n.remove());
+  let iframes = 0;
+  for (const f of body.querySelectorAll('iframe')){
+    const src = abs(base, f.getAttribute('src') || f.getAttribute('data-src'));
+    if (src && /^https:\/\/(www\.)?(youtube(-nocookie)?\.com|player\.vimeo\.com|www\.google\.com\/maps|maps\.google\.com|open\.spotify\.com)/i.test(src)){ f.setAttribute('src', src); f.removeAttribute('data-src'); iframes++; }
+    else f.remove();
+  }
+  let imgs = 0, links = 0;
+  for (const el of body.querySelectorAll('*')){
+    for (const [k] of Object.entries(el.attributes || {})){
+      if (/^on/i.test(k)) el.removeAttribute(k);
+    }
+    const tag = String(el.tagName).toUpperCase();
+    const lazy = el.getAttribute('data-src') || el.getAttribute('data-lazy-src');
+    const src = el.getAttribute('src');
+    if (lazy && (!src || /^data:/i.test(src))){ el.setAttribute('src', lazy); }
+    const lazySet = el.getAttribute('data-srcset') || el.getAttribute('data-lazy-srcset');
+    if (lazySet && !el.getAttribute('srcset')) el.setAttribute('srcset', lazySet);
+    for (const a of ['src', 'href', 'poster', 'action', 'data-bg', 'data-background']){
+      const v = el.getAttribute(a); if (!v) continue;
+      if (a === 'href' && /^(javascript:|#)/i.test(v.trim())){ if (/^javascript:/i.test(v.trim())) el.setAttribute('href', '#'); continue; }
+      if (/^(data:|blob:|mailto:|tel:|sms:)/i.test(v.trim())) continue;
+      const u = abs(base, v); if (u) el.setAttribute(a, u);
+    }
+    for (const a of ['srcset', 'data-srcset']){
+      const v = el.getAttribute(a); if (!v) continue;
+      el.setAttribute(a, v.split(',').map(part => { const [u, d] = part.trim().split(/\s+/); const au = abs(base, u); return (au || u) + (d ? ' ' + d : ''); }).join(', '));
+    }
+    const st = el.getAttribute('style');
+    if (st && /url\(/i.test(st)) el.setAttribute('style', cssUrls(st, base));
+    if (tag === 'IMG') imgs++; if (tag === 'A') links++;
+    if (tag === 'A' && el.getAttribute('target')) el.setAttribute('rel', 'noopener');
+    if (el.getAttribute('contenteditable')) el.removeAttribute('contenteditable');
+  }
+  const htmlEl = doc.querySelector('html');
+  const rootClass = clean(((htmlEl && htmlEl.getAttribute('class')) || '').replace(/\bno-js\b/g, 'js') + ' ' + ((body.getAttribute && body.getAttribute('class')) || ''));
+  let inner = body.innerHTML.replace(/<\/?(html|body|head)\b[^>]*>/gi, '');
+  found.push(`Exact copy of ${title ? '“' + cut(title, 50) + '”' : 'the page'}`);
+  found.push(`${sheets.filter(s => s.css).length} stylesheet${sheets.filter(s => s.css).length === 1 ? '' : 's'} (${Math.round(css.length / 1024)} KB)` + (fonts.length ? `, ${fonts.length} Google Fonts link${fonts.length > 1 ? 's' : ''}` : ''));
+  found.push(`${imgs} image${imgs === 1 ? '' : 's'}, ${links} link${links === 1 ? '' : 's'}` + (iframes ? `, ${iframes} embed${iframes > 1 ? 's' : ''}` : ''));
+  if (sheets.some(s => s.failed)) warn.push('One or more stylesheets could not be fetched; parts of the page may look plain.');
+  warn.push('Scripts were removed: menus, sliders and forms that relied on them will not run.');
+  return { meta: { title: cut(title, 70), desc: cut(desc, 160), importedFrom: pageUrl }, exact: { scopeId, rootClass, html: inner, css, fonts: [...new Set(fonts)] }, found, warn };
+}
+
+/* Copy one remote image into our Blob store so the copied page stops depending on the old site. */
+async function copyAsset(url, client){
+  const { put } = require('@vercel/blob');
+  if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error('no-blob-store');
+  const r = await fetchResource(url, { accept: /^image\/(jpeg|png|webp|gif|svg\+xml|avif)/, maxBytes: 4*1024*1024, timeout: 8000, acceptHeader: 'image/*' });
+  const ext = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif', 'image/svg+xml':'svg', 'image/avif':'avif' }[r.type.split(';')[0].trim()] || 'bin';
+  const name = (new URL(r.finalUrl).pathname.split('/').pop() || 'image').toLowerCase().replace(/\.[a-z0-9]+$/, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'image';
+  const hash = crypto.createHash('sha1').update(r.finalUrl).digest('hex').slice(0, 8);
+  const blob = await put(`sites/${client}/imported/${hash}-${name}.${ext}`, r.buf, { access: 'public', contentType: r.type.split(';')[0].trim(), addRandomSuffix: false });
+  return blob.url;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const secret = process.env.LOOP_SECRET;
   if (!secret) return res.status(500).json({ ok:false, reason:'server-config' });
   if (req.method !== 'POST') return res.status(405).json({ ok:false, reason:'method' });
-  if (!sessionClient(req, secret)) return res.status(401).json({ ok:false, reason:'unauthorized' });
+  const client = sessionClient(req, secret);
+  if (!client) return res.status(401).json({ ok:false, reason:'unauthorized' });
   let body = req.body; if (typeof body === 'string'){ try{ body = JSON.parse(body); }catch{ body = {}; } } body = body || {};
   let url = String(body.url || '').trim();
   if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
   try { new URL(url); } catch { return res.status(200).json({ ok:false, reason:'bad-url' }); }
+  if (body.action === 'asset'){
+    try { const stored = await copyAsset(url, client); return res.status(200).json({ ok:true, url: stored }); }
+    catch (e) { const msg = String(e && e.message || ''); return res.status(200).json({ ok:false, reason: /no-blob-store/.test(msg) ? 'no-blob-store' : /wrong-type/.test(msg) ? 'not-image' : /too-large/.test(msg) ? 'too-large' : 'failed' }); }
+  }
   try {
     const { html, finalUrl } = await fetchPage(url);
+    if (body.mode === 'exact'){
+      const page = await buildExact(html, finalUrl);
+      return res.status(200).json({ ok:true, page, found: page.found, warn: page.warn, source: finalUrl });
+    }
     const page = buildPage(html, finalUrl);
     return res.status(200).json({ ok:true, page, found: page.found, source: finalUrl });
   } catch (e) {

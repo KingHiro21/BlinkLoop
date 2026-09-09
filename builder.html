@@ -486,6 +486,10 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <input class="in" id="importUrl" type="url" placeholder="https://www.example.com" style="flex:1;min-width:220px" autocomplete="off" />
       <button class="tb-cta" id="importGo" type="submit">Read the site</button>
     </form>
+    <div class="field" style="margin-top:12px"><label>How should we bring it in?</label>
+      <div class="seg" id="importMode"><button type="button" data-v="exact" class="on">Exact copy</button><button type="button" data-v="blocks">Rebuild as blocks</button></div>
+      <div class="empty-note" id="importModeNote" style="padding:6px 0 0">The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.</div>
+    </div>
     <div class="access-err" id="importErr"></div>
     <div id="importResult" hidden>
       <h4 style="font-family:'Unbounded';font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 8px">Found on the page</h4>
@@ -671,6 +675,13 @@ h1,h2,h3{font-family:${f.disp};line-height:1.14;font-weight:600;letter-spacing:-
 ::selection{background:var(--accent);color:var(--on-accent)}
 .wrap{max-width:var(--wrapw);margin:0 auto;padding:0 26px}
 section{padding:var(--secpad) 0}
+.imp-sec{padding:0;margin:0;background:transparent}
+.imp-root{font:16px/normal sans-serif;color:#000;text-align:start;letter-spacing:normal;-webkit-font-smoothing:auto;overflow-x:clip}
+.imp-root *{box-sizing:revert;margin:revert;padding:revert}
+.imp-root img{max-width:revert;display:revert}
+.imp-root a{color:revert;text-decoration:revert}
+.imp-root h1,.imp-root h2,.imp-root h3{font:revert;line-height:revert;letter-spacing:revert}
+.imp-root section{padding:revert}
 .eyebrow{display:inline-block;padding:7px 15px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:.76rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;font-weight:600}
 .sec-head{max-width:640px;margin-bottom:46px}
 .sec-head h2{font-size:clamp(1.7rem,3.4vw,2.5rem);margin:16px 0 12px}
@@ -1301,10 +1312,24 @@ const BLOCKS = {
     defaults:{ size:'md' },
     fields:[{k:'size',l:'Height',t:'seg',opts:[['sm','Small'],['md','Medium'],['lg','Large']]}],
     render:p=>`<div class="spacer sp-${esc(p.size||'md')}" aria-hidden="true"></div>`
+  },
+
+  /* An exact copy of an imported page (or any hand-written HTML). The CSS is already scoped to #scopeId by the
+     importer, so it cannot restyle the rest of the site; a small revert block keeps our own base styles out of it. */
+  html: {
+    name:'Imported page', icon:'🧱', desc:'Exact copy of a page, or your own HTML', section:false,
+    defaults:{ scopeId:'', rootClass:'', html:'<div style="padding:60px 24px;text-align:center;font-family:system-ui"><h2>Custom HTML</h2><p>Paste markup in the panel on the right, or use Projects → Import from a website → Exact copy.</p></div>', css:'', fonts:[] },
+    fields:[{k:'html',l:'HTML',t:'textarea'},{k:'css',l:'CSS (applies inside this block only)',t:'textarea'},{t:'action',id:'copyAssets',l:'Copy images to BlinkLoop storage',note:'Images still load from the original site. This copies each one into our storage and updates the page, so the copy keeps working when the old site goes away.'}],
+    render:p=>{
+      const id = p.scopeId || 'imp-custom';
+      const fonts = (p.fonts||[]).filter(u=>/^https:\/\/fonts\.googleapis\.com\//.test(u)).map(u=>`@import url("${escAttr(u)}");`).join('');
+      const css = String(p.css||'').replace(/<\/style/gi,'<\\/style');
+      return `<section class="imp-sec">${fonts?`<style>${fonts}</style>`:''}${css?`<style>${css}</style>`:''}<div id="${escAttr(id)}" class="imp-root${p.rootClass?' '+escAttr(p.rootClass):''}"${EDIT?' data-rawedit="html"':''}>${p.html||''}</div></section>`;
+    }
   }
 };
 
-const BLOCK_ORDER = ['navbar','banner','hero','logos','features','steps','split','text','stats','pricing','payments','quotes','team','gallery','video','faq','map','cta','contact','social','spacer','footer'];
+const BLOCK_ORDER = ['navbar','banner','hero','logos','features','steps','split','text','stats','pricing','payments','quotes','team','gallery','video','faq','map','cta','contact','social','spacer','html','footer'];
 /* default anchor ids, so nav links like #pricing work out of the box; editable per block in the Section group */
 const DEFAULT_ANCHOR = { features:'features', pricing:'pricing', faq:'faq', contact:'contact', payments:'pay', gallery:'gallery', quotes:'testimonials', team:'team', map:'map', steps:'how', video:'video', logos:'partners' };
 
@@ -1448,6 +1473,17 @@ function wireCanvas(){
     el.addEventListener('keydown', e => { if(e.key==='Enter' && el.tagName!=='P' && !el.classList.contains('tx')){ e.preventDefault(); el.blur(); } });
   });
 
+  /* whole imported pages: the wrapper is editable, its markup is the block's html */
+  $$('[data-rawedit]', doc).forEach(el => {
+    el.setAttribute('contenteditable','true'); el.setAttribute('spellcheck','false');
+    el.addEventListener('focus', () => snapshot());
+    el.addEventListener('input', () => {
+      const blk = el.closest('.blk'); if(!blk) return;
+      const b = state.blocks.find(x => x.id === blk.dataset.id); if(!b) return;
+      b.props.html = el.innerHTML; autosave(); syncInspectorField('html', b.props.html);
+    });
+  });
+
   /* drag-drop from library + reorder inside canvas */
   doc.addEventListener('dragover', e => {
     e.preventDefault();
@@ -1586,7 +1622,7 @@ function renderInspector(){
   const def = BLOCKS[b.type];
   let html = `<div class="insp-blockname"><span class="ic">${def.icon}</span><span class="nm">${t(def.name)}</span>
     <button class="mini" title="${t('Duplicate')}" data-ia="dupe">⧉</button><button class="mini danger" title="${t('Delete')}" data-ia="del">✕</button></div>`;
-  html += def.fields.map(f=>fieldHTML(f, b.props[f.k], `p.${f.k}`)).join('');
+  html += def.fields.map(f=>fieldHTML(f, f.k ? b.props[f.k] : undefined, `p.${f.k||f.id}`)).join('');
   if (def.section !== false){
     const anchor = (b.props.anchor === undefined || b.props.anchor === null) ? (DEFAULT_ANCHOR[b.type] || '') : b.props.anchor;
     html += `<h4 class="grp">${t('Section')}</h4>`
@@ -1597,7 +1633,40 @@ function renderInspector(){
   wrap.innerHTML = html;
   wireFields(wrap, b);
   $$('[data-ia]',wrap).forEach(btn=>btn.addEventListener('click',()=>blockAction(btn.dataset.ia, b.id)));
+  $$('[data-act-id]',wrap).forEach(btn=>btn.addEventListener('click',()=>{ const fn=BLOCK_ACTIONS[btn.dataset.actId]; if(fn) fn(b, btn); }));
 }
+
+/* Block-level actions triggered from the inspector */
+const BLOCK_ACTIONS = {
+  /* every remote image in an imported page -> our Blob store, then the markup and CSS point at the copies */
+  async copyAssets(b, btn){
+    const urls = new Set();
+    const doc = new DOMParser().parseFromString('<div>'+(b.props.html||'')+'</div>', 'text/html');
+    doc.querySelectorAll('img[src], source[src], [poster]').forEach(el=>{ const u=el.getAttribute('src')||el.getAttribute('poster'); if(/^https?:/i.test(u)) urls.add(u); });
+    doc.querySelectorAll('[srcset]').forEach(el=>el.getAttribute('srcset').split(',').forEach(p=>{ const u=p.trim().split(/\s+/)[0]; if(/^https?:/i.test(u)) urls.add(u); }));
+    for (const m of String(b.props.css||'').matchAll(/url\("?(https?:[^")]+\.(?:png|jpe?g|webp|gif|svg|avif)(?:\?[^")]*)?)"?\)/gi)) urls.add(m[1]);
+    for (const m of String(b.props.html||'').matchAll(/url\((['"]?)(https?:[^'")]+\.(?:png|jpe?g|webp|gif|svg|avif)(?:\?[^'")]*)?)\1\)/gi)) urls.add(m[2]);
+    const list = [...urls].filter(u => !/vercel-storage\.com/i.test(u)).slice(0, 80);
+    if (!list.length){ toast(t('No remote images left to copy.')); return; }
+    btn.disabled = true; const label = btn.textContent;
+    snapshot();
+    let done = 0, failed = 0; const map = {};
+    for (const u of list){
+      btn.textContent = t('Copying') + ' ' + (done+failed+1) + '/' + list.length + '…';
+      try{
+        const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'asset', url:u }) });
+        const d = await r.json();
+        if (d.ok && d.url){ map[u] = d.url; done++; }
+        else { failed++; if (d.reason==='no-blob-store'){ toast(t('Image storage is not set up on the server.')); break; } }
+      }catch(e){ failed++; }
+    }
+    const swap = str => { for (const [from,to] of Object.entries(map)) str = str.split(from).join(to); return str; };
+    b.props.html = swap(b.props.html||''); b.props.css = swap(b.props.css||'');
+    btn.disabled = false; btn.textContent = label;
+    renderCanvas(); renderInspector(); autosave();
+    toast(done + ' ' + t('images copied') + (failed ? ', ' + failed + ' ' + t('skipped') : ''));
+  }
+};
 
 function fieldHTML(f, val, path){
   const id = 'f_'+path.replace(/[^\w]/g,'_');
@@ -1605,7 +1674,8 @@ function fieldHTML(f, val, path){
     const upBtn = f.up ? `<div class="up-row"><button class="up-btn" type="button" data-up="${path}">\u2b06 ${t('Upload image')}</button><input type="file" class="up-file" accept="image/jpeg,image/png,image/webp" data-path="${path}" hidden /></div>` : '';
     return `<div class="field"><label for="${id}">${t(f.l)}</label><input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" />${upBtn}</div>`;
   }
-  if (f.t==='textarea') return `<div class="field"><label for="${id}">${t(f.l)}</label><textarea id="${id}" data-path="${path}">${esc(val??'')}</textarea></div>`;
+  if (f.t==='textarea') return `<div class="field"><label for="${id}">${t(f.l)}</label><textarea id="${id}" data-path="${path}"${f.k==='html'||f.k==='css'?' style="font-family:ui-monospace,Consolas,monospace;font-size:.72rem;min-height:120px"':''}>${esc(val??'')}</textarea></div>`;
+  if (f.t==='action') return `<div class="field"><button class="up-btn" type="button" data-act-id="${f.id}">${t(f.l)}</button>${f.note?`<div class="empty-note" style="padding:6px 0 0">${t(f.note)}</div>`:''}</div>`;
   if (f.t==='seg') return `<div class="field"><label>${t(f.l)}</label><div class="seg" data-path="${path}">${f.opts.map(([v,l])=>`<button data-v="${v}" class="${String(val)===v?'on':''}">${t(l)}</button>`).join('')}</div></div>`;
   if (f.t==='toggle') return `<div class="field"><div class="toggle"><label style="margin:0">${t(f.l)}</label><button class="tg ${val?'on':''}" data-path="${path}" role="switch" aria-checked="${!!val}"></button></div></div>`;
   if (f.t==='items'){
@@ -3127,7 +3197,14 @@ $('#resetBtn').addEventListener('click', ()=>{
 /* /api/import fetches the page server-side and maps it to blocks; here we only fill in defaults,
    pick a matching palette/font, and let the user decide: new draft or append. */
 let importedPage = null;
+let importMode = 'exact';
+const IMPORT_MODE_NOTE = { exact: 'The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.', blocks: 'We read the headline, sections, prices, questions, photos and contact details and rebuild them as separate blocks in your chosen design.' };
+$$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=b.dataset.v; $$('#importMode button').forEach(x=>x.classList.toggle('on',x===b)); $('#importModeNote').textContent=t(IMPORT_MODE_NOTE[importMode]); $('#importResult').hidden=true; importedPage=null; }));
 function normaliseImported(page){
+  if (page.exact){
+    const x = page.exact;
+    return [{ id: uid(), type: 'html', props: Object.assign(clone(BLOCKS.html.defaults), { scopeId: x.scopeId, rootClass: x.rootClass||'', html: x.html||'', css: x.css||'', fonts: x.fonts||[] }) }];
+  }
   const blocks = (page.blocks||[]).filter(b => BLOCKS[b.type]).map(b => ({ id: uid(), type: b.type, props: Object.assign(clone(BLOCKS[b.type].defaults), b.props||{}) }));
   return blocks;
 }
@@ -3138,7 +3215,7 @@ async function runImport(){
   if (!url){ err.textContent = t('Paste a web address first.'); return; }
   const go = $('#importGo'); go.disabled = true; go.textContent = t('Reading…');
   try{
-    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
+    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, mode: importMode }) });
     if (r.status === 401){ err.textContent = t('Your session has expired. Sign in again.'); return; }
     const d = await r.json();
     if (!d.ok){
@@ -3146,7 +3223,8 @@ async function runImport(){
       return;
     }
     importedPage = d.page;
-    $('#importFound').innerHTML = (d.found||[]).map(f => `<li>${esc(f)}</li>`).join('') || `<li>${t('A page, but no recognisable sections. You will get a headline and a footer to start from.')}</li>`;
+    $('#importFound').innerHTML = (d.found||[]).map(f => `<li>${esc(f)}</li>`).join('') + (d.warn||[]).map(w => `<li style="list-style:none;color:#8a5a12">⚠ ${esc(w)}</li>`).join('') || `<li>${t('A page, but no recognisable sections. You will get a headline and a footer to start from.')}</li>`;
+    $('#importNote').textContent = d.page.exact ? t('Images still load from the original site. Select the block and use “Copy images to BlinkLoop storage” to make the copy independent. Click any text on the page to edit it.') : t('Images still point at the original site. Replace them from the block panel once the page is yours. Colours and fonts are matched where the site declares them; everything else stays editable.');
     $('#importResult').hidden = false;
   }catch(e){ err.textContent = t('Could not reach the server. Check your connection.'); }
   finally{ go.disabled = false; go.textContent = t('Read the site'); }

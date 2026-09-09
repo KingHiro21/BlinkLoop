@@ -21,6 +21,11 @@
       ]
     }
   ],
+  "functions": {
+    "api/import.js": {
+      "maxDuration": 30
+    }
+  },
   "regions": [
     "sin1"
   ]
