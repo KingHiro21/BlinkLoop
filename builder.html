@@ -408,6 +408,32 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     <h2 id="tplT">Start your loop</h2>
     <p class="sub" id="tplS">Pick a starting point. Everything is editable: the colors, the type, the blocks, all of it.</p>
     <div class="tpl-grid" id="tplGrid"></div>
+    <div class="row" style="margin-top:16px;justify-content:center">
+      <button class="tb-btn" id="tplImport" style="border:1px solid var(--line)">🌐 Import from an existing website</button>
+    </div>
+  </div>
+</div>
+
+<!-- import from a website -->
+<div class="modal-bg" id="importModal">
+  <div class="modal">
+    <button class="close-x" data-close aria-label="Close">✕</button>
+    <h2 id="imT">Import from a website</h2>
+    <p class="sub" id="imS">Paste the address of an existing site (WordPress, Wix, anything public). We read its headline, sections, prices, questions, photos and contact details and rebuild them as editable blocks. Only import sites you own or have permission to rebuild.</p>
+    <form class="row" id="importForm" style="margin-bottom:10px" novalidate>
+      <input class="in" id="importUrl" type="url" placeholder="https://www.example.com" style="flex:1;min-width:220px" autocomplete="off" />
+      <button class="tb-cta" id="importGo" type="submit">Read the site</button>
+    </form>
+    <div class="access-err" id="importErr"></div>
+    <div id="importResult" hidden>
+      <h4 style="font-family:'Unbounded';font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 8px">Found on the page</h4>
+      <ul class="access-perks" id="importFound" style="margin-top:0"></ul>
+      <div class="deploy-note" id="importNote">Images still point at the original site. Replace them from the block panel once the page is yours. Colours and fonts are matched where the site declares them; everything else stays editable.</div>
+      <div class="row" style="margin-top:14px">
+        <button class="tb-cta" id="importUse">Use this as a new draft</button>
+        <button class="tb-btn" id="importAppend" style="border:1px solid var(--line)">Add its blocks below my page</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -466,7 +492,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     <p class="sub" id="pjS">Your work autosaves in this browser automatically. A project file is for moving between devices, keeping a backup, or sending your draft to us.</p>
     <h4 style="font-family:'Unbounded';font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 0 0">Drafts on this device</h4>
     <div class="draft-list" id="draftList"></div>
-    <div class="row" style="margin-bottom:14px"><button class="tb-btn" id="newDraft" style="border:1px solid var(--line)">＋ New draft</button></div>
+    <div class="row" style="margin-bottom:14px"><button class="tb-btn" id="newDraft" style="border:1px solid var(--line)">＋ New draft</button><button class="tb-btn" id="pjImport" style="border:1px solid var(--line)">🌐 Import from a website</button></div>
     <div class="row">
       <button class="tb-cta" id="dlJson">Download project (.json)</button>
       <button class="tb-btn" id="upJson" style="border:1px solid var(--line)">Load project…</button>
@@ -1814,7 +1840,7 @@ try{ const l = localStorage.getItem('lb-lang'); if (l && LANGS[l]) uiLang = l; }
 const EN_LONG = {
 _tplS:'Pick a starting point. Everything is editable: the colors, the type, the blocks, all of it.',
 _gS:'Four things and you know the whole tool.',
-_g1t:'Add blocks', _g1b:'Click any block in the left panel, drag it onto the page, or use the <b>＋</b> buttons that appear on the page itself.',
+_g1t:'Add blocks', _g1b:'Click any block in the left panel, drag it onto the page, or use the <b>＋</b> buttons that appear on the page itself. Rebuilding an existing site? <b>Import from a website</b> (in Projects) reads it into blocks.',
 _g2t:'Click text to edit it', _g2b:'Headings, paragraphs, buttons: click them right on the page and type. Lists like pricing plans are edited in the right panel.',
 _g3t:'Make it yours in Design', _g3b:'The Design tab (top right) changes colors, fonts, button shape, content width, type size and hero texture for the whole site at once. Each block also has a Section group for its anchor id, spacing and alignment.',
 _g4t:'Export when ready', _g4b:'Export gives you the finished page as one clean, self-contained HTML file, ready to drop into any BlinkLoop repo or client project.',
@@ -3025,6 +3051,63 @@ $('#resetBtn').addEventListener('click', ()=>{
   openTemplates();
 });
 
+/* =============== IMPORT FROM A WEBSITE =============== */
+/* /api/import fetches the page server-side and maps it to blocks; here we only fill in defaults,
+   pick a matching palette/font, and let the user decide: new draft or append. */
+let importedPage = null;
+function normaliseImported(page){
+  const blocks = (page.blocks||[]).filter(b => BLOCKS[b.type]).map(b => ({ id: uid(), type: b.type, props: Object.assign(clone(BLOCKS[b.type].defaults), b.props||{}) }));
+  return blocks;
+}
+async function runImport(){
+  const url = ($('#importUrl').value||'').trim();
+  const err = $('#importErr'); err.textContent = '';
+  $('#importResult').hidden = true; importedPage = null;
+  if (!url){ err.textContent = t('Paste a web address first.'); return; }
+  const go = $('#importGo'); go.disabled = true; go.textContent = t('Reading…');
+  try{
+    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
+    if (r.status === 401){ err.textContent = t('Your session has expired. Sign in again.'); return; }
+    const d = await r.json();
+    if (!d.ok){
+      err.textContent = { 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.');
+      return;
+    }
+    importedPage = d.page;
+    $('#importFound').innerHTML = (d.found||[]).map(f => `<li>${esc(f)}</li>`).join('') || `<li>${t('A page, but no recognisable sections. You will get a headline and a footer to start from.')}</li>`;
+    $('#importResult').hidden = false;
+  }catch(e){ err.textContent = t('Could not reach the server. Check your connection.'); }
+  finally{ go.disabled = false; go.textContent = t('Read the site'); }
+}
+function applyImported(mode){
+  if (!importedPage) return;
+  const blocks = normaliseImported(importedPage);
+  snapshot();
+  if (mode === 'append'){
+    state.blocks = state.blocks.concat(blocks.filter(b => !(b.type==='navbar' && state.blocks.some(x=>x.type==='navbar')) && !(b.type==='footer' && state.blocks.some(x=>x.type==='footer'))));
+  } else {
+    const fresh = freshState();
+    fresh.meta.title = importedPage.meta.title || fresh.meta.title;
+    fresh.meta.desc = importedPage.meta.desc || '';
+    fresh.meta.importedFrom = importedPage.meta.importedFrom || '';
+    if (importedPage.theme){
+      if (importedPage.theme.accent){ fresh.theme.accent = importedPage.theme.accent; fresh.theme.palette = 'custom'; }
+      if (importedPage.theme.font && FONTS[importedPage.theme.font]) fresh.theme.font = importedPage.theme.font;
+    }
+    fresh.blocks = blocks;
+    state = fresh; history = []; future = [];
+  }
+  selectedId = null; importedPage = null;
+  afterStateSwap(); closeModals();
+  $('#importUrl').value = ''; $('#importResult').hidden = true;
+  toast(t('Imported. Every block is editable now.'));
+}
+$('#importForm').addEventListener('submit', e => { e.preventDefault(); runImport(); });
+$('#importUse').addEventListener('click', () => applyImported('new'));
+$('#importAppend').addEventListener('click', () => applyImported('append'));
+$('#tplImport').addEventListener('click', () => { closeModals(); openModal('importModal'); setTimeout(()=>$('#importUrl').focus(), 50); });
+$('#pjImport').addEventListener('click', () => { closeModals(); openModal('importModal'); setTimeout(()=>$('#importUrl').focus(), 50); });
+
 /* =============== INSERT PICKER =============== */
 let insertAt = null;
 function openPicker(idx){
@@ -3146,6 +3229,7 @@ $$('.modal-bg').forEach(m=>m.addEventListener('click',e=>{
   const isTpl = m.id==='tplModal';
   if (e.target===m || e.target.closest('[data-close]')){
     if (isTpl && (!state || !state.blocks.length)) return;
+    if (m.id==='importModal' && (!state || !state.blocks.length)){ m.classList.remove('show'); openModal('tplModal'); return; }
     m.classList.remove('show');
   }
 }));
@@ -3161,7 +3245,7 @@ document.addEventListener('keydown', e=>{
   else if((e.key==='Delete'||e.key==='Backspace') && selectedId && !typing){ blockAction('del', selectedId); toast(t('Block removed. Ctrl+Z to undo')); }
   else if(e.key==='Escape'){
     const open = $$('.modal-bg.show').filter(m=>!(m.id==='tplModal' && (!state||!state.blocks.length)));
-    if(open.length){ open.forEach(m=>m.classList.remove('show')); }
+    if(open.length){ open.forEach(m=>m.classList.remove('show')); if (!state || !state.blocks.length) openModal('tplModal'); }
     else select(null);
   }
 });

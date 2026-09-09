@@ -15,7 +15,7 @@ Static HTML + Vercel serverless functions. No build step, no framework, no bundl
 | `work.html` | Portfolio (`/work`): Hwasung Refrigeration, CORE Migration. Screenshots in `assets/work/` |
 | `privacy.html` | Privacy policy (RA 10173 aware) |
 | `login.html` | Staff login → sets session cookie; shows a hub (Builder / Team / Admin / Site) |
-| `builder.html` | **Loop Builder** — internal drag-and-drop site builder (single ~280KB file, i18n 7 languages). 22 blocks in `BLOCKS`, 9 font pairings, 10 palettes plus custom colours. Theme keys: palette, accent, accent2, bg, ink, font, radius, density, btn (pill/soft/sharp), width (narrow/normal/wide), scale (type size), texture (hero: glow/grid/dots/none). Every block gets a Section group (anchor id, spacing, alignment) applied by `decorate()` after render; `DEFAULT_ANCHOR` makes nav links like #pricing work out of the box. `onAccent()` picks readable text on the accent colour. Drafts: several sites per device (`loopbuilder-drafts` index + `loopbuilder-draft-<id>`); the current one still autosaves to `loopbuilder-page`. Exported client sites load Google Fonts by design (the client's site and disclosure). |
+| `builder.html` | **Loop Builder** — internal drag-and-drop site builder (single ~280KB file, i18n 7 languages). 22 blocks in `BLOCKS`, 9 font pairings, 10 palettes plus custom colours. Theme keys: palette, accent, accent2, bg, ink, font, radius, density, btn (pill/soft/sharp), width (narrow/normal/wide), scale (type size), texture (hero: glow/grid/dots/none). Every block gets a Section group (anchor id, spacing, alignment) applied by `decorate()` after render; `DEFAULT_ANCHOR` makes nav links like #pricing work out of the box. `onAccent()` picks readable text on the accent colour. Drafts: several sites per device (`loopbuilder-drafts` index + `loopbuilder-draft-<id>`); the current one still autosaves to `loopbuilder-page`. Exported client sites load Google Fonts by design (the client's site and disclosure). **Import from a website** (Projects modal and the template chooser) posts a URL to `/api/import` and turns the result into a new draft or appends its blocks. |
 | `team.html` | **Team chat** — daily pages, threads, search, pins, presence |
 | `admin.html` | Mints staff access codes (needs `LOOP_ADMIN_KEY`) |
 | `middleware.js` | Vercel Edge Middleware: `/builder` and `/team` redirect to `/login` without a valid session |
@@ -35,6 +35,12 @@ same name as a page (e.g. `work/` next to `work.html`); it confuses routing. Use
 - `/api/login` verifies a code and sets cookies `bl_session` (HttpOnly, the credential) and `bl_staff=1`
   (readable UI hint: site nav shows Builder/Team links + green presence pill when present).
 - `/api/me`, `/api/logout`, `/api/verify`, `/api/generate` (admin-key gated), `/api/upload` (builder images → Vercel Blob).
+- `/api/import` (session-gated, POST `{url}`): fetches a public page server-side with `node-html-parser` and maps it to builder
+  blocks (brand/nav from the header, h1 + first paragraph as the hero, each h2 section classified as pricing / FAQ / testimonials /
+  gallery / features / image+text / text by what it contains, runs of tiny h2 cards grouped into one features block, contact
+  from mailto/tel/address, footer). Menu links that name a rebuilt section are retargeted to its anchor. SSRF guard: http(s) only,
+  DNS result checked against private ranges, 3 redirects, 2.5MB, 8s, HTML only. `IMPORT_ALLOW_PRIVATE=1` is for the local
+  harness only, never set it in Vercel. Imported images hotlink the source site until replaced; `meta.importedFrom` records the URL.
 - Env vars (Vercel, Production): `LOOP_SECRET`, `LOOP_ADMIN_KEY`, `BLOB_READ_WRITE_TOKEN` (auto from Blob store),
   `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`. Never print or commit their values.
 
