@@ -125,7 +125,7 @@ No FormSubmit, no Resend, no serverless mail. The script must be deployed with a
 - Mobile first: every layout change must be checked at 320px, 390px, ~880px, 1024px and 1366px. The nav collapses
   into a scrollable pill strip (no hamburger) at 1180px and below, so the desktop row never has to squeeze the
   staff links and presence pill. Footer is a grid: brand and address on row one, policy links on row two,
-  stacked on phones. The chat header compacts at 900px and again at 640px. Never let a decorative element be wider than the
+  stacked on phones. The chat header compacts at 900px and again at 640px. The builder chrome never overflows: the app grid uses minmax(0,1fr) columns, tool buttons drop their labels at 1400px, the save text and export label at 1240px, the device switcher at 1060px, and at 880px and below the editor shows one pane at a time (Blocks / Page / Edit) from a bottom bar, with a ✎ button in the canvas block toolbar that opens the inspector. Never let a decorative element be wider than the
   viewport (mobile browsers zoom the whole page out to fit it): `html{overflow-x:hidden}` +
   `body{overflow-x:clip}` are the safety net, but fix the element too.
 - Inputs on mobile: `font-size:16px` (prevents iOS zoom). Hover-only controls must also be visible on touch.
