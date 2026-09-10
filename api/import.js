@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const dns = require('dns').promises;
 const net = require('net');
 const { parse } = require('node-html-parser');
+const analyzePage = require('../lib/analyze.js');
 
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 function b32(buf, len){ let bits=0,v=0,out=''; for(const x of buf){ v=(v<<8)|x; bits+=8; while(bits>=5){ out+=B32[(v>>>(bits-5))&31]; bits-=5; } } return out.slice(0,len); }
@@ -218,13 +219,14 @@ async function autoScroll(page){
     window.scrollTo(0, 0); await new Promise(r => setTimeout(r, 300));
   }).catch(() => {});
 }
-async function renderPage(url, budgetMs){
+async function renderPage(url, budgetMs, opts = {}){
   const browser = await getBrowser();
   const page = await browser.newPage();
   const allowPrivate = process.env.IMPORT_ALLOW_PRIVATE === '1';
   try {
     await page.setUserAgent(REAL_UA);
     await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' });
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]); // the copy shows the site's default look, not the server's OS theme
     await page.evaluateOnNewDocument(RECORD_RULES);
     await page.setRequestInterception(true);
     page.on('request', req => {
@@ -249,20 +251,26 @@ async function renderPage(url, budgetMs){
     await page.waitForNetworkIdle({ idleTime: 700, timeout: Math.min(8000, budgetMs) }).catch(() => {});
     await autoScroll(page);
     await page.waitForNetworkIdle({ idleTime: 500, timeout: 4000 }).catch(() => {});
+    let outline = null;
+    if (opts.analyze){
+      /* give in-flight pictures a moment so cards are measured with their images */
+      await page.evaluate(() => Promise.race([Promise.all([...document.images].filter(i => !i.complete).slice(0, 80).map(i => new Promise(r => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); }))), new Promise(r => setTimeout(r, 3000))])).catch(() => {});
+      try { outline = await page.evaluate(analyzePage); } catch (e) { if (process.env.IMPORT_DEBUG) console.error('analyze failed:', e && e.message); }
+    }
     const out = await page.evaluate(SERIALIZE);
     const html = typeof out === 'string' ? out : out.html;
     const status = resp ? resp.status() : 200;
     if (status >= 400) throw new Error('http-' + status);
     await new Promise(r => setTimeout(r, 150)); // let the last stylesheet bodies land in cssMap
-    return { html, finalUrl: page.url(), cssMap, mediaUrls, height: out && out.height || 0 };
+    return { html, finalUrl: page.url(), cssMap, mediaUrls, height: out && out.height || 0, outline };
   } finally { await page.close().catch(() => {}); }
 }
 /* the page as a browser sees it, or the raw HTML when no browser can be had */
-async function loadPage(url, budgetMs = 25000){
+async function loadPage(url, budgetMs = 25000, opts = {}){
   await assertPublic(new URL(url).hostname);
   let renderError = '';
   if (process.env.IMPORT_NO_RENDER !== '1'){
-    try { const r = await renderPage(url, budgetMs); if (r.html && r.html.length > 500) return { ...r, rendered: true }; renderError = 'empty page'; }
+    try { const r = await renderPage(url, budgetMs, opts); if (r.html && r.html.length > 500) return { ...r, rendered: true }; renderError = 'empty page'; }
     catch (e) { renderError = String(e && e.message || e).slice(0, 300); if (process.env.IMPORT_DEBUG) console.error('render failed, raw fetch instead:', renderError); if (/^http-4/.test(renderError)) throw e; }
   } else renderError = 'rendering disabled';
   const r = await fetchPage(url); return { ...r, rendered: false, renderError };
@@ -322,7 +330,192 @@ async function themeFromCSS(doc, base){
   return { accent, font: pickFont(heads) || pickFont(bodies), sheets: hrefs.length };
 }
 
-async function buildPage(html, pageUrl){
+/* ================= REBUILD FROM THE RENDERED OUTLINE =================
+   lib/analyze.js looked at the page in the browser: sections by geometry and background, card grids by alignment,
+   headings by size, buttons by their look, real colours and fonts. This turns that outline into builder blocks. */
+const shade = (hex, f) => { if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return hex; const n = parseInt(hex.slice(1), 16); const ch = s => Math.max(0, Math.min(255, Math.round(((n >> s) & 255) * f))); return '#' + [16, 8, 0].map(s => ch(s).toString(16).padStart(2, '0')).join(''); };
+const gname = f => encodeURIComponent(f).replace(/%20/g, '+');
+function buildFromOutline(o, html, pageUrl){
+  const doc = parse(html, { comment: false });
+  const found = [], blocks = [];
+  const meta = name => { const el = doc.querySelector(`meta[name="${name}"]`) || doc.querySelector(`meta[property="${name}"]`); return el ? clean(el.getAttribute('content')) : ''; };
+  const rawTitle = clean(doc.querySelector('title')?.text || o.title || '');
+  const host = new URL(pageUrl).hostname.replace(/^www\./, '');
+  const siteName = meta('og:site_name') || (o.nav.logoAlt && o.nav.logoAlt.length <= 40 ? o.nav.logoAlt : '') || rawTitle.split(/\s[|–-]\s/).pop() || host;
+  const desc = meta('description') || meta('og:description');
+  const words = clean(siteName).split(' ');
+  const brand = words.length > 1 ? words.slice(0, -1).join(' ') + ' ' : words[0] || 'Your';
+  const brandAccent = words.length > 1 ? words[words.length - 1] : '';
+
+  /* ---- theme: the site's own colours, corner style and type ---- */
+  const T = o.theme || {};
+  /* no saturated button colour anywhere means a monochrome design: black is its accent (on a light page) */
+  const accent = T.accent && usableAccent(T.accent) ? T.accent : ((T.btnDark || !T.accent) && (!T.bg || lum(T.bg) > 0.8) ? '#111111' : null);
+  const pageBg = T.bg && (lum(T.bg) > 0.8 || lum(T.bg) < 0.12) ? T.bg : null;
+  const ink = T.ink && pageBg && ((lum(pageBg) > 0.8 && lum(T.ink) < 0.35) || (lum(pageBg) < 0.12 && lum(T.ink) > 0.6)) ? T.ink : null;
+  const btn = (T.btnRadius >= 18 || (T.btnH && T.btnRadius >= T.btnH / 2 - 2)) ? 'pill' : T.btnRadius >= 5 ? 'soft' : 'sharp';
+  const radius = btn === 'pill' ? 18 : btn === 'soft' ? 12 : 4;
+  const serifish = f => /serif|garamond|playfair|georgia|times|didot|bodoni|baskerville|cormorant|lora|merriweather/i.test(f || '') && !/sans/i.test(f || '');
+  const font = pickFont([T.headFont || '']) || pickFont([T.bodyFont || '']) || (serifish(T.headFontFull || T.headFont) ? 'classic' : 'modern');
+  const gfams = (T.googleFonts || []).flatMap(u => { try { return [...decodeURIComponent(u).matchAll(/family=([^:&]+)/g)].map(m => m[1].replace(/\+/g, ' ')); } catch { return []; } });
+  const headG = gfams.find(f => f.toLowerCase() === String(T.headFont || '').toLowerCase());
+  const bodyG = gfams.find(f => f.toLowerCase() === String(T.bodyFont || '').toLowerCase());
+  const fontCustom = (headG || bodyG) ? {
+    name: (headG || bodyG) + (bodyG && headG && headG !== bodyG ? ' + ' + bodyG : ''),
+    disp: `'${headG || bodyG}',${/serif|garamond|playfair|lora|merriweather/i.test(headG || bodyG) && !/sans/i.test(headG || bodyG) ? 'serif' : 'sans-serif'}`,
+    body: `'${bodyG || headG}',system-ui,sans-serif`,
+    url: [headG || bodyG, bodyG && bodyG !== headG ? bodyG : null].filter(Boolean).map(f => `family=${gname(f)}:wght@400;500;600;700`).join('&')
+  } : null;
+
+  /* ---- navbar ---- */
+  const navLinks = (o.nav.links || []).filter(l => l.label && !/^(home|skip|menu)$/i.test(l.label)).slice(0, 6);
+  blocks.push({ id: uid(), type: 'navbar', props: { brand: clean(brand), brandAccent, logo: o.nav.logo || '', logoOnly: !!o.nav.logo, links: navLinks.length ? navLinks : [{ label: 'About', href: '#about' }, { label: 'Contact', href: '#contact' }], cta: o.nav.cta || 'Contact us', ctaHref: '#contact' } });
+  found.push(`Brand: ${clean(siteName)}` + (o.nav.logo ? ' (logo found)' : '') + (navLinks.length ? `, ${navLinks.length} menu links` : ''));
+
+  /* a short all-caps line above the heading is an eyebrow; the first real sentence is the subtitle */
+  const eyebrowOf = s => (s.paras || []).find(p => p.length <= 48 && p === p.toUpperCase() && /[A-Z]/.test(p) && p !== s.heading) || '';
+  const subOf = s => { const e = eyebrowOf(s); return (s.paras || []).find(p => p !== e && p !== s.heading && p.length > 20) || ''; };
+  let S = (o.sections || []).filter(s => s.textLen > 0 || s.imgs.length || s.bgImage || s.cards.length)
+    .filter(s => !(s.top < 160 && s.height < 130 && s.links >= 3 && !s.cards.length)); // a top utility bar is navigation, not a section
+  /* a heading-only strip followed by a headless grid is one section split in two by the markup: rejoin them */
+  for (let i = 0; i < S.length - 1; i++){
+    const a = S[i], b = S[i + 1];
+    if (a.heading && !a.cards.length && !a.imgs.length && a.paras.length <= 2 && a.height < 340 && !a.bgImage && !b.heading){
+      b.heading = a.heading; b.headingPx = a.headingPx; b.paras = a.paras.concat(b.paras); b.buttons = b.buttons.concat(a.buttons); b.height += a.height; b.top = a.top;
+      S.splice(i, 1); i--;
+    }
+  }
+  const variantOf = s => s.dark ? 'dark' : (s.bg && o.theme.bg && s.bg.toLowerCase() !== o.theme.bg.toLowerCase() && lum(s.bg) > 0.7 ? 'tint' : 'default');
+  const bigImg = s => (s.imgs || []).slice().sort((a, b) => b.w * b.h - a.w * a.h)[0];
+  const stepsLike = s => /how it works|steps?\b|process|how we work|getting started|what happens/i.test(s.heading || '') || (s.cards || []).filter(c => /^(step\s*)?\d+[.)]?\s/i.test(c.title)).length >= 2;
+  /* a stat reads like "250+", "98%", "12k clients", "4.9"; a bare 1 to 2 digit number is a step label */
+  const numeric = c => /^[\d.,]+\s?[%+kKmM]\s*[a-z]{0,10}$|^\d[\d,.]*\s?[+%]|^\d{3,}|^\d+\.\d+$/i.test(c.title);
+  const numbered = cards => cards.filter(c => c.num !== null && c.num !== undefined).length >= Math.max(2, cards.length - 1);
+
+  /* ---- hero: the first section with a real headline ---- */
+  let heroIdx = S.findIndex(s => s.heading && (s.headingPx >= 26 || s.bgImage || s.imgs.length));
+  if (heroIdx < 0) heroIdx = S.findIndex(s => s.heading);
+  const hero = heroIdx >= 0 ? S[heroIdx] : null;
+  if (hero){
+    const im = hero.split ? hero.split.img : bigImg(hero);
+    if (!hero.bgImage && hero.videoPoster) hero.bgImage = hero.videoPoster; // a film hero keeps its still behind the words
+    const useBg = hero.bgImage && (!im || hero.dark || hero.videoPoster);
+    blocks.push({ id: uid(), type: 'hero', props: {
+      eyebrow: cut(eyebrowOf(hero), 48),
+      title: cut(hero.heading, 110), sub: cut(subOf(hero) || desc || 'Tell people what you do in one honest sentence.', 300),
+      primary: hero.buttons[0] ? hero.buttons[0].text : 'Get in touch', primaryHref: '#contact',
+      secondary: hero.buttons[1] ? hero.buttons[1].text : '', secondaryHref: '',
+      img: !useBg && im ? im.src : '', imgLabel: clean(siteName), layout: !useBg && im ? 'split' : 'center', size: hero.height >= (o.vh || 900) * 0.85 ? 'tall' : 'normal',
+      bgImg: useBg ? hero.bgImage : '', bgDim: hero.dark ? '55' : '30' } });
+    found.push(`Headline: “${cut(hero.heading, 50)}”` + (im || useBg ? ', with image' : ''));
+  } else {
+    blocks.push({ id: uid(), type: 'hero', props: { eyebrow: '', title: cut(rawTitle.split(/\s[|–-]\s/)[0] || 'Welcome', 90), sub: cut(desc, 220) || 'Tell people what you do in one honest sentence.', primary: 'Get in touch', primaryHref: '#contact', secondary: '', secondaryHref: '', img: meta('og:image') ? abs(pageUrl, meta('og:image')) : '', imgLabel: clean(siteName), layout: meta('og:image') ? 'split' : 'center', size: 'normal', bgImg: '', bgDim: '55' } });
+  }
+
+  /* ---- every other section ---- */
+  let idx = 0;
+  const seenTitles = new Set(hero ? [hero.heading.toLowerCase()] : []);
+  for (const s of S){
+    if (s === hero || blocks.length >= 22) continue;
+    const title = cut(s.heading || '', 80);
+    if (title && seenTitles.has(title.toLowerCase())) continue; if (title) seenTitles.add(title.toLowerCase());
+    const cards = s.cards || []; const n = cards.length; const props = { eyebrow: cut(eyebrowOf(s), 48), title };
+    const variant = variantOf(s);
+    s.paras = (s.paras || []).filter(p => !/^(©|\(c\)|copyright)/i.test(p));
+    /* link columns near the bottom of the page are a footer, not content */
+    if (s.links >= 12 && !s.imgs.length && cards.every(c => !c.img) && s.top > (o.height || 0) * 0.7) continue;
+    /* a lone wide strip image (promo banner) becomes an announcement bar */
+    if (!title && s.imgs.length === 1 && !n && s.height < 220 && s.imgs[0].w >= (o.vw || 1366) * 0.6){
+      blocks.push({ id: uid(), type: 'banner', props: { text: cut(s.imgs[0].alt || s.paras[0] || 'Announcement', 120), label: s.buttons[0] ? s.buttons[0].text : '', href: '#contact' } }); found.push('Announcement bar'); continue;
+    }
+    if (n === 2 && cards.every(c => c.img)){
+      blocks.push({ id: uid(), type: 'features', props: { ...props, title: title || ' ', sub: cut(subOf(s), 160), cols: '2', iconStyle: 'none', variant, items: cards.map(c => ({ icon: '✦', title: cut(c.title || c.text, 44), text: cut(c.title ? c.text : '', 170) || ' ', img: c.img })) } });
+      found.push('Two picture panels' + (title ? `: “${cut(title, 40)}”` : '')); idx++; continue;
+    }
+    const video = s.video && /youtube|youtu\.be|vimeo/i.test(s.video) ? s.video : '';
+    if (video){ blocks.push({ id: uid(), type: 'video', props: { eyebrow: '', title: title || 'Watch', url: video, variant } }); found.push(`Video: “${cut(title, 40)}”`); idx++; continue; }
+    if (n >= 3){
+      const withPrice = cards.filter(c => c.price).length, withImg = cards.filter(c => c.img).length, quoteish = cards.filter(c => c.quoteLike || (!c.title && c.text.length > 60)).length, qs = cards.filter(c => c.question).length;
+      /* a product shelf (many priced cards with pictures) is a gallery with captions, not a pricing table */
+      if (withPrice >= Math.ceil(n / 2) && withImg >= Math.ceil(n / 2) && n >= 5){
+        blocks.push({ id: uid(), type: 'gallery', props: { title: title || 'Products', cols: String(Math.min(4, Math.max(3, s.cardCols || 4))), ratio: 'square', items: cards.filter(c => c.img).slice(0, 12).map(c => ({ img: c.img, caption: cut([c.title, c.price].filter(Boolean).join(' · '), 60) })) } });
+        found.push(`Products: ${Math.min(withImg, 12)} with prices`); idx++; continue;
+      }
+      if (withPrice >= Math.ceil(n / 2)){
+        const items = cards.slice(0, 4).map((c, i) => ({ name: cut(c.title || 'Plan ' + (i + 1), 30), price: c.price || 'Ask', period: c.period || '', features: (c.list && c.list.length ? c.list : (c.text ? c.text.split(/(?<=[.!])\s+|\s[•·]\s/).map(x => x.trim()).filter(Boolean) : [])).slice(0, 7).join('\n') || 'What this includes', cta: c.btn || ('Choose ' + cut(c.title || 'plan', 16)), href: '#contact', hot: i === 1 }));
+        blocks.push({ id: uid(), type: 'pricing', props: { ...props, title: title || 'Packages', sub: cut(subOf(s), 160), items } }); found.push(`Pricing: ${items.length} plans`); idx++; continue;
+      }
+      if (qs >= Math.ceil(n / 2) || (s.faq && s.faq.length >= 2)){
+        const items = (s.faq && s.faq.length >= 2 ? s.faq : cards).slice(0, 8).map(c => ({ q: cut(c.q || c.title, 110), a: cut(c.a || c.text || 'Answer goes here.', 300) }));
+        blocks.push({ id: uid(), type: 'faq', props: { title: title || 'Questions', items, variant } }); found.push(`FAQ: ${items.length} questions`); idx++; continue;
+      }
+      if (quoteish >= Math.ceil(n / 2) || /testimonial|what (our |people |clients |customers )?say|reviews|stories/i.test(title)){
+        const items = cards.slice(0, 6).map(c => { const who = c.cite || (c.text ? c.title : ''); const [nm, ...rest] = String(who).split(/,\s*/); return { quote: cut(c.text || c.title, 260), name: cut(nm || 'Customer', 40), role: cut(rest.join(', '), 60) }; });
+        blocks.push({ id: uid(), type: 'quotes', props: { ...props, title: title || 'What people say', items, variant } }); found.push(`Testimonials: ${items.length}`); idx++; continue;
+      }
+      if (cards.filter(numeric).length >= Math.ceil(n / 2)){
+        blocks.push({ id: uid(), type: 'stats', props: { items: cards.slice(0, 6).map(c => ({ value: cut(c.title, 16), label: cut(c.text || 'Stat', 60) })), variant } }); found.push(`Stats: ${Math.min(n, 6)}`); idx++; continue;
+      }
+      if (withImg >= n - 1 && cards.every(c => c.text.length < 40) && cards.filter(c => c.imgH && c.imgH <= 110 && !c.title).length >= Math.ceil(n * 0.7)){
+        blocks.push({ id: uid(), type: 'logos', props: { title: title || 'Trusted by', items: cards.slice(0, 10).map(c => ({ img: c.img, name: c.title || 'Partner', url: c.href || '' })) } }); found.push(`Logos: ${Math.min(n, 10)}`); idx++; continue;
+      }
+      if (withImg >= n - 1 && cards.every(c => c.text.length < 60) && n >= 4 && cards.filter(c => c.imgH > 160).length >= Math.ceil(n / 2)){
+        blocks.push({ id: uid(), type: 'gallery', props: { title: title || 'Gallery', cols: String(Math.min(4, Math.max(2, s.cardCols || 3))), ratio: cards.some(c => c.imgH > 260) ? 'port' : 'land', items: cards.slice(0, 12).map(c => ({ img: c.img, caption: cut(c.title, 40) })) } }); found.push(`Gallery: ${Math.min(n, 12)} pictures`); idx++; continue;
+      }
+      if (stepsLike(s) || (numbered(cards) && n <= 6)){
+        blocks.push({ id: uid(), type: 'steps', props: { ...props, title: title || 'How it works', sub: cut(subOf(s), 160), items: cards.slice(0, 5).map(c => ({ title: cut(c.title.replace(/^(step\s*)?\d+[.)]?\s*/i, ''), 40), text: cut(c.text, 160) || ' ' })), variant } }); found.push(`Steps: ${Math.min(n, 5)}`); idx++; continue;
+      }
+      if (/team|people|who we are|meet/i.test(title) && withImg >= 2){
+        blocks.push({ id: uid(), type: 'team', props: { ...props, sub: cut(subOf(s), 160), items: cards.slice(0, 6).map(c => ({ img: c.img, name: cut(c.title, 40), role: '', bio: cut(c.text, 120) })), variant } }); found.push(`Team: ${Math.min(n, 6)}`); idx++; continue;
+      }
+      const useImgs = withImg >= Math.ceil(n / 2) && cards.some(c => c.imgH >= 40);
+      blocks.push({ id: uid(), type: 'features', props: { ...props, title: title || 'What we offer', sub: cut(subOf(s), 160), cols: String(Math.min(4, Math.max(2, s.cardCols || (n >= 4 ? 4 : n)))), iconStyle: useImgs ? 'none' : (cards.some(c => c.icon) ? 'emoji' : 'number'), variant,
+        items: cards.slice(0, 8).map(c => ({ icon: c.icon || '✦', title: cut(c.title || c.text, 44), text: cut(c.title ? c.text : '', 170) || ' ', img: useImgs ? c.img : '' })) } });
+      found.push(`Features: ${Math.min(n, 8)} cards` + (useImgs ? ' with pictures' : '')); idx++; continue;
+    }
+    if (s.faq && s.faq.length >= 2){ blocks.push({ id: uid(), type: 'faq', props: { title: title || 'Questions', items: s.faq.slice(0, 8), variant } }); found.push(`FAQ: ${Math.min(s.faq.length, 8)} questions`); idx++; continue; }
+    if (s.quotes && s.quotes.length){ blocks.push({ id: uid(), type: 'quotes', props: { ...props, title: title || 'What people say', items: s.quotes.slice(0, 4).map(q => ({ quote: cut(q.text, 260), name: 'Customer', role: '' })), variant } }); found.push(`Testimonials: ${Math.min(s.quotes.length, 4)}`); idx++; continue; }
+    if (s.imgs.length >= 3 && s.paras.join(' ').length < 240){ blocks.push({ id: uid(), type: 'gallery', props: { title: title || 'Gallery', cols: '3', ratio: 'land', items: s.imgs.slice(0, 12).map(i => ({ img: i.src, caption: cut(i.alt, 40) })) } }); found.push(`Gallery: ${Math.min(s.imgs.length, 12)} pictures`); idx++; continue; }
+    if (s.split && title){ blocks.push({ id: uid(), type: 'split', props: { ...props, text: s.paras.slice(0, 3).join('\n\n') || ' ', cta: s.buttons[0] ? s.buttons[0].text : '', ctaHref: '#contact', img: s.split.img.src, alt: s.split.img.alt || title, flip: !!s.split.flip } }); found.push(`Image + text: “${cut(title, 40)}”`); idx++; continue; }
+    if (title && s.buttons.length && s.paras.length <= 1 && s.height < 460){ blocks.push({ id: uid(), type: 'cta', props: { title, sub: cut(subOf(s), 200), label: s.buttons[0].text, href: '#contact' } }); found.push(`Call to action: “${cut(title, 40)}”`); idx++; continue; }
+    if (title && (s.paras.length || s.imgs.length === 1)){
+      if (s.imgs.length === 1 && s.paras.length){ const im = s.imgs[0]; blocks.push({ id: uid(), type: 'split', props: { ...props, text: s.paras.slice(0, 3).join('\n\n'), cta: s.buttons[0] ? s.buttons[0].text : '', ctaHref: '#contact', img: im.src, alt: im.alt || title, flip: idx % 2 === 1 } }); found.push(`Image + text: “${cut(title, 40)}”`); }
+      else blocks.push({ id: uid(), type: 'text', props: { eyebrow: '', title, body: s.paras.slice(0, 5).join('\n\n') || ' ', variant } }), found.push(`Text: “${cut(title, 40)}”`);
+      idx++; continue;
+    }
+    if (!title && s.imgs.length === 1 && s.imgs[0].w >= (o.vw || 1366) * 0.6){ blocks.push({ id: uid(), type: 'gallery', props: { title: '', cols: '2', ratio: 'land', items: s.imgs.slice(0, 1).map(i => ({ img: i.src, caption: cut(i.alt, 40) })) } }); idx++; continue; }
+  }
+
+  /* ---- contact, social, footer ---- */
+  const c = o.contact || {};
+  if (c.email || c.phone || c.address){
+    blocks.push({ id: uid(), type: 'contact', props: { title: 'Let’s talk', sub: 'Tell us what you need and we reply within a day.', email: c.email || 'hello@yourbrand.com', phone: c.phone || '', where: cut(c.address || '', 80), action: '' } });
+    found.push('Contact details' + (c.email ? ': ' + c.email : ''));
+  }
+  if (c.socials && c.socials.length >= 2){ blocks.push({ id: uid(), type: 'social', props: { title: 'Find us here', items: c.socials.slice(0, 6) } }); found.push('Social links: ' + c.socials.map(s => s.label).join(', ')); }
+  const copy = ((o.footer && o.footer.text) || '').match(/(©|\(c\)|copyright)[^|\n]{3,90}/i);
+  const footLinks = ((o.footer && o.footer.links) || []).slice(0, 6);
+  blocks.push({ id: uid(), type: 'footer', props: { brand: clean(brand), brandAccent, logo: '', tagline: cut(desc, 140) || 'One honest line about what you do and who you do it for.', links: footLinks.length ? footLinks : navLinks.slice(0, 4), fine: copy ? clean(copy[0]) : `© ${new Date().getFullYear()} ${clean(siteName)}. All rights reserved.` } });
+
+  /* ---- menu links that name a rebuilt section scroll to it ---- */
+  const ANCHORS = { features: 'features', pricing: 'pricing', faq: 'faq', contact: 'contact', gallery: 'gallery', quotes: 'testimonials', team: 'team', map: 'map', steps: 'how', logos: 'partners' };
+  const LABEL_TO_TYPE = [[/pric|package|plan|rate/i, 'pricing'], [/faq|question/i, 'faq'], [/contact|book|quote|enquir|inquir/i, 'contact'], [/gallery|portfolio|work|photo|project/i, 'gallery'], [/testimonial|review|client|stories/i, 'quotes'], [/service|feature|what we|offer/i, 'features'], [/team|people/i, 'team'], [/about|story/i, 'about']];
+  const have = new Set(blocks.map(b => b.type));
+  const aboutBlock = blocks.find(b => (b.type === 'text' || b.type === 'split') && /about|story|who we/i.test(b.props.title || ''));
+  if (aboutBlock) aboutBlock.props.anchor = 'about';
+  const retarget = l => { const hit = LABEL_TO_TYPE.find(([re]) => re.test(l.label)); if (!hit) return l; const type = hit[1]; if (type === 'about') return aboutBlock ? { ...l, href: '#about' } : l; return (have.has(type) && ANCHORS[type]) ? { ...l, href: '#' + ANCHORS[type] } : l; };
+  for (const b of blocks) if ((b.type === 'navbar' || b.type === 'footer') && Array.isArray(b.props.links)) b.props.links = b.props.links.map(retarget);
+  const heroB = blocks.find(b => b.type === 'hero');
+  if (heroB && heroB.props.secondary){ const target = ['pricing', 'features', 'gallery', 'steps', 'quotes'].find(ty => have.has(ty)); if (target) heroB.props.secondaryHref = '#' + ANCHORS[target]; else heroB.props.secondary = ''; }
+
+  found.push('Design: ' + [accent ? 'brand colour ' + accent : '', pageBg ? 'page colour kept' : '', fontCustom ? 'type ' + fontCustom.name : (font ? 'type like the original' : ''), btn + ' buttons'].filter(Boolean).join(', '));
+  return { meta: { title: cut(rawTitle || siteName, 70), desc: cut(desc, 160), importedFrom: pageUrl }, theme: { accent, accent2: accent ? shade(accent, 0.72) : null, bg: pageBg, ink, font, fontCustom, btn, radius }, blocks, found, outline: { sections: S.length, height: o.height } };
+}
+
+async function buildPage(html, pageUrl, outline){
+  if (outline && Array.isArray(outline.sections) && outline.sections.length){
+    try { return buildFromOutline(outline, html, pageUrl); } catch (e) { if (process.env.IMPORT_DEBUG) console.error("outline mapping failed, markup heuristics instead:", e); }
+  }
   const doc = parse(html, { blockTextElements: { script: true, style: true, noscript: true, pre: true } });
   const cssTheme = await themeFromCSS(doc, pageUrl).catch(() => ({ accent: null, font: null }));
   doc.querySelectorAll('script, style, noscript, svg, form, template, aside, [role="complementary"], .sidebar, #sidebar, .widget-area, #secondary, .comments-area, #comments, .screen-reader-text, .sr-only, .visually-hidden, .cookie-banner, #cookie-notice, .skip-link').forEach(n => n.remove());
@@ -941,7 +1134,7 @@ module.exports = async (req, res) => {
     catch (e) { const msg = String(e && e.message || ''); return res.status(200).json({ ok:false, reason: /no-blob-store/.test(msg) ? 'no-blob-store' : /wrong-type/.test(msg) ? 'not-image' : /too-large/.test(msg) ? 'too-large' : 'failed' }); }
   }
   try {
-    const { html, finalUrl, rendered, cssMap, mediaUrls, renderError, height } = await loadPage(url);
+    const { html, finalUrl, rendered, cssMap, mediaUrls, renderError, height, outline } = await loadPage(url, 25000, { analyze: body.mode === 'blocks' });
     /* an exact copy means the page as a browser shows it; a raw copy only happens when the user asked for it */
     if (!rendered && !body.allowRaw && body.mode !== 'blocks' && process.env.IMPORT_NO_RENDER !== '1'){
       return res.status(200).json({ ok:false, reason:'no-browser', detail: renderError || '' });
@@ -955,7 +1148,7 @@ module.exports = async (req, res) => {
     if (body.mode === 'links'){
       return res.status(200).json({ ok:true, pages: listPages(html, finalUrl), source: finalUrl, rendered, warn: [how] });
     }
-    const page = await buildPage(html, finalUrl);
+    const page = await buildPage(html, finalUrl, outline);
     return res.status(200).json({ ok:true, page, found: page.found, warn: [how], source: finalUrl, rendered });
   } catch (e) {
     if (process.env.IMPORT_DEBUG) console.error(e);

@@ -745,7 +745,9 @@ let device = 'desktop';
 const themeFromPalette = key => { const p = PALETTES[key]; return { palette:key, bg:p.bg, ink:p.ink, accent:p.accent, accent2:p.accent2 }; };
 
 /* ---------- site CSS (shared by canvas + export) ---------- */
-function fontLink(t){ return `https://fonts.googleapis.com/css2?${FONTS[t.font].url}&display=swap`; }
+/* the pairing in use; an imported site can bring its own Google font pair (theme.fontCustom) */
+function fontOf(t){ return t.font==='custom' && t.fontCustom && t.fontCustom.disp ? t.fontCustom : (FONTS[t.font] || FONTS.blink); }
+function fontLink(t){ const f = fontOf(t); return `https://fonts.googleapis.com/css2?${f.url || FONTS.blink.url}&display=swap`; }
 
 /* text colour that stays readable on the accent, whatever the client picks */
 function onAccent(hex){
@@ -758,7 +760,7 @@ const BTN_R = { pill:'999px', soft:'12px', sharp:'3px' };
 const WRAP_W = { narrow:'960px', normal:'1140px', wide:'1320px' };
 const T_SCALE = { compact:'0.94', normal:'1', large:'1.08' };
 function siteCSS(t){
-  const f = FONTS[t.font];
+  const f = fontOf(t);
   return `
 :root{
   --bg:${t.bg}; --ink:${t.ink}; --accent:${t.accent}; --accent2:${t.accent2}; --r:${t.radius}px;
@@ -2114,7 +2116,7 @@ function renderDesign(){
       <div class="field"><label>${t('Text')}</label><div class="colorwrap"><input type="color" data-tk="ink" value="${th.ink}"></div></div>
     </div>
     <h4>${t('Type')}</h4>
-    <div class="field"><select data-tk="font">${Object.entries(FONTS).map(([k,f])=>`<option value="${k}" ${th.font===k?'selected':''}>${f.name}</option>`).join('')}</select></div>
+    <div class="field"><select data-tk="font">${th.fontCustom?`<option value="custom" ${th.font==='custom'?'selected':''}>${esc('Imported: '+th.fontCustom.name)}</option>`:''}${Object.entries(FONTS).map(([k,f])=>`<option value="${k}" ${th.font===k?'selected':''}>${f.name}</option>`).join('')}</select></div>
     <h4>${t('Corners')}</h4>
     <div class="field"><input type="range" min="0" max="34" value="${th.radius}" data-tk="radius"><label style="margin-top:4px">${t('Radius')}: <span id="radv">${th.radius}</span>px</label></div>
     <h4>${t('Spacing')}</h4>
@@ -3619,8 +3621,14 @@ function applyImported(mode){
     fresh.meta.desc = importedPage.meta.desc || '';
     fresh.meta.importedFrom = importedPage.meta.importedFrom || '';
     if (importedPage.theme){
-      if (importedPage.theme.accent){ fresh.theme.accent = importedPage.theme.accent; fresh.theme.palette = 'custom'; }
-      if (importedPage.theme.font && FONTS[importedPage.theme.font]) fresh.theme.font = importedPage.theme.font;
+      const th = importedPage.theme;
+      if (th.accent){ fresh.theme.accent = th.accent; fresh.theme.palette = 'custom'; if (th.accent2) fresh.theme.accent2 = th.accent2; }
+      if (th.bg){ fresh.theme.bg = th.bg; fresh.theme.palette = 'custom'; }
+      if (th.ink){ fresh.theme.ink = th.ink; fresh.theme.palette = 'custom'; }
+      if (th.fontCustom && th.fontCustom.disp){ fresh.theme.fontCustom = th.fontCustom; fresh.theme.font = 'custom'; }
+      else if (th.font && FONTS[th.font]) fresh.theme.font = th.font;
+      if (th.btn) fresh.theme.btn = th.btn;
+      if (th.radius !== undefined && th.radius !== null) fresh.theme.radius = th.radius;
     }
     fresh.blocks = blocks;
     fresh.meta.draftId = uid(); fresh.meta.ephemeral = true; TEMP.pages[fresh.meta.draftId] = fresh;
