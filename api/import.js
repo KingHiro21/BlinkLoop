@@ -94,7 +94,7 @@ let browserP = null;
 function getBrowser(){
   if (browserP) return browserP;
   browserP = (async () => {
-    const puppeteer = require('puppeteer-core');
+    const pmod = await import('puppeteer-core'); const puppeteer = pmod.default || pmod; // ESM-only on Vercel's Node
     let executablePath = '', args = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--hide-scrollbars', '--lang=en-US', '--disable-blink-features=AutomationControlled'];
     if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME){
       const mod = await import('@sparticuz/chromium'); const chromium = mod.default || mod; // ESM-only package
