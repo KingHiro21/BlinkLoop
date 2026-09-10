@@ -135,6 +135,7 @@ a{color:inherit;text-decoration:none}
 iframe.frame{
   width:100%;height:100%;min-height:calc(100svh - 160px);border:1px solid var(--line);border-radius:var(--r-lg);
   background:#fff;box-shadow:0 24px 60px rgba(43,20,14,.16);display:block;
+  color-scheme:light; /* the preview follows the site, not the editor: a dark editor must not switch on a site's dark-mode CSS */
 }
 .canvas-hint{
   position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
@@ -524,7 +525,8 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     <div class="field" style="margin-top:12px"><label>How should we bring it in?</label>
       <div class="seg" id="importMode"><button type="button" data-v="exact" class="on">Exact copy</button><button type="button" data-v="blocks">Rebuild as blocks</button></div>
       <div class="empty-note" id="importModeNote" style="padding:6px 0 0">The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.</div>
-      <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>Whole site</b>: every page linked from this address (up to 12), one draft per page, menus linking between them</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
+      <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>Whole site</b>: every page linked from this address (up to 20), one draft per page, menus linking between them</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
+      <div class="toggle" id="importRawWrap" style="margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--muted)">If our server cannot open the page in a browser, copy its raw HTML anyway. Content built by scripts (React, Vue, store apps) will be missing.</label><button type="button" class="tg" id="importRaw" role="switch" aria-checked="false"></button></div>
     </div>
     <div class="access-err" id="importErr"></div>
     <div id="importProgress" hidden style="margin:10px 0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)">
@@ -3450,10 +3452,11 @@ $('#resetBtn').addEventListener('click', ()=>{
 /* /api/import fetches the page server-side and maps it to blocks; here we only fill in defaults,
    pick a matching palette/font, and let the user decide: new draft or append. */
 let importedPage = null;
-let importMode = 'exact'; let importWhole = false;
+let importMode = 'exact'; let importWhole = false; let importRaw = false;
+$('#importRaw').addEventListener('click', ()=>{ importRaw = !importRaw; $('#importRaw').classList.toggle('on', importRaw); $('#importRaw').setAttribute('aria-checked', String(importRaw)); });
 $('#importSite').addEventListener('click', ()=>{ importWhole = !importWhole; $('#importSite').classList.toggle('on', importWhole); $('#importSite').setAttribute('aria-checked', String(importWhole)); $('#importResult').hidden = true; importedPage = null; });
 const IMPORT_MODE_NOTE = { exact: 'The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.', blocks: 'We read the headline, sections, prices, questions, photos and contact details and rebuild them as separate blocks in your chosen design.' };
-$$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=b.dataset.v; $$('#importMode button').forEach(x=>x.classList.toggle('on',x===b)); $('#importModeNote').textContent=t(IMPORT_MODE_NOTE[importMode]); $('#importSiteWrap').hidden = importMode!=='exact'; $('#importResult').hidden=true; importedPage=null; }));
+$$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=b.dataset.v; $$('#importMode button').forEach(x=>x.classList.toggle('on',x===b)); $('#importModeNote').textContent=t(IMPORT_MODE_NOTE[importMode]); $('#importSiteWrap').hidden = importMode!=='exact'; $('#importRawWrap').hidden = importMode!=='exact'; $('#importResult').hidden=true; importedPage=null; }));
 function normaliseImported(page){
   if (page.exact){
     const x = page.exact;
@@ -3463,7 +3466,7 @@ function normaliseImported(page){
   return blocks;
 }
 let importAbort = null;
-const IMPORT_ERR = d => ({ 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.'));
+const IMPORT_ERR = d => ({ 'no-browser': t('Our server could not open this page in a browser') + (d.detail ? ' (' + d.detail + ')' : '') + '. ' + t('Try again in a minute. If you only need the plain HTML, turn on the raw HTML option above.'), 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.'));
 /* top-level CSS rules (at-rule blocks kept whole) so identical rules from different pages can be stored once */
 function splitCssRules(css){
   const out = []; let depth = 0, start = 0, q = null;
@@ -3481,7 +3484,7 @@ function splitCssRules(css){
 const normUrlC = u => { try { const U = new URL(u); U.hash = ''; U.search = ''; return U.origin + U.pathname.replace(/\/index\.(html?|php)$/i, '/').replace(/\/+$/, ''); } catch { return ''; } };
 async function importWholeSite(url){
   const err = $('#importErr'); const prog = $('#importProgress'); const txt = $('#importProgressText'); const bar = $('#importProgressBar');
-  const post = async body => { const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), signal: importAbort.signal }); if (r.status === 401) throw new Error('session'); return r.json(); };
+  const post = async body => { const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({ allowRaw: importRaw }, body)), signal: importAbort.signal }); if (r.status === 401) throw new Error('session'); return r.json(); };
   importAbort = new AbortController(); let stopped = false;
   $('#importCancel').onclick = () => { stopped = true; importAbort.abort(); };
   prog.hidden = false; bar.style.width = '2%'; txt.textContent = t('Finding the pages of this site…');
@@ -3546,11 +3549,11 @@ async function runImport(){
     return;
   }
   try{
-    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, mode: importMode==='exact' ? (importWhole ? 'site' : 'exact') : 'blocks' }) });
+    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, mode: importMode==='exact' ? 'exact' : 'blocks', allowRaw: importRaw }) });
     if (r.status === 401){ err.textContent = t('Your session has expired. Sign in again.'); return; }
     const d = await r.json();
     if (!d.ok){
-      err.textContent = { 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.');
+      err.textContent = IMPORT_ERR(d);
       return;
     }
     importedPage = d.site ? { site: d.site } : d.page;

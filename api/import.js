@@ -184,11 +184,12 @@ async function renderPage(url, budgetMs){
 /* the page as a browser sees it, or the raw HTML when no browser can be had */
 async function loadPage(url, budgetMs = 25000){
   await assertPublic(new URL(url).hostname);
+  let renderError = '';
   if (process.env.IMPORT_NO_RENDER !== '1'){
-    try { const r = await renderPage(url, budgetMs); if (r.html && r.html.length > 500) return { ...r, rendered: true }; }
-    catch (e) { if (process.env.IMPORT_DEBUG) console.error('render failed, raw fetch instead:', e && e.message); if (/^http-4/.test(String(e && e.message))) throw e; }
-  }
-  const r = await fetchPage(url); return { ...r, rendered: false };
+    try { const r = await renderPage(url, budgetMs); if (r.html && r.html.length > 500) return { ...r, rendered: true }; renderError = 'empty page'; }
+    catch (e) { renderError = String(e && e.message || e).slice(0, 300); if (process.env.IMPORT_DEBUG) console.error('render failed, raw fetch instead:', renderError); if (/^http-4/.test(renderError)) throw e; }
+  } else renderError = 'rendering disabled';
+  const r = await fetchPage(url); return { ...r, rendered: false, renderError };
 }
 
 /* ---------- extraction helpers ---------- */
@@ -583,6 +584,9 @@ function scopeCSS(css, scope){
       const ch = css[i + rel]; const head = css.slice(i, i + rel).trim(); i += rel + 1;
       if (ch === '}') return res;               // end of the enclosing conditional block
       if (ch === ';'){ if (head && !/^@import/i.test(head)) res += head + ';'; continue; }
+      /* the copy shows the site the way it looks by default: dark-mode-only rules are dropped, light-only rules always apply */
+      if (/^@media/i.test(head) && /prefers-color-scheme\s*:\s*dark/i.test(head)){ walk(); continue; }
+      if (/^@media/i.test(head) && /prefers-color-scheme\s*:\s*light/i.test(head)){ res += head.replace(/\(\s*prefers-color-scheme\s*:\s*light\s*\)/gi, 'all') + '{' + walk() + '}'; continue; }
       if (/^@(media|supports|container|layer|document)/i.test(head)){ res += head + '{' + walk() + '}'; continue; }
       if (head.startsWith('@')){ res += head + '{' + readBlock() + '}'; continue; } // @font-face, @keyframes, @page…
       const body = readBlock();
@@ -814,8 +818,12 @@ module.exports = async (req, res) => {
     catch (e) { const msg = String(e && e.message || ''); return res.status(200).json({ ok:false, reason: /no-blob-store/.test(msg) ? 'no-blob-store' : /wrong-type/.test(msg) ? 'not-image' : /too-large/.test(msg) ? 'too-large' : 'failed' }); }
   }
   try {
-    const { html, finalUrl, rendered, cssMap } = await loadPage(url);
-    const how = rendered ? 'Loaded in a browser first, so content built by scripts is included.' : 'Read as raw HTML (no browser available), so content built by scripts may be missing.';
+    const { html, finalUrl, rendered, cssMap, renderError } = await loadPage(url);
+    /* an exact copy means the page as a browser shows it; a raw copy only happens when the user asked for it */
+    if (!rendered && !body.allowRaw && body.mode !== 'blocks' && process.env.IMPORT_NO_RENDER !== '1'){
+      return res.status(200).json({ ok:false, reason:'no-browser', detail: renderError || '' });
+    }
+    const how = rendered ? 'Loaded in a browser first, so content built by scripts is included.' : 'Read as raw HTML (browser unavailable: ' + (renderError || 'unknown') + '), so content built by scripts may be missing.';
     if (body.mode === 'exact'){
       const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have, cssMap });
       page.warn.unshift(how);
