@@ -158,14 +158,20 @@ const SERIALIZE = `(() => {
   /* backgrounds set by scripts: keep the computed image on the element */
   for (const el of document.querySelectorAll('div,section,header,footer,a,span,li,figure')){ try { const bg = getComputedStyle(el).backgroundImage; if (bg && bg !== 'none' && /url\\(/.test(bg) && !/url\\("?data:/.test(bg) && !(el.getAttribute('style') || '').includes('background')) el.style.backgroundImage = bg; } catch (e) {} }
   document.querySelectorAll('video[poster]').forEach(v => { try { v.setAttribute('poster', new URL(v.getAttribute('poster'), location.href).href); } catch (e) {} });
-  return '<!DOCTYPE html>' + document.documentElement.outerHTML;
+  return { html: '<!DOCTYPE html>' + document.documentElement.outerHTML, height: Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0), images: document.images.length };
 })()`;
+/* scroll the whole page so sections that render on approach appear; the height is re-read every step because it grows
+   as they load, and a second pass catches what the first one triggered */
 async function autoScroll(page){
   await page.evaluate(async () => {
-    const step = Math.max(400, Math.round(window.innerHeight * 0.8)); let y = 0; const limit = Math.min(document.body.scrollHeight, 20000);
-    while (y < limit){ y += step; window.scrollTo(0, y); await new Promise(r => setTimeout(r, 220)); }
-    await new Promise(r => setTimeout(r, 400));
-    window.scrollTo(0, 0);
+    const step = Math.max(400, Math.round(window.innerHeight * 0.8)); const t0 = Date.now();
+    const height = () => Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
+    for (let pass = 0; pass < 2; pass++){
+      let y = 0;
+      while (y < Math.min(height(), 40000) && Date.now() - t0 < 11000){ y += step; window.scrollTo(0, y); window.dispatchEvent(new Event('scroll')); await new Promise(r => setTimeout(r, 260)); }
+      await new Promise(r => setTimeout(r, 600));
+    }
+    window.scrollTo(0, 0); await new Promise(r => setTimeout(r, 300));
   }).catch(() => {});
 }
 async function renderPage(url, budgetMs){
@@ -198,11 +204,12 @@ async function renderPage(url, budgetMs){
     await page.waitForNetworkIdle({ idleTime: 700, timeout: Math.min(8000, budgetMs) }).catch(() => {});
     await autoScroll(page);
     await page.waitForNetworkIdle({ idleTime: 500, timeout: 4000 }).catch(() => {});
-    const html = await page.evaluate(SERIALIZE);
+    const out = await page.evaluate(SERIALIZE);
+    const html = typeof out === 'string' ? out : out.html;
     const status = resp ? resp.status() : 200;
     if (status >= 400) throw new Error('http-' + status);
     await new Promise(r => setTimeout(r, 150)); // let the last stylesheet bodies land in cssMap
-    return { html, finalUrl: page.url(), cssMap, mediaUrls };
+    return { html, finalUrl: page.url(), cssMap, mediaUrls, height: out && out.height || 0 };
   } finally { await page.close().catch(() => {}); }
 }
 /* the page as a browser sees it, or the raw HTML when no browser can be had */
@@ -854,12 +861,12 @@ module.exports = async (req, res) => {
     catch (e) { const msg = String(e && e.message || ''); return res.status(200).json({ ok:false, reason: /no-blob-store/.test(msg) ? 'no-blob-store' : /wrong-type/.test(msg) ? 'not-image' : /too-large/.test(msg) ? 'too-large' : 'failed' }); }
   }
   try {
-    const { html, finalUrl, rendered, cssMap, mediaUrls, renderError } = await loadPage(url);
+    const { html, finalUrl, rendered, cssMap, mediaUrls, renderError, height } = await loadPage(url);
     /* an exact copy means the page as a browser shows it; a raw copy only happens when the user asked for it */
     if (!rendered && !body.allowRaw && body.mode !== 'blocks' && process.env.IMPORT_NO_RENDER !== '1'){
       return res.status(200).json({ ok:false, reason:'no-browser', detail: renderError || '' });
     }
-    const how = rendered ? 'Loaded in a browser first, so content built by scripts is included.' : 'Read as raw HTML (browser unavailable: ' + (renderError || 'unknown') + '), so content built by scripts may be missing.';
+    const how = rendered ? 'Loaded in a browser first, so content built by scripts is included' + (height ? ' (page captured ' + Math.round(height) + 'px tall)' : '') + '.' : 'Read as raw HTML (browser unavailable: ' + (renderError || 'unknown') + '), so content built by scripts may be missing.';
     if (body.mode === 'exact'){
       const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have, cssMap, mediaUrls });
       page.warn.unshift(how);
