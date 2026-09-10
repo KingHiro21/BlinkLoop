@@ -25,6 +25,8 @@
   --rust:#F45D2A; --rust-deep:#D94E1F; --maroon:#7F2027; --bg:#FFFCF7; --bg2:#FFF7EF; --ink:#2B140E; --muted:#7E5D4C;
   --glass:rgba(251,235,221,.5); --glass-strong:rgba(255,247,239,.85); --line:rgba(127,32,39,.16);
 }
+select,select option{color:var(--ink);background-color:var(--bg)}
+select option:checked{background-color:var(--ink);color:var(--bg)}
 :root[data-theme="dark"]{color-scheme:dark;
   --bg:#140806; --bg2:#1D0D0A; --ink:#FAF4EA; --muted:#C9A395;
   --glass:rgba(250,244,234,.06); --glass-strong:rgba(250,244,234,.09); --line:rgba(250,244,234,.13);

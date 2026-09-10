@@ -93,14 +93,46 @@ function isDecorativeImg(el){
 }
 const PRICE_RE = /(₱|\$|€|£|PHP|USD)\s?\d[\d,]*(\.\d+)?/;
 
-function textOf(el){ return clean(el.text || el.textContent || ''); }
+/* structuredText keeps a break between block elements, so "₱450 per head" and the next line never run together */
+function textOf(el){ let t = ''; try { t = el.structuredText; } catch {} return clean(t || el.text || el.textContent || ''); }
 function directParas(root){
   return root.querySelectorAll('p, li').map(p => textOf(p)).filter(t => t.length >= 25 && !/cookie|javascript/i.test(t)).slice(0, 8);
 }
 
-function buildPage(html, pageUrl){
+const lum = hex => { const n = parseInt(hex.slice(1), 16); const c = [16, 8, 0].map(s => ((n >> s) & 255) / 255).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+const sat = hex => { const n = parseInt(hex.slice(1), 16); const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx ? (mx - mn) / mx : 0; };
+const normHex = h => { h = h.toLowerCase(); return h.length === 4 ? '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3] : h; };
+const usableAccent = hex => sat(hex) >= 0.35 && lum(hex) > 0.03 && lum(hex) < 0.55;
+const FONT_MAP = [[/playfair/i,'classic'],[/fraunces/i,'editorial'],[/space\s?grotesk/i,'grotesk'],[/manrope/i,'modern'],[/lora/i,'warm'],[/cormorant|garamond|didot|bodoni/i,'elegant'],[/nunito|baloo|quicksand|comfortaa/i,'friendly'],[/archivo|anton|oswald|bebas|montserrat/i,'bold'],[/merriweather|baskerville|crimson|pt\s?serif|georgia|noto\s?serif|source\s?serif/i,'classic'],[/unbounded|sora/i,'blink'],[/inter|roboto|open\s?sans|lato|poppins|work\s?sans|dm\s?sans|source\s?sans|helvetica|arial|system-ui|segoe/i,'modern']];
+const famOf = s => clean(String(s).split(',')[0].replace(/['"]/g, '').replace(/var\([^)]*\)/g, ''));
+const pickFont = list => { for (const f of list){ const hit = FONT_MAP.find(([re]) => re.test(famOf(f))); if (hit) return hit[1]; } return null; };
+
+/* Brand colour and type from the site's own stylesheets: named variables first, then the colour buttons use,
+   then the most repeated saturated mid-tone; headings' font-family mapped onto our pairings. */
+async function themeFromCSS(doc, base){
+  const hrefs = doc.querySelectorAll('link[rel]').filter(l => /stylesheet/i.test(l.getAttribute('rel') || '')).map(l => abs(base, l.getAttribute('href'))).filter(h => h && !/^https:\/\/fonts\.googleapis\.com\//i.test(h)).slice(0, 4);
+  const inline = doc.querySelectorAll('style').map(s => s.text || '').join('\n');
+  const parts = await Promise.all(hrefs.map(h => fetchResource(h, { accept: /text\/css|text\/plain|application\/octet-stream/, maxBytes: 400*1024, timeout: 4000, acceptHeader: 'text/css,*/*;q=0.1' }).then(r => r.buf.toString('utf8')).catch(() => '')));
+  const css = (inline + '\n' + parts.join('\n')).replace(/\/\*[\s\S]*?\*\//g, '');
+  let accent = null;
+  const named = [...css.matchAll(/--(?:primary|accent|brand|main|theme|color-primary|wp--preset--color--primary)[\w-]*\s*:\s*(#[0-9a-f]{3}(?:[0-9a-f]{3})?)\b/gi)].map(m => normHex(m[1])).find(usableAccent);
+  if (named) accent = named;
+  if (!accent){
+    const counts = {};
+    for (const m of css.matchAll(/(#[0-9a-f]{3}(?:[0-9a-f]{3})?)\b/gi)){ const h = normHex(m[1]); if (usableAccent(h)) counts[h] = (counts[h] || 0) + 1; }
+    for (const m of css.matchAll(/(?:btn|button|primary|cta)[^{}]*\{[^}]*?(?:background(?:-color)?|border-color)\s*:\s*(#[0-9a-f]{3}(?:[0-9a-f]{3})?)\b/gi)){ const h = normHex(m[1]); if (usableAccent(h)) counts[h] = (counts[h] || 0) + 6; }
+    const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    if (best && best[1] >= 2) accent = best[0];
+  }
+  const heads = [...css.matchAll(/(?:^|[},])\s*([^{}]*\b(?:h1|h2|h3|heading|title|display)[^{}]*)\{[^}]*?font-family\s*:\s*([^;}]+)/gi)].map(m => m[2]);
+  const bodies = [...css.matchAll(/(?:^|[},])\s*(?:html|body)[^{}]*\{[^}]*?font-family\s*:\s*([^;}]+)/gi)].map(m => m[1]);
+  return { accent, font: pickFont(heads) || pickFont(bodies), sheets: hrefs.length };
+}
+
+async function buildPage(html, pageUrl){
   const doc = parse(html, { blockTextElements: { script: true, style: true, noscript: true, pre: true } });
-  doc.querySelectorAll('script, style, noscript, svg, iframe, form, template, aside, [role="complementary"], .sidebar, #sidebar, .widget-area, #secondary, .comments-area, #comments, .screen-reader-text, .sr-only, .visually-hidden, .cookie-banner, #cookie-notice, .skip-link').forEach(n => n.remove());
+  const cssTheme = await themeFromCSS(doc, pageUrl).catch(() => ({ accent: null, font: null }));
+  doc.querySelectorAll('script, style, noscript, svg, form, template, aside, [role="complementary"], .sidebar, #sidebar, .widget-area, #secondary, .comments-area, #comments, .screen-reader-text, .sr-only, .visually-hidden, .cookie-banner, #cookie-notice, .skip-link').forEach(n => n.remove());
   const found = [];
   const meta = name => { const el = doc.querySelector(`meta[name="${name}"]`) || doc.querySelector(`meta[property="${name}"]`); return el ? clean(el.getAttribute('content')) : ''; };
   const rawTitle = clean(doc.querySelector('title')?.text || '');
@@ -142,11 +174,20 @@ function buildPage(html, pageUrl){
     while (n && hops < 3 && !heroSub){ const p = n.querySelectorAll('p').map(x => textOf(x)).find(t => t.length >= 40 && t.length <= 400); if (p) heroSub = p; n = n.parentNode; hops++; }
   }
   if (!heroSub) heroSub = cut(desc, 220) || 'Tell people what you do in one honest sentence.';
-  const heroBtn = main.querySelector('a[class*="btn" i], a[class*="button" i], a.elementor-button, .wp-block-button a');
-  let heroImg = ogImage;
+  /* the hero's own section: the largest ancestor of the h1 that holds no h2 */
+  let heroScope = null;
+  if (h1){ heroScope = h1.parentNode; while (heroScope.parentNode && heroScope.parentNode !== main && !heroScope.parentNode.querySelector('h2')) heroScope = heroScope.parentNode; }
+  const BTN_SEL = 'a[class*="btn" i], a[class*="button" i], a.elementor-button, .wp-block-button a, a[role="button"]';
+  const heroBtns = (heroScope || main).querySelectorAll(BTN_SEL).filter(a => clean(a.text).length > 1);
+  const heroBtn = heroBtns[0] || main.querySelector(BTN_SEL);
+  const btnKey = a => clean(a ? a.text : '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const heroBtn2 = heroBtns.find(a => a !== heroBtn && btnKey(a) !== btnKey(heroBtn) && btnKey(a).length > 1);
+  let heroImg = '';
+  if (heroScope){ const im = heroScope.querySelectorAll('img').find(i => !isDecorativeImg(i) && imgSrc(i, pageUrl)); if (im) heroImg = imgSrc(im, pageUrl); }
+  if (!heroImg) heroImg = ogImage;
   if (!heroImg){ const im = main.querySelectorAll('img').find(i => !isDecorativeImg(i) && imgSrc(i, pageUrl)); if (im) heroImg = imgSrc(im, pageUrl); }
-  const eyebrowCand = main.querySelector('.eyebrow, .subtitle, .tagline, .kicker, .elementor-heading-title.elementor-size-small');
-  blocks.push({ id: uid(), type: 'hero', props: { eyebrow: eyebrowCand && clean(eyebrowCand.text).length <= 48 ? clean(eyebrowCand.text) : '', title: heroTitle, sub: cut(heroSub, 300), primary: heroBtn ? cut(heroBtn.text, 28) : 'Get in touch', primaryHref: '#contact', secondary: '', secondaryHref: '', img: heroImg, imgLabel: clean(siteName), layout: heroImg ? 'split' : 'center', size: 'normal', bgImg: '', bgDim: '55' } });
+  const eyebrowCand = (heroScope || main).querySelector('.eyebrow, .subtitle, .tagline, .kicker, .elementor-heading-title.elementor-size-small, .pre-title, .pretitle, .overline, .subheading');
+  blocks.push({ id: uid(), type: 'hero', props: { eyebrow: eyebrowCand && clean(eyebrowCand.text).length <= 48 ? clean(eyebrowCand.text) : '', title: heroTitle, sub: cut(heroSub, 300), primary: heroBtn ? cut(heroBtn.text, 28) : 'Get in touch', primaryHref: '#contact', secondary: heroBtn2 ? cut(heroBtn2.text, 28) : '', secondaryHref: '', img: heroImg, imgLabel: clean(siteName), layout: heroImg ? 'split' : 'center', size: 'normal', bgImg: '', bgDim: '55' } });
   found.push(`Headline: “${cut(heroTitle, 50)}”` + (heroImg ? ', with image' : ''));
 
   /* sections by h2. A section is the largest ancestor that holds only this h2 (a real <section> or a theme
@@ -182,12 +223,15 @@ function buildPage(html, pageUrl){
   }
   let sectionCount = 0;
   const CARD_SEL = '[class*="plan" i], [class*="package" i], [class*="tier" i], [class*="price-card" i], [class*="pricing-card" i], [class*="pricing-table" i] > *, [class*="pricing" i] .card';
+  const PRICE_PERIOD = new RegExp(PRICE_RE.source + '\\s*((?:\\/|per|a|each)\\s*[a-z]{2,10})?', 'i');
   const cardOf = c => {
-    const price = (textOf(c).match(PRICE_RE) || [''])[0];
+    const pm = textOf(c).match(PRICE_PERIOD);
+    const period = pm && pm[3] && /^(\/|per|a|each)\s*(month|mo|year|yr|week|wk|day|hour|hr|head|person|pax|guest|night|session|page|site|project|event|kg|kilo|piece|pc|visit|class|seat)$/i.test(pm[3]) ? clean(pm[3].replace(/^\//, '/ ')) : '';
+    const price = pm ? clean(pm[0].slice(0, pm[0].length - (period ? pm[3].length : 0))) : '';
     const nameEl = c.querySelector('h2, h3, h4, h5, [class*="tier" i], [class*="name" i], [class*="title" i], strong');
     const name = cut(nameEl ? nameEl.text : textOf(c).split(' ').slice(0, 3).join(' '), 30);
     const feats = c.querySelectorAll('li').map(l => cut(l.text, 60)).filter(Boolean).slice(0, 6).join('\n');
-    return { name, price, period: '', features: feats || 'What this includes', cta: 'Choose ' + cut(name, 16), href: '#contact', hot: false };
+    return { name, price, period, features: feats || 'What this includes', cta: 'Choose ' + cut(name, 16), href: '#contact', hot: false };
   };
   const headingCards = (scope, n) => scope.querySelectorAll('h3, h4').slice(0, n).map(h => {
     /* the card is the ancestor that holds this heading alone, plus its text */
@@ -204,6 +248,18 @@ function buildPage(html, pageUrl){
     const details = scope.querySelectorAll('details, [class*="faq" i], [class*="accordion" i]');
     const prices = (txt.match(new RegExp(PRICE_RE.source, 'g')) || []).length;
 
+    /* an embedded video is the section */
+    const vid = scope.querySelector('iframe[src*="youtube" i], iframe[src*="youtu.be" i], iframe[src*="vimeo" i], iframe[data-src*="youtube" i], iframe[data-src*="vimeo" i]');
+    if (vid && !hero){
+      blocks.push({ id: uid(), type: 'video', props: { eyebrow: '', title: title || 'Watch', url: abs(pageUrl, vid.getAttribute('src') || vid.getAttribute('data-src')), variant: 'default' } });
+      found.push(`Video: “${cut(title, 40)}”`); return true;
+    }
+    /* partner / client logos: a row of images, usually small, in a section that says so */
+    const logoish = /logo|partner|client|brand|sponsor/i.test((scope.getAttribute && scope.getAttribute('class')) || '') || /partners|clients|trusted|brands|sponsors|featured in|as seen/i.test(title);
+    if (logoish && !hero){
+      const all = scope.querySelectorAll('img').map(i => ({ img: imgSrc(i, pageUrl), name: clean(i.getAttribute('alt')) || 'Partner', url: '' })).filter(i => i.img);
+      if (all.length >= 3){ blocks.push({ id: uid(), type: 'logos', props: { title, items: all.slice(0, 8) } }); found.push(`Logos: ${Math.min(all.length, 8)}`); return true; }
+    }
     if (!hero && (details.length >= 2 || /faq|question/i.test(title)) && h3s.length >= 2){
       const items = headingCards(scope, 8).map(c => ({ q: cut(c.h.text, 90), a: c.text || 'Answer goes here.' }));
       blocks.push({ id: uid(), type: 'faq', props: { title, items } }); found.push(`FAQ: ${items.length} questions`); return true;
@@ -248,6 +304,12 @@ function buildPage(html, pageUrl){
       found.push(`Features: ${cards.length} cards`); return true;
     }
     if (hero) return false;
+    /* a heading, at most one line, and a button: that is a call to action */
+    const ctaA = scope.querySelector('a[class*="btn" i], a[class*="button" i], .wp-block-button a, a[role="button"]');
+    if (ctaA && !imgs.length && paras.length <= 1 && txt.length < 360 && clean(ctaA.text)){
+      blocks.push({ id: uid(), type: 'cta', props: { title, sub: paras[0] ? cut(paras[0], 200) : '', label: cut(ctaA.text, 28), href: '#contact' } });
+      found.push(`Call to action: “${cut(title, 40)}”`); return true;
+    }
     if (paras.length && imgs.length === 1){
       blocks.push({ id: uid(), type: 'split', props: { ...props, text: paras.slice(0, 3).join('\n\n'), cta: '', ctaHref: '#contact', img: imgs[0].src, alt: imgs[0].alt || title, flip: sectionCount % 2 === 1 } }); found.push(`Image + text: “${cut(title, 40)}”`); return true;
     }
@@ -285,9 +347,37 @@ function buildPage(html, pageUrl){
   const mail = doc.querySelector('a[href^="mailto:"]'); const tel = doc.querySelector('a[href^="tel:"]'); const addr = doc.querySelector('address, [itemprop="address"], [class*="address" i]');
   const email = mail ? clean(mail.getAttribute('href').replace(/^mailto:/,'').split('?')[0]) : '';
   const phone = tel ? clean(tel.getAttribute('href').replace(/^tel:/,'')) : '';
+  /* an embedded Google map becomes our Map block, centred on the same place */
+  const mapF = doc.querySelector('iframe[src*="google.com/maps" i], iframe[src*="maps.google" i], iframe[data-src*="google.com/maps" i]');
+  let mapAddr = addr ? cut(addr.text, 100) : '';
+  if (mapF){
+    try { const q = new URL(mapF.getAttribute('src') || mapF.getAttribute('data-src'), pageUrl).searchParams; mapAddr = mapAddr || clean(q.get('q') || (q.get('pb') ? '' : '')); } catch {}
+    if (mapAddr){ blocks.push({ id: uid(), type: 'map', props: { eyebrow: 'Visit us', title: 'Find us', address: mapAddr, showHours: false, hoursTitle: 'Opening hours', hours: [] } }); found.push('Map: ' + cut(mapAddr, 40)); }
+  }
   if (email || phone || addr){
     blocks.push({ id: uid(), type: 'contact', props: { title: 'Let’s talk', sub: 'Tell us what you need and we reply within a day.', email: email || 'hello@yourbrand.com', phone, where: addr ? cut(addr.text, 80) : '', action: '' } });
     found.push('Contact details' + (email ? ': ' + email : ''));
+  }
+
+  /* social profiles linked anywhere on the page */
+  const SOC = [[/facebook\.com/i,'Facebook'],[/instagram\.com/i,'Instagram'],[/tiktok\.com/i,'TikTok'],[/youtube\.com|youtu\.be/i,'YouTube'],[/linkedin\.com/i,'LinkedIn'],[/(?:^|\/\/)(?:www\.)?(?:twitter|x)\.com/i,'X'],[/wa\.me|whatsapp\.com/i,'WhatsApp'],[/t\.me/i,'Telegram'],[/pinterest\./i,'Pinterest'],[/threads\.net/i,'Threads']];
+  const socials = [];
+  for (const a of doc.querySelectorAll('a[href]')){
+    const href = a.getAttribute('href') || ''; if (/\/(sharer|share|intent|embed)\b|\/plugins\//i.test(href)) continue;
+    const hit = SOC.find(([re]) => re.test(href));
+    if (hit && !socials.some(s => s.label === hit[1])) socials.push({ label: hit[1], url: abs(pageUrl, href) || '#' });
+  }
+  if (socials.length >= 2){ blocks.push({ id: uid(), type: 'social', props: { title: 'Find us here', items: socials.slice(0, 6) } }); found.push('Social links: ' + socials.slice(0, 6).map(s => s.label).join(', ')); }
+
+  /* an announcement bar above the header */
+  const ann = doc.querySelector('[class*="announce" i], [class*="promo-bar" i], [class*="top-bar" i], [class*="topbar" i], [class*="notice-bar" i], [class*="alert-bar" i], [class*="header-bar" i]');
+  if (ann && !within(ann, footer)){
+    const at = textOf(ann);
+    if (at.length >= 8 && at.length <= 140 && !/cookie|privacy/i.test(at)){
+      const al = ann.querySelector('a');
+      blocks.splice(1, 0, { id: uid(), type: 'banner', props: { text: cut(at.replace(al ? clean(al.text) : '', '').trim() || at, 120), label: al ? cut(al.text, 20) : '', href: al ? abs(pageUrl, al.getAttribute('href')) || '#contact' : '#contact' } });
+      found.push('Announcement bar');
+    }
   }
 
   /* footer */
@@ -305,14 +395,20 @@ function buildPage(html, pageUrl){
   const retarget = l => { const hit = LABEL_TO_TYPE.find(([re]) => re.test(l.label)); if (!hit) return l; const type = hit[1]; if (type==='about') return aboutBlock ? { ...l, href:'#about' } : l; return (have.has(type) && ANCHORS[type]) ? { ...l, href:'#'+ANCHORS[type] } : l; };
   for (const b of blocks) if ((b.type==='navbar' || b.type==='footer') && Array.isArray(b.props.links)) b.props.links = b.props.links.map(retarget);
 
-  /* theme hints */
+  /* the hero's second button points at the most useful section we rebuilt */
+  const heroB = blocks.find(b => b.type === 'hero');
+  if (heroB && heroB.props.secondary){
+    const target = ['pricing', 'features', 'gallery', 'steps', 'quotes'].find(ty => have.has(ty));
+    if (target) heroB.props.secondaryHref = '#' + ANCHORS[target]; else { heroB.props.secondary = ''; }
+  }
+
+  /* theme hints: the site's CSS first, then theme-color (often just the page background, so only a mid-tone counts) */
   const themeColor = meta('theme-color');
-  const lum = hex => { const n = parseInt(hex.slice(1), 16); const c = [16, 8, 0].map(s => ((n >> s) & 255) / 255).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
-  /* theme-color is often the page background (near white or near black); only a mid-tone is a usable accent */
-  const accent = /^#[0-9a-f]{6}$/i.test(themeColor) && lum(themeColor) > 0.02 && lum(themeColor) < 0.5 ? themeColor : null;
+  const accent = cssTheme.accent || (/^#[0-9a-f]{6}$/i.test(themeColor) && usableAccent(themeColor.toLowerCase()) ? themeColor.toLowerCase() : null);
   const fontsLink = doc.querySelector('link[href*="fonts.googleapis.com"]')?.getAttribute('href') || '';
-  const fontMap = [[/Playfair/i,'classic'],[/Fraunces/i,'editorial'],[/Space\+?Grotesk/i,'grotesk'],[/Manrope/i,'modern'],[/Lora/i,'warm'],[/Cormorant/i,'elegant'],[/Nunito|Baloo/i,'friendly'],[/Archivo/i,'bold']];
-  const font = (fontMap.find(([re]) => re.test(fontsLink)) || [null, null])[1];
+  const linkFams = [...fontsLink.matchAll(/family=([^:&]+)/g)].map(m => decodeURIComponent(m[1]).replace(/\+/g, ' '));
+  const font = pickFont(linkFams.filter(f => !/^(inter|roboto|open sans|lato|poppins|work sans|dm sans|source sans)/i.test(f))) || cssTheme.font || pickFont(linkFams);
+  if (accent || font) found.push('Design: ' + [accent ? 'brand colour ' + accent : '', font ? 'type like the original' : ''].filter(Boolean).join(', '));
 
   return {
     meta: { title: cut(rawTitle || siteName, 70), desc: cut(desc, 160), importedFrom: pageUrl },
@@ -538,7 +634,7 @@ module.exports = async (req, res) => {
       const page = await buildExact(html, finalUrl);
       return res.status(200).json({ ok:true, page, found: page.found, warn: page.warn, source: finalUrl });
     }
-    const page = buildPage(html, finalUrl);
+    const page = await buildPage(html, finalUrl);
     return res.status(200).json({ ok:true, page, found: page.found, source: finalUrl });
   } catch (e) {
     if (process.env.IMPORT_DEBUG) console.error(e);

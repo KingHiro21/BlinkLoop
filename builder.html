@@ -17,6 +17,8 @@
   --ease:cubic-bezier(.22,.8,.24,1);
   --shadow:0 10px 30px rgba(127,32,39,.10);
 }
+select,select option{color:var(--ink);background-color:var(--bg)}
+select option:checked{background-color:var(--ink);color:var(--bg)}
 :root[data-theme="dark"]{color-scheme:dark;
   --bg:#140806; --bg-2:#1C0C08; --ink:#FAF4EA; --muted:#C9A395;
   --glass:rgba(250,244,234,.06); --glass-strong:rgba(30,16,11,.85);
@@ -213,6 +215,15 @@ details.item-card .item-body{padding:0 11px 11px}
 .insp-blockname .ic{font-size:1.1rem}
 .insp-blockname .nm{font-family:'Unbounded';font-weight:600;font-size:.88rem;flex:1}
 .no-sel{color:var(--muted);font-size:.82rem;line-height:1.6;padding:8px 4px}
+.media-list{display:grid;gap:8px}
+.media-row{display:flex;gap:10px;padding:8px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass-strong);align-items:flex-start}
+.media-row.on{border-color:var(--rust);box-shadow:0 0 0 2px color-mix(in srgb,var(--rust) 30%,transparent)}
+.media-th{width:56px;height:56px;flex:none;border-radius:8px;background:var(--glass);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:1.2rem;color:var(--muted)}
+.media-th img{width:100%;height:100%;object-fit:cover;display:block}
+.media-body{flex:1;min-width:0;display:grid;gap:6px}
+.media-kind{font-size:.7rem;font-weight:600;color:var(--muted);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.media-url{font-size:.74rem!important;padding:6px 8px!important}
+.media-body .up-row{margin-top:0}
 .mobile-nav{display:none;border-top:1px solid var(--line);background:var(--glass-strong);backdrop-filter:blur(16px);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:6px}
 .mobile-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px;border-radius:12px;font-size:.7rem;font-weight:600;color:var(--muted);letter-spacing:.02em}
 .mobile-nav button .ic{font-size:1.05rem;line-height:1}
@@ -402,7 +413,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <button class="tb-btn" data-dev="mobile" title="Mobile preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18h.01"/></svg></button>
     </div>
     <div class="tb-group">
-      <select id="uiLang" class="tb-btn" aria-label="Language" style="appearance:none;background:transparent;border:none;font-weight:600"></select>
+      <select id="uiLang" class="tb-btn" aria-label="Language" style="appearance:none;background-color:transparent;border:none;font-weight:600;color:var(--ink)"></select>
       <button class="tb-btn" id="themeBtn" title="Light / dark editor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
       <button class="tb-btn" id="guideBtn" title="Quick guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></svg><span class="lbl">Guide</span></button>
       <button class="tb-btn" id="jsonBtn" title="Drafts on this device, project files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="lbl">Projects</span></button>
@@ -1319,7 +1330,7 @@ const BLOCKS = {
   html: {
     name:'Imported page', icon:'🧱', desc:'Exact copy of a page, or your own HTML', section:false,
     defaults:{ scopeId:'', rootClass:'', rootStyle:'', rootLang:'', rootDir:'', html:'<div style="padding:60px 24px;text-align:center;font-family:system-ui"><h2>Custom HTML</h2><p>Paste markup in the panel on the right, or use Projects → Import from a website → Exact copy.</p></div>', css:'', fonts:[] },
-    fields:[{k:'html',l:'HTML',t:'textarea'},{k:'css',l:'CSS (applies inside this block only)',t:'textarea'},{t:'action',id:'copyAssets',l:'Copy images and fonts to BlinkLoop storage',note:'Images and fonts still load from the original site, and fonts from another domain often refuse to load at all. This copies each file into our storage and updates the page, so the copy looks right and keeps working when the old site goes away.'}],
+    fields:[{t:'media',l:'Pictures and videos on this page'},{k:'html',l:'HTML',t:'textarea'},{k:'css',l:'CSS (applies inside this block only)',t:'textarea'},{t:'action',id:'copyAssets',l:'Copy images and fonts to BlinkLoop storage',note:'Images and fonts still load from the original site, and fonts from another domain often refuse to load at all. This copies each file into our storage and updates the page, so the copy looks right and keeps working when the old site goes away.'}],
     render:p=>{
       const id = p.scopeId || 'imp-custom';
       const fonts = (p.fonts||[]).filter(u=>/^https:\/\/fonts\.googleapis\.com\//.test(u)).map(u=>`@import url("${escAttr(u)}");`).join('');
@@ -1450,6 +1461,12 @@ function wireCanvas(){
     if (act){ e.preventDefault(); blockAction(act.dataset.action, act.dataset.id); return; }
     const blk = e.target.closest('.blk');
     if (e.target.closest('a') && !e.target.closest('[data-edit]')) e.preventDefault(); // don't navigate in editor
+    const root = e.target.closest('.imp-root');
+    if (root){
+      const media = e.target.closest(MEDIA_SEL);
+      const all = [...root.querySelectorAll(MEDIA_SEL)];
+      activeMedia = media && root.contains(media) ? all.indexOf(media) : -1;
+    } else activeMedia = -1;
     select(blk ? blk.dataset.id : null);
   });
 
@@ -1632,8 +1649,77 @@ function renderInspector(){
   }
   wrap.innerHTML = html;
   wireFields(wrap, b);
+  if (b.type==='html') wireMedia(wrap, b);
   $$('[data-ia]',wrap).forEach(btn=>btn.addEventListener('click',()=>blockAction(btn.dataset.ia, b.id)));
   $$('[data-act-id]',wrap).forEach(btn=>btn.addEventListener('click',()=>{ const fn=BLOCK_ACTIONS[btn.dataset.actId]; if(fn) fn(b, btn); }));
+}
+
+/* ---- media inside an imported page: list, replace, upload ---- */
+let activeMedia = -1;
+const MEDIA_SEL = 'img, video, iframe, [style*="background-image"]';
+function mediaDoc(html){ return new DOMParser().parseFromString('<!doctype html><body><div id="__m">' + (html||'') + '</div>', 'text/html').getElementById('__m'); }
+function mediaKind(el){ const tg = el.tagName; return tg==='IMG' ? 'img' : tg==='VIDEO' ? 'video' : tg==='IFRAME' ? 'iframe' : 'bg'; }
+function mediaUrl(el){
+  const k = mediaKind(el);
+  if (k==='bg'){ const m = (el.getAttribute('style')||'').match(/background(?:-image)?\s*:[^;]*url\((['"]?)([^'")]+)\1\)/i); return m ? m[2] : ''; }
+  if (k==='video'){ const so = el.querySelector('source[src]'); return el.getAttribute('src') || (so ? so.getAttribute('src') : '') || ''; }
+  return el.getAttribute('src') || '';
+}
+function mediaList(html){
+  const root = mediaDoc(html);
+  return [...root.querySelectorAll(MEDIA_SEL)].map((el, i) => ({ i, kind: mediaKind(el), url: mediaUrl(el), alt: el.getAttribute && (el.getAttribute('alt') || el.getAttribute('title') || '') }));
+}
+function replaceMedia(b, i, url){
+  url = String(url||'').trim(); if (!url) return;
+  const root = mediaDoc(b.props.html);
+  const el = root.querySelectorAll(MEDIA_SEL)[i]; if (!el) return;
+  const kind = mediaKind(el);
+  const vid = parseVideo(url);
+  const isFile = /\.(mp4|webm|mov|ogv|m4v)(\?|#|$)/i.test(url);
+  const carry = n => { for (const a of ['class','id','width','height']){ const v = el.getAttribute(a); if (v) n.setAttribute(a, v); } const st = el.getAttribute('style'); if (st && kind!=='bg') n.setAttribute('style', st); return n; };
+  if (kind==='bg'){
+    el.setAttribute('style', (el.getAttribute('style')||'').replace(/(background(?:-image)?\s*:[^;]*url\()(['"]?)[^'")]+\2(\))/i, `$1"${url}"$3`));
+  } else if (vid){
+    const f = carry(document.createElement('iframe'));
+    f.setAttribute('src', vid.src); f.setAttribute('loading','lazy'); f.setAttribute('allowfullscreen',''); f.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'); f.setAttribute('title','Video');
+    f.setAttribute('style', ((f.getAttribute('style')||'') + ';border:0;display:block;max-width:100%;aspect-ratio:16/9' + (el.getAttribute('width')?'':';width:100%')).replace(/^;/,''));
+    f.removeAttribute('height');
+    el.replaceWith(f);
+  } else if (isFile){
+    const v = kind==='video' ? el : carry(document.createElement('video'));
+    v.querySelectorAll('source').forEach(x=>x.remove());
+    v.setAttribute('src', url); v.setAttribute('controls',''); v.setAttribute('playsinline',''); v.setAttribute('preload','metadata');
+    if (kind!=='video'){ v.setAttribute('style', ((v.getAttribute('style')||'') + ';display:block;max-width:100%').replace(/^;/,'')); el.replaceWith(v); }
+  } else {
+    const im = kind==='img' ? el : carry(document.createElement('img'));
+    im.setAttribute('src', url); ['srcset','sizes','data-src','data-srcset','data-lazy-src','data-lazy-srcset'].forEach(a=>im.removeAttribute(a));
+    if (kind!=='img'){ im.setAttribute('alt',''); im.setAttribute('style', ((im.getAttribute('style')||'') + ';display:block;max-width:100%').replace(/^;/,'')); el.replaceWith(im); }
+  }
+  b.props.html = root.innerHTML;
+}
+async function uploadToUrl(file){
+  const { blob, type } = await optimizeImage(file);
+  const b64 = await blobToBase64(blob);
+  if (clientMode){
+    let code = null; try{ code = localStorage.getItem('lb-access'); }catch(e){}
+    try{ const r = await fetch('/api/upload', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code, name:file.name, type, data:b64 }) }); const d = await r.json(); if (d.ok) return d.url; }catch(e){}
+  }
+  return `data:${type};base64,${b64}`;
+}
+function wireMedia(wrap, b){
+  $$('.media-url', wrap).forEach(inp => {
+    inp.addEventListener('focus', ()=>snapshot());
+    inp.addEventListener('change', ()=>{ replaceMedia(b, +inp.dataset.media, inp.value); renderCanvas(); renderInspector(); autosave(); toast(t('Updated')); });
+  });
+  $$('[data-mup]', wrap).forEach(btn => btn.addEventListener('click', ()=>{ const f = wrap.querySelector(`.mup-file[data-media="${btn.dataset.mup}"]`); if (f) f.click(); }));
+  $$('.mup-file', wrap).forEach(inp => inp.addEventListener('change', async ()=>{
+    const file = inp.files && inp.files[0]; if (!file) return; const i = +inp.dataset.media; inp.value = '';
+    const btn = wrap.querySelector(`[data-mup="${i}"]`); const orig = btn ? btn.textContent : '';
+    if (btn){ btn.disabled = true; btn.textContent = t('Uploading…'); }
+    try{ const url = await uploadToUrl(file); snapshot(); replaceMedia(b, i, url); renderCanvas(); renderInspector(); autosave(); toast(t('Image added')); }
+    catch(e){ toast(e && e.message==='too-large' ? t('That image is too large (max 10 MB)') : t('Upload failed. Try again, or paste a URL instead.')); if (btn){ btn.disabled=false; btn.textContent=orig; } }
+  }));
+  const on = wrap.querySelector('.media-row.on'); if (on) setTimeout(()=>on.scrollIntoView({block:'center'}), 30);
 }
 
 /* Block-level actions triggered from the inspector */
@@ -1669,12 +1755,26 @@ const BLOCK_ACTIONS = {
 };
 
 function fieldHTML(f, val, path){
-  const id = 'f_'+path.replace(/[^\w]/g,'_');
+  const id = 'f_'+String(path||f.id||f.t).replace(/[^\w]/g,'_');
   if (f.t==='text'){
     const upBtn = f.up ? `<div class="up-row"><button class="up-btn" type="button" data-up="${path}">\u2b06 ${t('Upload image')}</button><input type="file" class="up-file" accept="image/jpeg,image/png,image/webp" data-path="${path}" hidden /></div>` : '';
     return `<div class="field"><label for="${id}">${t(f.l)}</label><input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" />${upBtn}</div>`;
   }
   if (f.t==='textarea') return `<div class="field"><label for="${id}">${t(f.l)}</label><textarea id="${id}" data-path="${path}"${f.k==='html'||f.k==='css'?' style="font-family:ui-monospace,Consolas,monospace;font-size:.72rem;min-height:120px"':''}>${esc(val??'')}</textarea></div>`;
+  if (f.t==='media'){
+    const b = state.blocks.find(x=>x.id===selectedId); const list = b ? mediaList(b.props.html) : [];
+    if (!list.length) return `<div class="field"><label>${t(f.l)}</label><div class="empty-note" style="padding:4px 0">${t('No pictures or videos found in this page yet.')}</div></div>`;
+    const shown = list.slice(0, 80);
+    return `<div class="field"><label>${t(f.l)} (${list.length})</label>
+      <div class="empty-note" style="padding:0 0 8px">${t('Click a picture on the page to jump to it here. Paste a new image address, upload your own, or paste a YouTube, Vimeo or .mp4 link to turn that spot into a video.')}</div>
+      <div class="media-list">${shown.map(m => `<div class="media-row${m.i===activeMedia?' on':''}" data-mrow="${m.i}">
+        <div class="media-th">${m.kind==='img'||m.kind==='bg' ? `<img src="${escAttr(m.url)}" alt="" loading="lazy" />` : `<span class="ic">${m.kind==='iframe'?'▶':'🎬'}</span>`}</div>
+        <div class="media-body">
+          <div class="media-kind">${m.i+1}. ${t(m.kind==='img'?'Image':m.kind==='bg'?'Background image':m.kind==='video'?'Video':'Embed')}${m.alt?` · ${esc(String(m.alt).slice(0,30))}`:''}</div>
+          <input class="in media-url" data-media="${m.i}" value="${escAttr(m.url)}" placeholder="https://… or a YouTube link" />
+          <div class="up-row"><button class="up-btn" type="button" data-mup="${m.i}">⬆ ${t('Upload image')}</button><input type="file" class="mup-file" accept="image/jpeg,image/png,image/webp" data-media="${m.i}" hidden /></div>
+        </div></div>`).join('')}${list.length>shown.length?`<div class="empty-note">${t('Showing the first 80. Edit the rest in the HTML below.')}</div>`:''}</div></div>`;
+  }
   if (f.t==='action') return `<div class="field"><button class="up-btn" type="button" data-act-id="${f.id}">${t(f.l)}</button>${f.note?`<div class="empty-note" style="padding:6px 0 0">${t(f.note)}</div>`:''}</div>`;
   if (f.t==='seg') return `<div class="field"><label>${t(f.l)}</label><div class="seg" data-path="${path}">${f.opts.map(([v,l])=>`<button data-v="${v}" class="${String(val)===v?'on':''}">${t(l)}</button>`).join('')}</div></div>`;
   if (f.t==='toggle') return `<div class="field"><div class="toggle"><label style="margin:0">${t(f.l)}</label><button class="tg ${val?'on':''}" data-path="${path}" role="switch" aria-checked="${!!val}"></button></div></div>`;
