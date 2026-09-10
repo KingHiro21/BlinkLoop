@@ -106,9 +106,47 @@ function getBrowser(){
   browserP.catch(() => { browserP = null; });
   return browserP;
 }
+/* installed before any page script runs: remembers the authored text of every rule a script inserts through the CSSOM
+   (emotion, styled-components, constructed sheets), because reading such rules back via cssText loses shorthands set
+   to var() tokens (Chrome serialises them as empty longhands) */
+const RECORD_RULES = `(() => {
+  const map = new WeakMap(); window.__lbRules = map;
+  const seed = sh => { let arr = map.get(sh); if (!arr){ arr = []; try { for (const r of sh.cssRules) arr.push(r.cssText); } catch (e) {} map.set(sh, arr); } return arr; };
+  const P = CSSStyleSheet.prototype;
+  const ins = P.insertRule; P.insertRule = function(rule, index){ const arr = seed(this); const r = ins.call(this, rule, index); try { arr.splice(index === undefined ? 0 : index, 0, String(rule)); } catch (e) {} return r; };
+  const del = P.deleteRule; P.deleteRule = function(index){ const arr = seed(this); const r = del.call(this, index); try { arr.splice(index, 1); } catch (e) {} return r; };
+  if (P.replaceSync){ const rs = P.replaceSync; P.replaceSync = function(t){ const r = rs.call(this, t); try { map.set(this, [String(t)]); } catch (e) {} return r; }; }
+  if (P.replace){ const rp = P.replace; P.replace = function(t){ try { map.set(this, [String(t)]); } catch (e) {} return rp.call(this, t); }; }
+})();`;
 /* runs inside the page: fold CSSOM-inserted rules back into <style> text, pin the chosen image sources */
 const SERIALIZE = `(() => {
-  for (const sh of document.styleSheets){ try { if (sh.href) continue; const node = sh.ownerNode; if (!node || node.tagName !== 'STYLE') continue; const rules = [...sh.cssRules].map(r => r.cssText).join('\\n'); if (rules && rules.length > (node.textContent || '').length) node.textContent = rules; } catch (e) {} }
+  const recorded = sh => { try { const rec = window.__lbRules && window.__lbRules.get(sh); return rec && rec.length === sh.cssRules.length ? rec.join('\\n') : ''; } catch (e) { return ''; } };
+  /* Chrome serialises a shorthand set to a var() (font: var(--x)) as a row of empty longhands, which drops the
+     declaration entirely; rebuild those from the shorthand value so design-token typography survives */
+  const SHORTHANDS = ['font','background','border','border-top','border-right','border-bottom','border-left','border-radius','border-color','border-style','border-width','margin','padding','inset','gap','grid-area','grid-template','grid','grid-column','grid-row','flex','flex-flow','transition','animation','outline','list-style','overflow','text-decoration','place-items','place-content','place-self','columns','mask','scroll-margin','scroll-padding','container','text-emphasis','border-block','border-inline','margin-block','margin-inline','padding-block','padding-inline','inset-block','inset-inline'];
+  const ruleText = r => {
+    try {
+      if (r.cssRules && r.cssText.indexOf('{') > 0 && !(r instanceof CSSStyleRule)){ const head = r.cssText.slice(0, r.cssText.indexOf('{')); return head + '{' + [...r.cssRules].map(ruleText).join('\\n') + '}'; }
+      let t = r.cssText;
+      if (r.style && /[\\w-]+\\s*:\\s*;/.test(t)){
+        t = t.replace(/[\\w-]+\\s*:\\s*;\\s*/g, '');
+        const adds = [];
+        for (const sh of SHORTHANDS){ const v = r.style.getPropertyValue(sh); if (v && /var\\(/.test(v) && !new RegExp('[;{\\\\s]' + sh + '\\\\s*:').test(t)) adds.push(sh + ': ' + v + (r.style.getPropertyPriority(sh) ? ' !important' : '') + ';'); }
+        if (adds.length) t = t.replace(/\\}\\s*$/, ' ' + adds.join(' ') + ' }');
+      }
+      return t;
+    } catch (e) { return r.cssText; }
+  };
+  /* stylesheets attached by scripts without any <style> tag (adoptedStyleSheets) would vanish: write them into one */
+  try { const extra = [...(document.adoptedStyleSheets || [])].map(sh => { try { return recorded(sh) || [...sh.cssRules].map(ruleText).join('\\n'); } catch (e) { return ''; } }).filter(Boolean).join('\\n'); if (extra){ const st = document.createElement('style'); st.setAttribute('data-adopted', '1'); st.textContent = extra; document.head.appendChild(st); } } catch (e) {}
+  /* shadow roots: their markup is invisible to outerHTML; flatten open ones into their host so the copy keeps them */
+  try { for (const host of [...document.querySelectorAll('*')].filter(e => e.shadowRoot)){ const sr = host.shadowRoot; const css = [...sr.adoptedStyleSheets || []].concat([...sr.styleSheets || []]).map(sh => { try { return [...sh.cssRules].map(ruleText).join('\\n'); } catch (e) { return ''; } }).join('\\n'); host.innerHTML = (css ? '<style>' + css.replace(/:host\\b/g, host.tagName.toLowerCase()) + '</style>' : '') + sr.innerHTML; } } catch (e) {}
+  for (const sh of document.styleSheets){ try {
+    if (sh.href) continue; const node = sh.ownerNode; if (!node || node.tagName !== 'STYLE') continue;
+    const rec = recorded(sh); if (rec){ node.textContent = rec; continue; }           // authored text of script-inserted rules
+    if ((node.textContent || '').trim()) continue;                                      // authored text already in the tag: keep it
+    const rules = [...sh.cssRules].map(ruleText).join('\\n'); if (rules) node.textContent = rules;
+  } catch (e) {} }
   const best = set => { const c = String(set || '').split(',').map(p => p.trim()).filter(Boolean).map(p => { const [u, d] = p.split(/\\s+/); return { u, w: parseFloat(d) || 0 }; }); c.sort((a, b) => b.w - a.w); return c.length ? c[0].u : ''; };
   for (const img of document.images){ try {
     const placeholder = !img.currentSrc || /^data:/.test(img.currentSrc);
@@ -154,7 +192,13 @@ const SERIALIZE = `(() => {
     if (cs.position === 'fixed' && (covers || dialogish) && (parseInt(cs.zIndex) || 0) >= 10) el.remove();
     else if (dialogish && cs.position !== 'sticky' && el.matches('[role="dialog"],[aria-modal="true"],dialog')) el.remove();
   } catch (e) {} }
-  try { document.body.style.overflow = ''; document.documentElement.style.overflow = ''; document.body.classList.remove('modal-open', 'no-scroll', 'overflow-hidden'); } catch (e) {}
+  /* scroll locks left behind by a dialog (body pinned with position:fixed, overflow hidden, "no-scroll" classes) would
+     pin the whole copy to one screen; the copy is the page, not the dialog state */
+  for (const el of [document.documentElement, document.body]){ try {
+    for (const cls of [...el.classList]) if (/no-?scroll|scroll-?lock|modal-open|overflow-hidden|is-locked|has-modal|dialog-open|menu-open|nav-open|body-fixed/i.test(cls)) el.classList.remove(cls);
+    for (const p of ['position', 'top', 'left', 'right', 'bottom', 'inset', 'overflow', 'overflow-y', 'overflow-x', 'height', 'width', 'padding-right']) el.style.removeProperty(p);
+  } catch (e) {} }
+  document.querySelectorAll('[data-shell-aria-hidden-by-dialog],[data-aria-hidden]').forEach(e => { e.removeAttribute('aria-hidden'); e.removeAttribute('data-shell-aria-hidden-by-dialog'); e.removeAttribute('data-aria-hidden'); });
   /* backgrounds set by scripts: keep the computed image on the element */
   for (const el of document.querySelectorAll('div,section,header,footer,a,span,li,figure')){ try { const bg = getComputedStyle(el).backgroundImage; if (bg && bg !== 'none' && /url\\(/.test(bg) && !/url\\("?data:/.test(bg) && !(el.getAttribute('style') || '').includes('background')) el.style.backgroundImage = bg; } catch (e) {} }
   document.querySelectorAll('video[poster]').forEach(v => { try { v.setAttribute('poster', new URL(v.getAttribute('poster'), location.href).href); } catch (e) {} });
@@ -181,6 +225,7 @@ async function renderPage(url, budgetMs){
   try {
     await page.setUserAgent(REAL_UA);
     await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' });
+    await page.evaluateOnNewDocument(RECORD_RULES);
     await page.setRequestInterception(true);
     page.on('request', req => {
       const type = req.resourceType(); let host = ''; const u = req.url();
@@ -741,8 +786,9 @@ function cleanBody(doc, base, mediaUrls = []){
   const htmlEl = doc.querySelector('html');
   return {
     inner: body.innerHTML.replace(/<\/?(html|body|head)\b[^>]*>/gi, ''),
-    rootClass: clean(((htmlEl && htmlEl.getAttribute('class')) || '').replace(/\bno-js\b/g, 'js') + ' ' + ((body.getAttribute && body.getAttribute('class')) || '')),
-    rootStyle: cssUrls(clean((body.getAttribute && body.getAttribute('style')) || ''), base).replace(/"/g, "'"),
+    rootClass: clean(((htmlEl && htmlEl.getAttribute('class')) || '').replace(/\bno-js\b/g, 'js') + ' ' + ((body.getAttribute && body.getAttribute('class')) || '')).split(' ').filter(c => !/no-?scroll|scroll-?lock|modal-open|overflow-hidden|is-locked|has-modal|dialog-open|body-fixed/i.test(c)).join(' '),
+    /* the body's inline style comes along for colours and fonts, never for positioning or scroll locks */
+    rootStyle: cssUrls(clean((body.getAttribute && body.getAttribute('style')) || ''), base).split(';').map(d => d.trim()).filter(d => d && !/^(position|top|left|right|bottom|inset|overflow(-[xy])?|height|min-height|max-height|width|padding-right)\s*:/i.test(d)).join(';').replace(/"/g, "'"),
     rootLang: clean((htmlEl && htmlEl.getAttribute('lang')) || ''),
     rootDir: clean((htmlEl && htmlEl.getAttribute('dir')) || (body.getAttribute && body.getAttribute('dir')) || ''),
     imgs, links, iframes
@@ -755,6 +801,39 @@ const pageMeta = (doc, pageUrl) => {
   return { title, desc: meta('description') || meta('og:description'), base };
 };
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+/* Web fonts declared by the copied CSS live on the original domain, and most hosts refuse to serve fonts to other
+   origins (CORS), so the copy would silently fall back to Arial. When the Blob store is available, every @font-face
+   file is copied into it at import time and the CSS points there. Cached per instance by URL. */
+const fontCache = new Map();
+async function rehostFonts(css, client){
+  if (!process.env.BLOB_READ_WRITE_TOKEN || !css || !/@font-face/i.test(css)) return css;
+  const urls = new Set();
+  for (const block of css.match(/@font-face\s*\{[^}]*\}/gi) || []){
+    for (const m of block.matchAll(/url\(\s*(['"]?)([^'")]+)\1\s*\)/gi)){ const u = m[2]; if (/^https?:/i.test(u) && !/vercel-storage\.com/i.test(u) && /\.(woff2?|ttf|otf|eot)(\?|#|$)/i.test(u)) urls.add(u); }
+  }
+  const list = [...urls].slice(0, 40);
+  if (!list.length) return css;
+  const { put } = require('@vercel/blob');
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(6, list.length) }, async () => {
+    while (i < list.length){
+      const u = list[i++];
+      if (fontCache.has(u)) continue;
+      const p = (async () => {
+        const r = await fetchResource(u, { accept: /font\/|application\/(font-woff2?|x-font-woff|x-font-ttf|x-font-opentype|vnd\.ms-fontobject|octet-stream)|binary/, maxBytes: 1024*1024, timeout: 6000, acceptHeader: 'font/woff2,font/woff,*/*;q=0.5' });
+        const ext = (u.match(/\.(woff2|woff|ttf|otf|eot)(\?|#|$)/i) || [, 'woff2'])[1].toLowerCase();
+        const type = { woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf', eot: 'application/vnd.ms-fontobject' }[ext];
+        const hash = crypto.createHash('sha1').update(u).digest('hex').slice(0, 10);
+        const blob = await put(`sites/${client}/imported/fonts/${hash}.${ext}`, r.buf, { access: 'public', contentType: type, addRandomSuffix: false });
+        return blob.url;
+      })().catch(() => null);
+      fontCache.set(u, p);
+    }
+  }));
+  for (const u of list){ const dest = await fontCache.get(u); if (dest) css = css.split(u).join(dest); }
+  return css;
+}
 
 /* one page, as it is. With opts.split (whole-site imports, one request per page) the linked stylesheets come back
    one by one so the builder can keep a single shared copy per site; sheets listed in opts.have are not resent. */
@@ -776,10 +855,11 @@ async function buildExact(html, pageUrl, opts = {}){
   if (opts.split){
     const have = new Set(Array.isArray(opts.have) ? opts.have : []);
     const list = sheets.linked.filter(l => l.css).map(l => ({ href: l.href, css: have.has(l.href) ? null : finalizeCss(wrapMedia(l), scope, rootPx, false) }));
-    exact = { scopeId, rootClass: b.rootClass, rootStyle: b.rootStyle, rootLang: b.rootLang, rootDir: b.rootDir, html: b.inner, css: finalizeCss(inline, scope, rootPx, false), sheets: list, overrides: OVERRIDES(scope), fonts: sheets.fonts };
+    for (const l of list) if (l.css) l.css = await rehostFonts(l.css, opts.client || 'site');
+    exact = { scopeId, rootClass: b.rootClass, rootStyle: b.rootStyle, rootLang: b.rootLang, rootDir: b.rootDir, html: b.inner, css: await rehostFonts(finalizeCss(inline, scope, rootPx, false), opts.client || 'site'), sheets: list, overrides: OVERRIDES(scope), fonts: sheets.fonts };
     found.push(`${plural(nSheets, 'stylesheet')}, ${plural(list.filter(l => l.css).length, 'new')}` + (sheets.fonts.length ? `, ${plural(sheets.fonts.length, 'Google Fonts link')}` : ''));
   } else {
-    const css = finalizeCss(raw + '\n' + inline, scope, rootPx, true);
+    const css = await rehostFonts(finalizeCss(raw + '\n' + inline, scope, rootPx, true), opts.client || 'site');
     exact = { scopeId, rootClass: b.rootClass, rootStyle: b.rootStyle, rootLang: b.rootLang, rootDir: b.rootDir, html: b.inner, css, fonts: sheets.fonts };
     found.push(`${plural(nSheets, 'stylesheet')} (${Math.round(css.length / 1024)} KB)` + (sheets.fonts.length ? `, ${plural(sheets.fonts.length, 'Google Fonts link')}` : ''));
   }
@@ -868,7 +948,7 @@ module.exports = async (req, res) => {
     }
     const how = rendered ? 'Loaded in a browser first, so content built by scripts is included' + (height ? ' (page captured ' + Math.round(height) + 'px tall)' : '') + '.' : 'Read as raw HTML (browser unavailable: ' + (renderError || 'unknown') + '), so content built by scripts may be missing.';
     if (body.mode === 'exact'){
-      const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have, cssMap, mediaUrls });
+      const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have, cssMap, mediaUrls, client });
       page.warn.unshift(how);
       return res.status(200).json({ ok:true, page, found: page.found, warn: page.warn, source: finalUrl, rendered });
     }

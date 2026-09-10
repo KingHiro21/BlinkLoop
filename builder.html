@@ -781,6 +781,7 @@ h1,h2,h3{font-family:${f.disp};line-height:1.14;font-weight:600;letter-spacing:-
 section{padding:var(--secpad) 0}
 .imp-sec{padding:0;margin:0;background:transparent;position:relative;isolation:isolate;z-index:0}
 .imp-root{font:16px/normal sans-serif;color:#000;text-align:start;letter-spacing:normal;-webkit-font-smoothing:auto;overflow-x:clip}
+.imp-root{position:relative!important;inset:auto!important;overflow-y:visible!important;overflow-x:clip!important} /* a copied body rule like position:fixed must never pin the page to one screen */
 .imp-root *{box-sizing:revert;margin:revert;padding:revert}
 .imp-root img{max-width:revert;display:revert}
 .imp-root a{color:revert;text-decoration:revert}
