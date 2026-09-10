@@ -128,6 +128,24 @@ under the code generator. Shared helpers: `lib/db.js` (PostgREST fetch), `lib/se
 Analytics: `window.BL_ANALYTICS = { ga4, plausible }`; a Plausible domain loads cookieless with no banner (cookies.html has a
 paragraph for it), GA4 still asks first.
 
+## Publishing from the builder (Vercel API)
+
+`api/publish.js` (session-gated, POST `{slug, pages:[{file, html}], customDomain?}`) puts a builder site online at
+`<slug>.blinkloop-ph.com`: one Vercel project per site named `bl-site-<slug>` (created on first publish), a production
+deployment of the exported HTML files plus a generated vercel.json (cleanUrls), and the subdomain attached to the project.
+Env: `VERCEL_TOKEN` (token with project + deployment scope), optional `VERCEL_TEAM_ID` when the token belongs to a team,
+optional `PUBLISH_DOMAIN` (default blinkloop-ph.com). DNS once: wildcard CNAME `*.blinkloop-ph.com -> cname.vercel-dns.com`.
+Without the token the endpoint answers `{ok:false, reason:'no-token'}` and the builder says publishing is not switched on.
+Slugs are 2 to 40 chars `[a-z0-9-]`, a reserved list blocks www/api/admin/etc. An optional own domain is attached too and the
+response carries the DNS record the client must set. The builder side lives in the export modal (`#pubBox`, `publishSite()`):
+slug prefilled from the title, an "all pages in this folder" switch when the draft belongs to an imported site
+(`folderPages()` gathers TEMP pages and saved drafts sharing `siteRefOf`, which now also reads `meta.site`; blocks-mode
+whole-site imports set it), the result link kept in `meta.publish` {slug,url,at}. Before publishing, every Contact block with an
+empty action is pointed at `https://www.blinkloop-ph.com/api/lead?site=<slug>`; a Contact block whose action contains /api/lead
+renders with a consent checkbox, a honeypot and `data-lead`, and `exportHTML()` appends a small script (`leadJS`) that submits
+the form as JSON via fetch and shows an inline thank-you, so published client sites feed the Leads panel in Admin with no
+mail setup. Other actions keep the plain HTML form (mailto GET or a custom POST endpoint).
+
 ## Conventions (the founder cares about these)
 
 - **No em dashes anywhere in copy.** Use commas, periods, or colons.

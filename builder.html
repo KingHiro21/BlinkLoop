@@ -399,6 +399,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 .modal .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .modal .in{background:var(--glass-strong);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 12px;font-size:.86rem}
 .modal .in:focus{outline:none;border-color:var(--rust)}
+.pub-box{margin-top:18px;padding:16px;border:1px solid color-mix(in srgb, var(--rust) 45%, var(--line));border-radius:var(--r-md);background:color-mix(in srgb, var(--rust) 5%, var(--glass))}
 .deploy-note{margin-top:18px;padding:14px 16px;background:var(--glass);border:1px solid var(--line);border-radius:var(--r-md);font-size:.82rem;color:var(--muted);line-height:1.6}
 .deploy-note b{color:var(--ink)}
 .modal .close-x{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;color:var(--muted);font-size:1rem}
@@ -604,6 +605,18 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <button class="tb-btn" id="copyExport" style="border:1px solid var(--line)">Copy HTML</button>
       <button class="tb-btn" id="openExportPreview" style="border:1px solid var(--line)">Open preview</button>
     </div>
+    <div class="pub-box" id="pubBox">
+      <h4 style="font-family:'Unbounded';font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px">Publish with BlinkLoop</h4>
+      <p class="sub" style="margin-bottom:10px">One click puts this site online at <b><span id="pubHost">your-name</span>.blinkloop-ph.com</b>. Its contact form delivers to the Leads list in Admin.</p>
+      <div class="row" style="margin-bottom:8px">
+        <input class="in" id="pubSlug" placeholder="site-name" autocomplete="off" style="flex:1;min-width:160px" />
+        <input class="in" id="pubCustom" placeholder="own domain (optional): www.client.com" autocomplete="off" style="flex:1.3;min-width:200px" />
+      </div>
+      <div class="toggle" id="pubAllWrap" style="margin:0 0 10px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)" hidden><label style="margin:0;font-size:.8rem;color:var(--ink)">Publish <b>all pages in this folder</b> (<span id="pubAllCount">0</span>)</label><button type="button" class="tg on" id="pubAll" role="switch" aria-checked="true"></button></div>
+      <div class="row"><button class="tb-cta" id="doPublish">Publish</button><span id="pubStatus" style="font-size:.82rem;color:var(--muted)"></span></div>
+      <div class="access-err" id="pubErr"></div>
+      <div id="pubResult" class="deploy-note" hidden></div>
+    </div>
     <div class="deploy-note" id="deployNote">
       <b>To put it online:</b> name the file <b>index.html</b> and drop it into your hosting. For Vercel, add it to your repo and push, or drag the file into a new Vercel project. It's live in seconds. Want BlinkLoop to host and maintain it for you? That's exactly what our <b>care plans</b> are for.
     </div>
@@ -686,7 +699,7 @@ function siteCss(ref){ if (!ref) return ''; if (siteCssMem[ref] !== undefined) r
 function storeSiteCss(ref, css, persist){ siteCssMem[ref] = css || ''; if (!persist) return; try{ localStorage.setItem(SITE_CSS_PREFIX + ref, css || ''); }catch(e){ toast(t('Not enough space on this device to keep the site styles. Export soon.')); } }
 /* Imported pages live here, in memory only, until the user saves them (storage on a device is small and shared). */
 const TEMP = { pages: {} };
-const siteRefOf = st => { const b = (st && st.blocks || []).find(x => x.type==='html' && (x.props.cssRef || x.props.scopeId)); return b ? (b.props.cssRef || b.props.scopeId) : ''; };
+const siteRefOf = st => { if (st && st.meta && st.meta.site) return st.meta.site; const b = (st && st.blocks || []).find(x => x.type==='html' && (x.props.cssRef || x.props.scopeId)); return b ? (b.props.cssRef || b.props.scopeId) : ''; };
 function isTemp(){ return !!(state && state.meta && state.meta.ephemeral); }
 /* which draft (in memory or saved) is page /slug of the same imported site */
 function findPageId(slug, site){
@@ -910,6 +923,11 @@ section{padding:var(--secpad) 0}
 .cform input,.cform textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:calc(var(--r)*.5);padding:12px 14px;font:inherit;color:inherit;margin-bottom:16px}
 .cform input:focus,.cform textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
 .cform textarea{min-height:120px;resize:vertical}
+.cform .cf-consent{display:flex;gap:10px;align-items:flex-start;font-size:.82rem;color:var(--muted);margin:-4px 0 16px;font-weight:400}
+.cform .cf-consent input{width:auto;margin:3px 0 0}
+.cform .cf-msg{margin:12px 0 0;font-size:.9rem;min-height:1.2em}
+.cform .cf-msg.ok{color:#2c7a4b;font-weight:600}
+.cform .cf-msg.err{color:#c0392b}
 
 /* footer */
 .foot{border-top:1px solid var(--line);padding:52px 0 40px}
@@ -1322,14 +1340,17 @@ const BLOCKS = {
     ],
     render:p=>{
       const action = p.action ? `action="${escAttr(p.action)}" method="POST"` : `action="mailto:${escAttr(p.email)}" method="GET"`;
+      const lead = /\/api\/lead/.test(p.action||'');
       return `<section id="contact" class="contact"><div class="wrap"><div class="contact-grid">
       <div><h2${ed('title')}>${esc(p.title)}</h2><p class="tx" style="color:var(--muted);margin-top:12px"${ed('sub')}>${esc(p.sub)}</p>
         <div class="meta">${p.email?`<div>📧 <b>${esc(p.email)}</b></div>`:''}${p.phone?`<div>📞 <b>${esc(p.phone)}</b></div>`:''}${p.where?`<div>📍 <b>${esc(p.where)}</b></div>`:''}</div></div>
-      <form class="cform" ${action}>
+      <form class="cform" ${action}${lead?' data-lead':''} novalidate>
         <label for="cf-n">Name</label><input id="cf-n" name="name" required placeholder="Your name" />
         <label for="cf-e">Email</label><input id="cf-e" name="email" type="email" required placeholder="you@email.com" />
         <label for="cf-m">Message</label><textarea id="cf-m" name="message" required placeholder="What are you building?"></textarea>
+        ${lead?`<label class="cf-consent"><input type="checkbox" name="consent" value="yes" required /> <span>I agree that my details are used to reply to this message.</span></label><input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />`:''}
         <button class="btn btn-solid" type="submit">Send message</button>
+        <p class="cf-msg" role="status" aria-live="polite"></p>
       </form></div></div></section>`;
     }
   },
@@ -3271,6 +3292,8 @@ function pluginsHeadHTML(){
 
 function exportHTML(){
   const t = state.theme;
+  const leadJS = state.blocks.some(b=>b.type==='contact' && /\/api\/lead/.test(b.props.action||''))
+    ? `<script>document.querySelectorAll('form.cform[data-lead]').forEach(function(f){f.addEventListener('submit',async function(e){e.preventDefault();var m=f.querySelector('.cf-msg'),b=f.querySelector('button[type=submit]'),d={};Array.prototype.forEach.call(f.elements,function(el){if(el.name)d[el.name]=el.type==='checkbox'?(el.checked?'yes':''):el.value});m.className='cf-msg';m.textContent='';if(!d.name||d.name.trim().length<2||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email||'')||!d.message||d.message.trim().length<5){m.className='cf-msg err';m.textContent='Please fill in your name, a working email and a short message.';return}if(!d.consent){m.className='cf-msg err';m.textContent='Please tick the box so we may reply to you.';return}b.disabled=true;var old=b.textContent;b.textContent='Sending\\u2026';try{d.consentAt=new Date().toISOString();d.page=location.href;var r=await fetch(f.getAttribute('action'),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)});var j=await r.json();if(!j.ok)throw new Error(j.reason||'failed');f.reset();m.className='cf-msg ok';m.textContent='Thank you, '+d.name.trim().split(' ')[0]+'. We will get back to you soon.'}catch(err){m.className='cf-msg err';m.textContent='That did not send. Please email us instead.'}b.disabled=false;b.textContent=old})});<\/script>` : '';
   const navJS = state.blocks.some(b=>b.type==='navbar')
     ? `<script>document.querySelectorAll('.nav nav a').forEach(function(a){a.addEventListener('click',function(){var n=a.closest('nav');if(n)n.classList.remove('open')})});<\/script>` : '';
   const plang = state.meta.lang || 'en';
@@ -3289,7 +3312,7 @@ function exportHTML(){
 </head>
 <body class="tx-${t.texture||'glow'}">
 ${pageBodyHTML(false)}
-${navJS}
+${navJS}${leadJS}
 <!-- Built with Loop Builder · blinkloop -->
 ${privacySectionHTML()}${waFabHTML()}</body>
 </html>`;
@@ -3307,10 +3330,63 @@ const slug = s => (s||'site').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/
 function openModal(id){ $('#'+id).classList.add('show'); }
 function closeModals(){ $$('.modal-bg').forEach(m=>m.classList.remove('show')); }
 
-$('#exportBtn').addEventListener('click', ()=>{ if (state.meta.slug) $('#exportName').value = state.meta.slug + '.html';
+$('#exportBtn').addEventListener('click', ()=>{ preparePublish(); if (state.meta.slug) $('#exportName').value = state.meta.slug + '.html';
   if(!state.blocks.length) return toast(t('Your page is empty. Add a block first'));
   openModal('exportModal');
 });
+/* Publishing: the exported HTML of this page (or every page of the folder) goes to /api/publish, which makes a Vercel
+   project per site and attaches <slug>.blinkloop-ph.com. Contact blocks are pointed at the BlinkLoop leads endpoint first. */
+const LEAD_ENDPOINT = 'https://www.blinkloop-ph.com/api/lead';
+function exportHTMLFor(st){ const prev = state; state = st; try { return exportHTML(); } finally { state = prev; } }
+function folderPages(){
+  const site = siteRefOf(state); if (!site) return [state];
+  const list = [];
+  Object.values(TEMP.pages).forEach(st => { if (siteRefOf(st) === site) list.push(st); });
+  draftsIndex().forEach(d => { if ((d.site||'') === site && !list.some(st => st.meta.draftId === d.id)){ try{ const st = JSON.parse(localStorage.getItem(DRAFT_PREFIX + d.id) || 'null'); if (st && st.blocks) list.push(st); }catch(e){} } });
+  if (!list.some(st => st.meta.draftId === state.meta.draftId)) list.unshift(state);
+  return list;
+}
+function pubDefaultSlug(){ return (state.meta.publish && state.meta.publish.slug) || slug(state.meta.title || 'site').slice(0, 40) || 'site'; }
+function preparePublish(){
+  $('#pubSlug').value = pubDefaultSlug(); $('#pubHost').textContent = $('#pubSlug').value;
+  const pages = folderPages(); $('#pubAllWrap').hidden = pages.length < 2; $('#pubAllCount').textContent = pages.length;
+  $('#pubResult').hidden = !(state.meta.publish && state.meta.publish.url);
+  if (state.meta.publish && state.meta.publish.url) $('#pubResult').innerHTML = t('Live at') + ' <a href="' + escAttr(state.meta.publish.url) + '" target="_blank" rel="noopener"><b>' + esc(state.meta.publish.url) + '</b></a> · ' + t('last published') + ' ' + new Date(state.meta.publish.at).toLocaleString();
+  $('#pubErr').textContent = ''; $('#pubStatus').textContent = '';
+}
+$('#pubSlug').addEventListener('input', ()=>{ $('#pubHost').textContent = ($('#pubSlug').value || 'your-name').toLowerCase().replace(/[^a-z0-9-]/g, '-'); });
+$('#pubAll').addEventListener('click', ()=>{ const on = !$('#pubAll').classList.contains('on'); $('#pubAll').classList.toggle('on', on); $('#pubAll').setAttribute('aria-checked', String(on)); });
+async function publishSite(){
+  if(!clientMode){ closeModals(); renderAccessModal(true); openModal('accessModal'); return; }
+  const err = $('#pubErr'), st = $('#pubStatus'), btn = $('#doPublish'); err.textContent = ''; st.textContent = '';
+  const sl = ($('#pubSlug').value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '');
+  if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(sl)){ err.textContent = t('Pick a name of 2 to 40 letters, numbers or dashes.'); return; }
+  const all = !$('#pubAllWrap').hidden && $('#pubAll').classList.contains('on');
+  const pages = all ? folderPages() : [state];
+  const files = pages.map(pg => {
+    const copy = clone(pg);
+    copy.blocks.forEach(b => { if (b.type === 'contact' && !(b.props.action||'').trim()) b.props.action = LEAD_ENDPOINT + '?site=' + sl; });
+    const file = (copy.meta.slug && copy.meta.slug !== 'index' ? copy.meta.slug : 'index') + '.html';
+    return { file, html: exportHTMLFor(copy) };
+  });
+  btn.disabled = true; st.textContent = t('Publishing') + ' ' + files.length + ' ' + t(files.length === 1 ? 'page' : 'pages') + '…';
+  try{
+    const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug: sl, pages: files, customDomain: ($('#pubCustom').value||'').trim() }) });
+    if (r.status === 401) throw new Error(t('Your session has expired. Sign in again.'));
+    const d = await r.json();
+    if (!d.ok){
+      const msgs = { 'no-token': t('Publishing is not switched on yet: add VERCEL_TOKEN in the Vercel project settings.'), 'bad-slug': t('That name is taken or not allowed. Try another.'), 'no-index': t('The home page is missing.'), 'too-large': t('This site is too large to publish in one go.'), 'project': t('Vercel refused to create the project') + (d.detail ? ': ' + d.detail : ''), 'deploy': t('Vercel refused the deployment') + (d.detail ? ': ' + d.detail : ''), 'timeout': t('Vercel took too long. Try again in a minute.') };
+      throw new Error(msgs[d.reason] || (t('Publishing failed') + (d.detail ? ': ' + d.detail : '')));
+    }
+    snapshot(); state.meta.publish = { slug: sl, url: d.url, at: Date.now(), pages: d.pages }; autosave();
+    pages.forEach(pg => { if (pg !== state){ pg.meta.publish = { slug: sl, url: d.url, at: Date.now() }; if (!pg.meta.ephemeral) try{ localStorage.setItem(DRAFT_PREFIX + pg.meta.draftId, JSON.stringify(pg)); }catch(e){} } });
+    $('#pubResult').hidden = false;
+    $('#pubResult').innerHTML = '<b>' + t('Live at') + '</b> <a href="' + escAttr(d.url) + '" target="_blank" rel="noopener"><b>' + esc(d.url) + '</b></a>' + (d.pages.length > 1 ? ' · ' + d.pages.length + ' ' + t('pages') : '') + (d.state && d.state !== 'READY' ? ' · ' + t('still finishing, give it a minute') : '') + (!d.domainOk ? '<br>' + t('The subdomain could not be attached; the deployment is at') + ' <a href="' + escAttr(d.deployUrl) + '" target="_blank" rel="noopener">' + esc(d.deployUrl) + '</a>' : '') + (d.custom ? '<br>' + t('Own domain') + ' <b>' + esc(d.custom.domain) + '</b>: ' + (d.custom.verified ? t('connected') : t('set this DNS record with the domain provider') + ': <code>' + esc(d.custom.dns) + '</code>') : '');
+    st.textContent = ''; toast(t('Published'));
+  }catch(e){ err.textContent = e && e.message || t('Publishing failed.'); st.textContent = ''; }
+  finally{ btn.disabled = false; }
+}
+$('#doPublish').addEventListener('click', publishSite);
 $('#doExport').addEventListener('click', ()=>{
   if(!clientMode){ closeModals(); renderAccessModal(true); openModal('accessModal'); return; }
   let name = $('#exportName').value.trim() || 'index.html';
@@ -3633,7 +3709,7 @@ function applyImportedSite(S){
   S.pages.forEach(pg => {
     const st = freshState(); const x = pg.exact;
     st.meta.title = pg.meta.title || pg.slug; st.meta.desc = pg.meta.desc || ''; st.meta.importedFrom = pg.url; st.meta.slug = pg.slug; st.meta.draftId = uid();
-    if (!x){ applyImportedTheme(st, siteTheme || pg.theme); st.blocks = normaliseImported({ blocks: pg.blocks }); st.meta.ephemeral = true; TEMP.pages[st.meta.draftId] = st; ids.push(st.meta.draftId); return; }
+    if (!x){ applyImportedTheme(st, siteTheme || pg.theme); st.blocks = normaliseImported({ blocks: pg.blocks }); st.meta.site = S.scopeId; st.meta.ephemeral = true; TEMP.pages[st.meta.draftId] = st; ids.push(st.meta.draftId); return; }
     st.blocks = [{ id: uid(), type: 'html', props: Object.assign(clone(BLOCKS.html.defaults), { scopeId: S.scopeId, cssRef: S.scopeId, rootClass: x.rootClass||'', rootStyle: x.rootStyle||'', rootLang: x.rootLang||'', rootDir: x.rootDir||'', html: x.html||'', css: x.css||'', fonts: S.fonts||[] }) }];
     st.meta.ephemeral = true; TEMP.pages[st.meta.draftId] = st; ids.push(st.meta.draftId);
   });
