@@ -538,17 +538,13 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
   <div class="modal">
     <button class="close-x" data-close aria-label="Close">✕</button>
     <h2 id="imT">Import from a website</h2>
-    <p class="sub" id="imS">Paste the address of an existing site (WordPress, Wix, anything public). We read its headline, sections, prices, questions, photos and contact details and rebuild them as editable blocks. Only import sites you own or have permission to rebuild.</p>
+    <p class="sub" id="imS">Paste the address of an existing site: WordPress, Wix, Lovable, a store, anything public. It comes back as blocks you can restyle, reorder and export.</p>
     <form class="row" id="importForm" style="margin-bottom:10px" novalidate>
       <input class="in" id="importUrl" type="url" placeholder="https://www.example.com" style="flex:1;min-width:220px" autocomplete="off" />
       <button class="tb-cta" id="importGo" type="submit">Read the site</button>
     </form>
-    <div class="field" style="margin-top:12px"><label>How should we bring it in?</label>
-      <div class="seg" id="importMode"><button type="button" data-v="exact" class="on">Exact copy</button><button type="button" data-v="blocks">Rebuild as blocks</button></div>
-      <div class="empty-note" id="importModeNote" style="padding:6px 0 0">The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.</div>
-      <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>Whole site</b>: every page linked from this address (up to 20), one draft per page, menus linking between them (works for both modes)</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
-      <div class="toggle" id="importRawWrap" style="margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--muted)">If our server cannot open the page in a browser, copy its raw HTML anyway. Content built by scripts (React, Vue, store apps) will be missing.</label><button type="button" class="tg" id="importRaw" role="switch" aria-checked="false"></button></div>
-    </div>
+    <div class="empty-note" style="padding:8px 0 0">We open the page in a browser, read its sections, cards, pictures, colours and fonts, and rebuild it as editable blocks in your design. Only import sites you own or have permission to rebuild.</div>
+    <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>All pages</b>: every page linked from this address (up to 20), one draft per page, menus linking between them</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
     <div class="access-err" id="importErr"></div>
     <div id="importProgress" hidden style="margin:10px 0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)">
       <div style="display:flex;align-items:center;gap:10px"><span id="importProgressText" style="flex:1;font-size:.84rem;font-weight:600"></span><button type="button" class="tb-btn" id="importCancel" style="border:1px solid var(--line)">Stop here</button></div>
@@ -558,7 +554,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     <div id="importResult" hidden>
       <h4 style="font-family:'Unbounded';font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 8px">Found on the page</h4>
       <ul class="access-perks" id="importFound" style="margin-top:0"></ul>
-      <div class="deploy-note" id="importNote">Images still point at the original site. Replace them from the block panel once the page is yours. Colours and fonts are matched where the site declares them; everything else stays editable.</div>
+      <div class="deploy-note" id="importNote">Pictures still load from the original site until you replace them from the block panel. Colours, fonts and button style come from the site; every block stays editable.</div>
       <div class="row" style="margin-top:14px">
         <button class="tb-cta" id="importUse">Use this as a new draft</button>
         <button class="tb-btn" id="importAppend" style="border:1px solid var(--line)">Add its blocks below my page</button>
@@ -3493,11 +3489,9 @@ $('#resetBtn').addEventListener('click', ()=>{
 /* /api/import fetches the page server-side and maps it to blocks; here we only fill in defaults,
    pick a matching palette/font, and let the user decide: new draft or append. */
 let importedPage = null;
-let importMode = 'exact'; let importWhole = false; let importRaw = false;
-$('#importRaw').addEventListener('click', ()=>{ importRaw = !importRaw; $('#importRaw').classList.toggle('on', importRaw); $('#importRaw').setAttribute('aria-checked', String(importRaw)); });
+let importMode = 'blocks'; let importWhole = false; let importRaw = false; // exact copy retired from the UI: blocks are the product
 $('#importSite').addEventListener('click', ()=>{ importWhole = !importWhole; $('#importSite').classList.toggle('on', importWhole); $('#importSite').setAttribute('aria-checked', String(importWhole)); $('#importResult').hidden = true; importedPage = null; });
 const IMPORT_MODE_NOTE = { exact: 'The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.', blocks: 'We read the headline, sections, prices, questions, photos and contact details and rebuild them as separate blocks in your chosen design.' };
-$$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=b.dataset.v; $$('#importMode button').forEach(x=>x.classList.toggle('on',x===b)); $('#importModeNote').textContent=t(IMPORT_MODE_NOTE[importMode]); $('#importRawWrap').hidden = importMode!=='exact'; $('#importResult').hidden=true; importedPage=null; }));
 function normaliseImported(page){
   if (page.exact){
     const x = page.exact;
