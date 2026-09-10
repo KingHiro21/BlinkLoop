@@ -120,8 +120,30 @@ const SERIALIZE = `(() => {
       const pick = src || own; if (pick){ try { img.setAttribute('src', new URL(pick, location.href).href); } catch (e) { img.setAttribute('src', pick); } img.removeAttribute('srcset'); img.removeAttribute('sizes'); }
     }
     img.removeAttribute('loading');
+    /* images that a script would reveal once loaded (opacity 0 until a "loaded" class lands): reveal them now */
+    const cs = getComputedStyle(img);
+    if (img.getAttribute('src') && (parseFloat(cs.opacity) === 0 || cs.visibility === 'hidden')){ const lc = img.getAttribute('data-image-loaded-class') || img.getAttribute('data-loaded-class'); if (lc) img.classList.add(...lc.split(/\s+/).filter(Boolean)); img.setAttribute('data-force-visible', '1'); }
+  } catch (e) {} }
+  /* aspect-ratio boxes a script never finished ("--padding-top: NaN%"): size them from the picture inside, or drop the broken value */
+  for (const el of document.querySelectorAll('[style*="NaN"]')){ try {
+    const im = el.querySelector('img'); const ratio = im && im.naturalWidth ? (im.naturalHeight / im.naturalWidth * 100) : 0;
+    el.setAttribute('style', el.getAttribute('style').replace(/([\\w-]+)\\s*:\\s*[^;]*NaN[^;]*;?/g, (m, prop) => ratio && /padding|aspect/i.test(prop) ? prop + ':' + ratio.toFixed(3) + '%;' : ''));
   } catch (e) {} }
   document.querySelectorAll('picture source').forEach(s => s.remove());
+  /* players that stream into a blob (video.js, HLS): keep the poster image so the spot is not black, note the player state */
+  for (const v of document.querySelectorAll('video')){ try {
+    const src = v.getAttribute('src') || (v.querySelector('source') ? v.querySelector('source').getAttribute('src') : '') || v.currentSrc || '';
+    if (!src || /^blob:/.test(src)){
+      v.setAttribute('data-blob-src', '1'); v.removeAttribute('src');
+      if (!v.getAttribute('poster')){
+        const box = v.closest('.video-js, [data-vjs-player], .video-container, .media-container, [class*="video" i]') || v.parentElement;
+        const posterEl = box && [...box.querySelectorAll('[class*="poster" i], img')].find(e => (getComputedStyle(e).backgroundImage || '').includes('url(') || (e.tagName === 'IMG' && e.currentSrc));
+        const bg = posterEl ? (posterEl.tagName === 'IMG' ? posterEl.currentSrc : (getComputedStyle(posterEl).backgroundImage.match(/url\\("?([^")]+)"?\\)/) || [])[1]) : '';
+        if (bg) v.setAttribute('poster', bg);
+      }
+      const vjs = v.closest('.video-js'); if (vjs){ vjs.classList.remove('vjs-has-started', 'vjs-playing', 'vjs-poster-inactive', 'vjs-user-inactive'); vjs.classList.add('vjs-paused'); }
+    }
+  } catch (e) {} }
   /* pop-ups that appeared during the visit (error dialogs, cookie walls, newsletter modals, dimming backdrops) are not the page */
   const vw = window.innerWidth, vh = window.innerHeight;
   for (const el of [...document.body.querySelectorAll('*')]){ try {
@@ -155,14 +177,16 @@ async function renderPage(url, budgetMs){
     await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' });
     await page.setRequestInterception(true);
     page.on('request', req => {
-      const type = req.resourceType(); let host = '';
-      try { host = new URL(req.url()).hostname; } catch {}
+      const type = req.resourceType(); let host = ''; const u = req.url();
+      try { host = new URL(u).hostname; } catch {}
       const privateHost = !allowPrivate && (net.isIP(host) ? privateIp(host) : /^(localhost|.*\.local|.*\.internal)$/i.test(host));
+      /* video files are not downloaded, but their addresses are remembered so <video> tags that play from a blob can point at them */
+      if (type === 'media' || /\.(mp4|webm|m4v|mov|m3u8|mpd)(\?|$)/i.test(u)){ if (/^https?:/i.test(u) && !mediaUrls.includes(u)) mediaUrls.push(u); }
       if (privateHost || type === 'media' || type === 'font') return req.abort().catch(() => {}); // images load so lazy loaders reveal their real sources
       req.continue().catch(() => {});
     });
     /* every stylesheet the browser receives is kept, so nothing has to be refetched (and blocked) afterwards */
-    const cssMap = new Map();
+    const cssMap = new Map(); const mediaUrls = [];
     page.on('response', resp => {
       try {
         const type = resp.request().resourceType(); const ct = (resp.headers()['content-type'] || '').toLowerCase();
@@ -178,7 +202,7 @@ async function renderPage(url, budgetMs){
     const status = resp ? resp.status() : 200;
     if (status >= 400) throw new Error('http-' + status);
     await new Promise(r => setTimeout(r, 150)); // let the last stylesheet bodies land in cssMap
-    return { html, finalUrl: page.url(), cssMap };
+    return { html, finalUrl: page.url(), cssMap, mediaUrls };
   } finally { await page.close().catch(() => {}); }
 }
 /* the page as a browser sees it, or the raw HTML when no browser can be had */
@@ -643,6 +667,7 @@ async function collectSheets(doc, base, cache){
 const wrapMedia = l => l.media ? `@media ${l.media}{${l.css}}` : l.css;
 /* what only appears once the original site's scripts run, and what should never appear in a copy */
 const OVERRIDES = scope => `\n${scope} [data-aos],${scope} .aos-init,${scope} .elementor-invisible,${scope} .wow,${scope} .animate__animated,${scope} .fade-in,${scope} .reveal,${scope} .lazyload,${scope} .lazy,${scope} .b-lazy,${scope} img[data-src],${scope} [data-animate],${scope} .sal-animate,${scope} [data-sal]{opacity:1!important;visibility:visible!important;transform:none!important;animation:none!important}`
+  + `\n${scope} img[data-force-visible]{opacity:1!important;visibility:visible!important}`
   + `\n${scope} .preloader,${scope} #preloader,${scope} .page-loader,${scope} .loading-overlay,${scope} .cookie-notice,${scope} #cookie-law-info-bar,${scope} .cky-consent-container,${scope} .cc-window{display:none!important}`;
 /* raw css -> css that only applies inside the wrapper; rootPx converts rem when the site sets html{font-size} */
 function finalizeCss(raw, scope, rootPx, overrides){
@@ -656,9 +681,20 @@ function finalizeCss(raw, scope, rootPx, overrides){
   return css.replace(/<\/style/gi, '<\\/style');
 }
 /* the body, cleaned: no scripts, no handlers, every address absolute, lazy attributes promoted */
-function cleanBody(doc, base){
+const TRACKER_RE = /bat\.bing\.com|facebook\.com\/tr|doubleclick\.net|google-analytics\.com|googletagmanager|analytics\.|\/pixel\b|adsrvr|criteo|scorecardresearch|quantserve|\/beacon/i;
+function cleanBody(doc, base, mediaUrls = []){
   const body = doc.querySelector('body') || doc;
   body.querySelectorAll('script, noscript, template, link, meta, style, base, title, object, embed, applet').forEach(n => n.remove());
+  /* tracking pixels and analytics beacons are not part of the design */
+  body.querySelectorAll('img').forEach(im => { const w = im.getAttribute('width'), h = im.getAttribute('height'); if ((w === '0' || h === '0' || w === '1' && h === '1') || TRACKER_RE.test(im.getAttribute('src') || '')) im.remove(); });
+  /* videos that streamed into a blob: give them the first real video file the page loaded, or leave the poster to stand in */
+  const files = mediaUrls.filter(u => /\.(mp4|webm|m4v|mov)(\?|$)/i.test(u));
+  let fi = 0;
+  for (const v of body.querySelectorAll('video[data-blob-src]')){
+    v.removeAttribute('data-blob-src');
+    const f = files[fi]; if (f){ fi++; v.setAttribute('src', f); v.setAttribute('autoplay', ''); v.setAttribute('muted', ''); v.setAttribute('loop', ''); v.setAttribute('playsinline', ''); }
+    else if (!v.getAttribute('poster')) v.remove();
+  }
   let iframes = 0;
   for (const f of body.querySelectorAll('iframe')){
     const src = abs(base, f.getAttribute('src') || f.getAttribute('data-src'));
@@ -726,7 +762,7 @@ async function buildExact(html, pageUrl, opts = {}){
   for (const l of sheets.linked){ if (!l.css) continue; total += l.css.length; if (total > CSS_TOTAL_MAX){ warn.push('Some stylesheets were skipped (size limit).'); l.css = ''; continue; } raw += wrapMedia(l) + '\n'; }
   const inline = sheets.inline.join('\n');
   const rootPx = rootFontPx(raw + '\n' + inline);
-  const b = cleanBody(doc, base);
+  const b = cleanBody(doc, base, opts.mediaUrls || []);
   const nSheets = sheets.linked.filter(s => s.css).length + sheets.inline.length;
   found.push(`Exact copy of ${title ? '“' + cut(title, 50) + '”' : 'the page'}`);
   let exact;
@@ -818,14 +854,14 @@ module.exports = async (req, res) => {
     catch (e) { const msg = String(e && e.message || ''); return res.status(200).json({ ok:false, reason: /no-blob-store/.test(msg) ? 'no-blob-store' : /wrong-type/.test(msg) ? 'not-image' : /too-large/.test(msg) ? 'too-large' : 'failed' }); }
   }
   try {
-    const { html, finalUrl, rendered, cssMap, renderError } = await loadPage(url);
+    const { html, finalUrl, rendered, cssMap, mediaUrls, renderError } = await loadPage(url);
     /* an exact copy means the page as a browser shows it; a raw copy only happens when the user asked for it */
     if (!rendered && !body.allowRaw && body.mode !== 'blocks' && process.env.IMPORT_NO_RENDER !== '1'){
       return res.status(200).json({ ok:false, reason:'no-browser', detail: renderError || '' });
     }
     const how = rendered ? 'Loaded in a browser first, so content built by scripts is included.' : 'Read as raw HTML (browser unavailable: ' + (renderError || 'unknown') + '), so content built by scripts may be missing.';
     if (body.mode === 'exact'){
-      const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have, cssMap });
+      const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have, cssMap, mediaUrls });
       page.warn.unshift(how);
       return res.status(200).json({ ok:true, page, found: page.found, warn: page.warn, source: finalUrl, rendered });
     }
