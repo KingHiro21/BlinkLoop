@@ -1714,11 +1714,26 @@ function canvasDoc(){
 }
 
 let savedScroll = 0;
+/* Chrome drops a srcdoc navigation that starts while the previous one is still loading, so two renders in one tick
+   would leave the canvas stale. While a load is pending the newest document waits and is applied on load. */
+let canvasPending = false, canvasQueued = null, canvasTimer = 0;
 function renderCanvas(keepScroll=true){
   const win = frame.contentWindow;
   if (keepScroll && win) savedScroll = win.scrollY || 0;
-  frame.srcdoc = canvasDoc();
-  frame.onload = () => { wireCanvas(); frame.contentWindow.scrollTo(0, savedScroll); markSelected(); };
+  const doc = canvasDoc();
+  if (canvasPending){ canvasQueued = doc; return; }
+  applyCanvas(doc);
+}
+function applyCanvas(doc){
+  canvasPending = true; clearTimeout(canvasTimer);
+  const done = () => {
+    clearTimeout(canvasTimer); canvasPending = false;
+    if (canvasQueued){ const q = canvasQueued; canvasQueued = null; applyCanvas(q); return; }
+    wireCanvas(); frame.contentWindow.scrollTo(0, savedScroll); markSelected();
+  };
+  frame.onload = done;
+  canvasTimer = setTimeout(done, 4000); // safety net: never stay "pending" if load does not fire
+  frame.srcdoc = doc;
 }
 
 function markSelected(){

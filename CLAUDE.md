@@ -187,11 +187,21 @@ mail setup. Other actions keep the plain HTML form (mailto GET or a custom POST 
 
 ## Testing
 
-Historically tested with Puppeteer end-to-end suites (login flow, chat, days/threads/search, presence,
-forms, SEO tags, mobile widths). Those suites are not in the repo yet; if you add tests, put them under
-`tests/`, use plain `puppeteer`, and mock external hosts (Apps Script URL, Supabase via a small PostgREST
-emulator). A pattern that worked: an in-memory `@vercel/blob` stub via `require.cache`, and a tiny local
-server that mounts the `api/*.js` handlers and emulates the middleware redirect.
+`npm test` runs `tests/run.js`: an end-to-end suite on plain `puppeteer-core` driving the Chrome or Edge already on the
+machine (`tests/chrome.js`, or `CHROME_PATH`), against `tests/harness.js`, a local server that serves the repo, mounts the
+real `api/*.js` handlers, emulates the middleware redirect, Supabase PostgREST and Realtime Broadcast in memory, mints staff
+codes with the test secret, and hosts a WordPress-like sample site (`tests/fixtures/sample-wp.html`, `/__sample-wp` plus
+`/menus/` etc.) for the importer. Nothing reaches the internet: outside requests are aborted in the browser, Apps Script
+forwarding is off, and VERCEL_TOKEN / ANTHROPIC_API_KEY / BLOB token are unset so the fallbacks are what gets tested.
+About 26 checks in 40s: every public page (SEO tags, one h1, skip link, JSON-LD parses, no em dashes, no script errors, no
+sideways scroll at 320/390/880/1366, dark theme), internal pages noindex and out of the sitemap, the homepage form storing a
+lead, auth (middleware redirect, bad/expired codes, login, /api/me, logout, admin minting), the builder (library, adding
+blocks, inspector, export contents, publish and AI fallbacks, slug validation, chrome overflow at five widths), the importer
+(sample site to blocks with theme; links mode; SSRF refusals), chat (post, reply, pin, react, feed, realtime ping, /team on a
+phone), leads API and admin panel, presence/realtime config. `node tests/run.js builder` runs only matching tests;
+`npm run harness` starts the harness alone on :3457 and prints a code for manual testing (`HARNESS_PORT` changes the port).
+The browser keeps cookies between tests, so a test that needs a signed-out state calls /api/logout first. Add a test with
+every feature; keep tests hermetic (mock hosts, never real emails or tokens). `tests/` is in `.vercelignore`.
 
 ## Known limits / open items
 

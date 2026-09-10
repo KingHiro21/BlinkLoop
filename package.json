@@ -7,5 +7,9 @@
     "node-html-parser": "^7.1.0",
     "puppeteer-core": "^25.10.0",
     "web-push": "^3.6.7"
+  },
+  "scripts": {
+    "test": "node tests/run.js",
+    "harness": "node tests/harness.js"
   }
 }
