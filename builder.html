@@ -271,6 +271,7 @@ details.item-card .item-body{padding:0 11px 11px}
 @media (max-width:1400px){
   .brand small{display:none}
   .tb-btn .lbl{display:none}
+  #saveDraftBtn .lbl{display:inline}
   .tb-btn{padding:6px 9px}
   .topbar{gap:10px}
 }
@@ -347,6 +348,12 @@ details.item-card .item-body{padding:0 11px 11px}
 .savestate{font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:5px;min-width:64px}
 .savestate .d{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .3s}
 .savestate.saved .d{background:#3f9d63}
+.savestate.temp .d{background:#EDA33F;box-shadow:0 0 8px rgba(237,163,63,.6)}
+.temp-box{border:1px dashed rgba(237,163,63,.7);border-radius:var(--r-md);padding:10px;margin-bottom:12px;background:rgba(237,163,63,.06)}
+.temp-head{display:flex;flex-direction:column;gap:2px;margin:0 2px 10px}
+.temp-head b{font-size:.84rem}
+.temp-head span{font-size:.74rem;color:var(--muted)}
+.draft.temp{background:transparent}
 .guide-steps{display:grid;gap:14px;margin-top:6px}
 .gstep{display:flex;gap:14px;align-items:flex-start;background:var(--glass);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}
 .gstep .n{font-family:'Unbounded';font-weight:700;color:var(--rust);font-size:1.05rem;line-height:1.3;flex:none}
@@ -401,6 +408,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <small>Builder</small></a>
     <input class="page-title" id="pageTitle" value="My website" aria-label="Page title" />
     <span class="savestate" id="saveState"><span class="d"></span><span class="t">&nbsp;</span></span>
+    <button class="tb-btn" id="saveDraftBtn" hidden title="Keep this page on this device (Ctrl+S)" style="border:1px solid var(--rust);color:var(--rust-ink,var(--rust))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg><span class="lbl">Save</span></button>
     <button class="chip trial" id="accessChip" title="Access status">Trial</button>
     <div class="tb-group" role="group" aria-label="History">
       <button class="tb-btn" id="undoBtn" title="Undo (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
@@ -567,7 +575,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
   <div class="modal">
     <button class="close-x" data-close aria-label="Close">✕</button>
     <h2 id="pjT">Save or load your project</h2>
-    <p class="sub" id="pjS">Your work autosaves in this browser automatically. A project file is for moving between devices, keeping a backup, or sending your draft to us.</p>
+    <p class="sub" id="pjS">Your work autosaves in this browser automatically. Imported pages are the exception: they stay in memory until you save them. A project file is for moving between devices, keeping a backup, or sending your draft to us.</p>
     <h4 style="font-family:'Unbounded';font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 0 0">Drafts on this device</h4>
     <div class="draft-list" id="draftList"></div>
     <div class="row" style="margin-bottom:14px"><button class="tb-btn" id="newDraft" style="border:1px solid var(--line)">＋ New draft</button><button class="tb-btn" id="pjImport" style="border:1px solid var(--line)">🌐 Import from a website</button></div>
@@ -635,7 +643,42 @@ const FONTS = {
    Project files (.loop.json) carry it as state.siteCss so a draft can travel to another device. */
 const SITE_CSS_PREFIX = 'loopbuilder-sitecss-'; const siteCssMem = {};
 function siteCss(ref){ if (!ref) return ''; if (siteCssMem[ref] !== undefined) return siteCssMem[ref]; let v = ''; try{ v = localStorage.getItem(SITE_CSS_PREFIX + ref) || ''; }catch(e){} siteCssMem[ref] = v; return v; }
-function storeSiteCss(ref, css){ siteCssMem[ref] = css || ''; try{ localStorage.setItem(SITE_CSS_PREFIX + ref, css || ''); }catch(e){ toast(t('Not enough space on this device to keep the site styles. Export soon.')); } }
+function storeSiteCss(ref, css, persist){ siteCssMem[ref] = css || ''; if (!persist) return; try{ localStorage.setItem(SITE_CSS_PREFIX + ref, css || ''); }catch(e){ toast(t('Not enough space on this device to keep the site styles. Export soon.')); } }
+/* Imported pages live here, in memory only, until the user saves them (storage on a device is small and shared). */
+const TEMP = { pages: {} };
+const siteRefOf = st => { const b = (st && st.blocks || []).find(x => x.type==='html' && (x.props.cssRef || x.props.scopeId)); return b ? (b.props.cssRef || b.props.scopeId) : ''; };
+function isTemp(){ return !!(state && state.meta && state.meta.ephemeral); }
+/* which draft (in memory or saved) is page /slug of the same imported site */
+function findPageId(slug, site){
+  const tmp = Object.values(TEMP.pages).find(st => st.meta.slug === slug && (!site || siteRefOf(st) === site)); if (tmp) return tmp.meta.draftId;
+  const d = draftsIndex().find(x => x.slug === slug && (!site || x.site === site)); return d ? d.id : null;
+}
+function persistSiteCssFor(st){ const ref = siteRefOf(st); if (ref && siteCssMem[ref] !== undefined) storeSiteCss(ref, siteCssMem[ref], true); }
+function saveTempPage(id){
+  const st = id === state.meta.draftId ? state : TEMP.pages[id]; if (!st) return false;
+  delete st.meta.ephemeral; persistSiteCssFor(st);
+  const ok = saveDraftState(st); if (!ok){ st.meta.ephemeral = true; toast(t('Not enough space on this device to save this page.')); return false; }
+  delete TEMP.pages[id]; return true;
+}
+function saveCurrentDraft(){
+  if (isTemp()){ if (saveTempPage(state.meta.draftId)){ autosave(); toast(t('Saved on this device')); } }
+  else { autosave(); toast(t('Saved')); }
+  updateTempUI();
+}
+function discardTemp(id){
+  delete TEMP.pages[id];
+  if (state.meta.draftId === id){
+    const next = Object.keys(TEMP.pages)[0];
+    if (next){ state = TEMP.pages[next]; } else { let saved = null; try{ saved = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){} state = saved && saved.blocks ? saved : freshState(); }
+    selectedId = null; history = []; future = []; afterStateSwap();
+  }
+}
+function updateTempUI(){
+  const st = $('#saveState'); const btn = $('#saveDraftBtn');
+  if (isTemp()){ st.classList.remove('saved'); st.classList.add('temp'); st.querySelector('.t').textContent = t('Not saved'); if (btn) btn.hidden = false; }
+  else { st.classList.remove('temp'); if (btn) btn.hidden = true; }
+}
+window.addEventListener('beforeunload', e => { if (Object.keys(TEMP.pages).length || isTemp()){ e.preventDefault(); e.returnValue = ''; } });
 const PALETTES = {
   ember: { name:'Ember',  bg:'#FFFCF7', ink:'#3A1B1E', accent:'#F45D2A', accent2:'#7F2027' },
   sunset:{ name:'Sunset', bg:'#FFF6F0', ink:'#33202A', accent:'#FF5E5B', accent2:'#FFB627' },
@@ -1472,6 +1515,21 @@ function wireCanvas(){
     const blk = e.target.closest('.blk');
     if (e.target.closest('a') && !e.target.closest('[data-edit]')) e.preventDefault(); // don't navigate in editor
     const root = e.target.closest('.imp-root');
+    const link = root && e.target.closest('a[href]');
+    if (link && !e.altKey){
+      const href = link.getAttribute('href') || '';
+      const [pathPart, hash] = href.split('#');
+      if (/^\/[a-z0-9-]*$/i.test(pathPart)){
+        const slug = pathPart === '/' ? 'index' : pathPart.slice(1);
+        const cur = state.meta.slug || (state.blocks.length && !state.meta.slug ? '' : 'index');
+        if (slug === cur || (slug === 'index' && !state.meta.slug)){ if (hash){ const tEl = doc.getElementById(hash); if (tEl) tEl.scrollIntoView({behavior:'smooth'}); } return; }
+        const id = findPageId(slug, siteRefOf(state));
+        if (id){ openDraft(id); if (hash) setTimeout(()=>{ const d2 = frame.contentDocument; const tEl = d2 && d2.getElementById(hash); if (tEl) tEl.scrollIntoView(); }, 700); toast(t('Opened') + ' /' + (slug==='index'?'':slug) + '. ' + t('Hold Alt while clicking to edit a link instead.')); return; }
+        toast(t('That page was not imported.')); return;
+      }
+      if (!pathPart && hash){ const tEl = doc.getElementById(hash); if (tEl) tEl.scrollIntoView({behavior:'smooth'}); return; }
+      if (/^https?:/i.test(href) && (e.ctrlKey || e.metaKey)){ window.open(href, '_blank', 'noopener'); return; }
+    }
     if (root){
       const media = e.target.closest(MEDIA_SEL);
       const all = [...root.querySelectorAll(MEDIA_SEL)];
@@ -1562,9 +1620,9 @@ function snapshot(){
 function undo(){ if(!history.length) return; future.push(JSON.stringify(state)); state = JSON.parse(history.pop()); afterStateSwap(); }
 function redo(){ if(!future.length) return; history.push(JSON.stringify(state)); state = JSON.parse(future.pop()); afterStateSwap(); }
 function afterStateSwap(){
-  if (state.siteCss){ for (const [k,v] of Object.entries(state.siteCss)) storeSiteCss(k, v); delete state.siteCss; }
+  if (state.siteCss){ for (const [k,v] of Object.entries(state.siteCss)) storeSiteCss(k, v, !state.meta.ephemeral); delete state.siteCss; }
   if (selectedId && !state.blocks.find(b=>b.id===selectedId)) selectedId = null;
-  renderCanvas(); renderLayers(); renderInspector(); renderDesign(); autosave(); updateHistoryBtns();
+  renderCanvas(); renderLayers(); renderInspector(); renderDesign(); autosave(); updateHistoryBtns(); updateTempUI();
   $('#pageTitle').value = state.meta.title;
 }
 function updateHistoryBtns(){ $('#undoBtn').disabled = !history.length; $('#redoBtn').disabled = !future.length; }
@@ -2798,7 +2856,7 @@ function applyLang(){
   set('[data-rtab="block"]','Block'); set('[data-rtab="design"]','Design');
   set('[data-rtab="plugins"]','Plugins'); set('[data-rtab="seo"]','SEO');
   const setLbl = (sel, key) => { const el=$(sel); if(!el) return; let l=el.querySelector('.lbl'); if(!l){ l=document.createElement('span'); l.className='lbl'; el.appendChild(l); } l.textContent=t(key).replace(/^\?\s*/,''); el.title=t(key).replace(/^\?\s*/,''); };
-  setLbl('#guideBtn','? Guide'); setLbl('#jsonBtn','Projects'); setLbl('#previewBtn','Preview'); setLbl('#exportBtn','Export site');
+  setLbl('#guideBtn','? Guide'); setLbl('#jsonBtn','Projects'); setLbl('#saveDraftBtn','Save'); setLbl('#previewBtn','Preview'); setLbl('#exportBtn','Export site');
   setLbl('.mobile-nav [data-view="blocks"]','Blocks'); setLbl('.mobile-nav [data-view="page"]','Page'); setLbl('.mobile-nav [data-view="style"]','Edit');
   set('#hintBlocks','Click a block to add it, or drag it onto the page.');
   set('#hintLayers','Your page, top to bottom. Drag to reorder, click to jump to a block.');
@@ -3231,10 +3289,11 @@ function persistDraft(json){
   const id = state.meta.draftId;
   try{ localStorage.setItem(DRAFT_PREFIX+id, json); }catch(e){ return; }
   const list = draftsIndex().filter(d=>d.id!==id);
-  list.unshift({ id, title: state.meta.title || 'Untitled', updated: Date.now(), blocks: state.blocks.length });
+  list.unshift({ id, title: state.meta.title || 'Untitled', updated: Date.now(), blocks: state.blocks.length, slug: state.meta.slug || '', site: siteRefOf(state) });
   saveDraftsIndex(list);
 }
 function openDraft(id){
+  if (TEMP.pages[id]){ state = TEMP.pages[id]; selectedId = null; history = []; future = []; afterStateSwap(); closeModals(); return; }
   let data=null; try{ data = JSON.parse(localStorage.getItem(DRAFT_PREFIX+id)||'null'); }catch(e){}
   if (!data || !data.blocks){ toast(t('That draft could not be opened')); return; }
   snapshot(); state = data; selectedId = null; afterStateSwap(); closeModals();
@@ -3249,12 +3308,25 @@ function renderDrafts(){
   const box = $('#draftList'); if (!box) return;
   const list = draftsIndex();
   const when = ts => { const d = Date.now()-ts; return d<60000 ? t('just now') : d<3600000 ? Math.round(d/60000)+' min' : d<86400000 ? Math.round(d/3600000)+' h' : new Date(ts).toLocaleDateString(); };
-  box.innerHTML = list.length ? list.map(d=>`<div class="draft ${d.id===state.meta.draftId?'on':''}">
+  const temp = Object.values(TEMP.pages).filter(st => st.meta.draftId !== state.meta.draftId || isTemp());
+  const tempHTML = temp.length ? `<div class="temp-box"><div class="temp-head"><b>${t('Imported, not saved yet')}</b><span>${t('Kept in memory only. Save the ones you want to keep; storage on a device is limited.')}</span></div>
+    ${temp.map(st=>`<div class="draft temp ${st.meta.draftId===state.meta.draftId?'on':''}">
+      <div class="dn"><b>${esc(st.meta.title||'Untitled')}</b><span>${st.meta.slug ? '/' + (st.meta.slug==='index'?'':st.meta.slug) + ' · ' : ''}${st.blocks.length} ${t('blocks')}${st.meta.draftId===state.meta.draftId?' · '+t('open now'):''}</span></div>
+      ${st.meta.draftId===state.meta.draftId?'':`<button data-open="${st.meta.draftId}">${t('Open')}</button>`}
+      <button data-tsave="${st.meta.draftId}">${t('Save')}</button>
+      <button class="del" data-tdiscard="${st.meta.draftId}" title="${t('Discard')}">✕</button>
+    </div>`).join('')}
+    <div class="row" style="margin-top:8px"><button class="tb-btn" id="tempSaveAll" style="border:1px solid var(--line)">${t('Save all')}</button><button class="tb-btn" id="tempDiscardAll" style="border:1px solid var(--line);color:#c0392b">${t('Discard all')}</button></div></div>` : '';
+  box.innerHTML = tempHTML + (list.length ? list.map(d=>`<div class="draft ${d.id===state.meta.draftId?'on':''}">
       <div class="dn"><b>${esc(d.title||'Untitled')}</b><span>${d.blocks||0} ${t('blocks')} · ${when(d.updated)}${d.id===state.meta.draftId?' · '+t('open now'):''}</span></div>
       ${d.id===state.meta.draftId?'':`<button data-open="${d.id}">${t('Open')}</button>`}
       <button class="del" data-delete="${d.id}" title="${t('Delete draft')}">✕</button>
-    </div>`).join('') : `<div class="empty-note">${t('No other drafts on this device yet.')}</div>`;
+    </div>`).join('') : `<div class="empty-note">${t('No other drafts on this device yet.')}</div>`);
   $$('[data-open]',box).forEach(b=>b.addEventListener('click',()=>openDraft(b.dataset.open)));
+  $$('[data-tsave]',box).forEach(b=>b.addEventListener('click',()=>{ if (saveTempPage(b.dataset.tsave)){ toast(t('Saved on this device')); } updateTempUI(); renderDrafts(); }));
+  $$('[data-tdiscard]',box).forEach(b=>b.addEventListener('click',()=>{ if (confirm(t('Discard this imported page? It is not stored anywhere.'))){ discardTemp(b.dataset.tdiscard); renderDrafts(); } }));
+  const sa = $('#tempSaveAll'); if (sa) sa.addEventListener('click', ()=>{ let n=0; Object.keys(TEMP.pages).forEach(id=>{ if (saveTempPage(id)) n++; }); if (isTemp()) saveTempPage(state.meta.draftId); updateTempUI(); renderDrafts(); toast(n + ' ' + t('pages saved on this device')); });
+  const da = $('#tempDiscardAll'); if (da) da.addEventListener('click', ()=>{ if (confirm(t('Discard every imported page that is not saved?'))){ Object.keys(TEMP.pages).forEach(id=>discardTemp(id)); renderDrafts(); } });
   $$('[data-delete]',box).forEach(b=>b.addEventListener('click',()=>{ if(confirm(t('Delete this draft? This cannot be undone.'))) { const wasCurrent = b.dataset.delete===state.meta.draftId; deleteDraft(b.dataset.delete); if (wasCurrent){ state = freshState(); selectedId=null; afterStateSwap(); closeModals(); openTemplates(); } } }));
 }
 let saveT;
@@ -3263,6 +3335,7 @@ function autosave(){
   st.classList.remove('saved'); st.querySelector('.t').textContent = t('Saving…');
   clearTimeout(saveT);
   saveT = setTimeout(()=>{
+    if (isTemp()){ TEMP.pages[state.meta.draftId] = state; updateTempUI(); return; }
     try{
       const json = JSON.stringify(state);
       if (json.length > 4500000) throw new Error('big');
@@ -3348,23 +3421,21 @@ async function runImport(){
 function saveDraftState(st){
   try{ localStorage.setItem(DRAFT_PREFIX + st.meta.draftId, JSON.stringify(st)); }catch(e){ return false; }
   const list = draftsIndex().filter(d=>d.id!==st.meta.draftId);
-  list.unshift({ id: st.meta.draftId, title: st.meta.title || 'Untitled', updated: Date.now(), blocks: st.blocks.length });
+  list.unshift({ id: st.meta.draftId, title: st.meta.title || 'Untitled', updated: Date.now(), blocks: st.blocks.length, slug: st.meta.slug || '', site: siteRefOf(st) });
   saveDraftsIndex(list); return true;
 }
 function applyImportedSite(S){
-  storeSiteCss(S.scopeId, S.sharedCss);
-  const ids = []; let failed = 0;
+  storeSiteCss(S.scopeId, S.sharedCss, false);
+  const ids = [];
   S.pages.forEach(pg => {
     const st = freshState(); const x = pg.exact;
     st.meta.title = pg.meta.title || pg.slug; st.meta.desc = pg.meta.desc || ''; st.meta.importedFrom = pg.url; st.meta.slug = pg.slug; st.meta.draftId = uid();
     st.blocks = [{ id: uid(), type: 'html', props: Object.assign(clone(BLOCKS.html.defaults), { scopeId: S.scopeId, cssRef: S.scopeId, rootClass: x.rootClass||'', rootStyle: x.rootStyle||'', rootLang: x.rootLang||'', rootDir: x.rootDir||'', html: x.html||'', css: x.css||'', fonts: S.fonts||[] }) }];
-    if (saveDraftState(st)) ids.push(st.meta.draftId); else failed++;
+    st.meta.ephemeral = true; TEMP.pages[st.meta.draftId] = st; ids.push(st.meta.draftId);
   });
-  if (!ids.length){ toast(t('Could not store the pages on this device (out of space).')); return; }
-  let data = null; try{ data = JSON.parse(localStorage.getItem(DRAFT_PREFIX + ids[0]) || 'null'); }catch(e){}
-  if (data){ state = data; history = []; future = []; selectedId = null; afterStateSwap(); }
+  state = TEMP.pages[ids[0]]; history = []; future = []; selectedId = null; afterStateSwap();
   importedPage = null; closeModals(); $('#importUrl').value = ''; $('#importResult').hidden = true;
-  toast(ids.length + ' ' + t('pages imported as drafts') + (failed ? ', ' + failed + ' ' + t('skipped') : '') + '. ' + t('Open them from Projects.'));
+  toast(ids.length + ' ' + t('pages imported. Nothing is stored yet: click a menu link to move between pages, and Save the ones you want to keep.'));
 }
 function applyImported(mode){
   if (!importedPage) return;
@@ -3383,12 +3454,13 @@ function applyImported(mode){
       if (importedPage.theme.font && FONTS[importedPage.theme.font]) fresh.theme.font = importedPage.theme.font;
     }
     fresh.blocks = blocks;
+    fresh.meta.draftId = uid(); fresh.meta.ephemeral = true; TEMP.pages[fresh.meta.draftId] = fresh;
     state = fresh; history = []; future = [];
   }
   selectedId = null; importedPage = null;
   afterStateSwap(); closeModals();
   $('#importUrl').value = ''; $('#importResult').hidden = true;
-  toast(t('Imported. Every block is editable now.'));
+  toast(mode === 'append' ? t('Imported. Every block is editable now.') : t('Imported. Nothing is stored yet: press Save when you want to keep this page.'));
 }
 $('#importForm').addEventListener('submit', e => { e.preventDefault(); runImport(); });
 $('#importUse').addEventListener('click', () => applyImported('new'));
@@ -3504,6 +3576,7 @@ window.addEventListener('resize', syncChrome);
 document.addEventListener('visibilitychange', syncChrome);
 $('#pageTitle').addEventListener('change', e=>{ snapshot(); state.meta.title=e.target.value; autosave(); });
 $('#undoBtn').addEventListener('click', undo);
+$('#saveDraftBtn').addEventListener('click', saveCurrentDraft);
 $('#redoBtn').addEventListener('click', redo);
 $('#guideBtn').addEventListener('click', ()=> openModal('guideModal'));
 $$('.tb-btn[data-dev]').forEach(b=>b.addEventListener('click',()=>{
@@ -3543,7 +3616,7 @@ document.addEventListener('keydown', e=>{
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if(mod && e.key.toLowerCase()==='z' && !e.shiftKey && !typing){ e.preventDefault(); undo(); }
   else if(mod && (e.key.toLowerCase()==='y' || (e.key.toLowerCase()==='z'&&e.shiftKey)) && !typing){ e.preventDefault(); redo(); }
-  else if(mod && e.key.toLowerCase()==='s'){ e.preventDefault(); try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(_){} toast('Saved'); }
+  else if(mod && e.key.toLowerCase()==='s'){ e.preventDefault(); saveCurrentDraft(); }
   else if(mod && e.key.toLowerCase()==='d' && selectedId && !typing){ e.preventDefault(); blockAction('dupe', selectedId); toast(t('Duplicated')); }
   else if(e.altKey && (e.key==='ArrowUp'||e.key==='ArrowDown') && selectedId && !typing){ e.preventDefault(); blockAction(e.key==='ArrowUp'?'up':'down', selectedId); }
   else if((e.key==='Delete'||e.key==='Backspace') && selectedId && !typing){ blockAction('del', selectedId); toast(t('Block removed. Ctrl+Z to undo')); }
