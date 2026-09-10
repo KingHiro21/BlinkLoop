@@ -546,7 +546,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     <div class="field" style="margin-top:12px"><label>How should we bring it in?</label>
       <div class="seg" id="importMode"><button type="button" data-v="exact" class="on">Exact copy</button><button type="button" data-v="blocks">Rebuild as blocks</button></div>
       <div class="empty-note" id="importModeNote" style="padding:6px 0 0">The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.</div>
-      <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>Whole site</b>: every page linked from this address (up to 20), one draft per page, menus linking between them</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
+      <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>Whole site</b>: every page linked from this address (up to 20), one draft per page, menus linking between them (works for both modes)</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
       <div class="toggle" id="importRawWrap" style="margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--muted)">If our server cannot open the page in a browser, copy its raw HTML anyway. Content built by scripts (React, Vue, store apps) will be missing.</label><button type="button" class="tg" id="importRaw" role="switch" aria-checked="false"></button></div>
     </div>
     <div class="access-err" id="importErr"></div>
@@ -694,7 +694,7 @@ const siteRefOf = st => { const b = (st && st.blocks || []).find(x => x.type==='
 function isTemp(){ return !!(state && state.meta && state.meta.ephemeral); }
 /* which draft (in memory or saved) is page /slug of the same imported site */
 function findPageId(slug, site){
-  const tmp = Object.values(TEMP.pages).find(st => st.meta.slug === slug && (!site || siteRefOf(st) === site)); if (tmp) return tmp.meta.draftId;
+  const tmp = Object.values(TEMP.pages).find(st => st.meta.slug === slug && (!site || siteRefOf(st) === site || !siteRefOf(st))); if (tmp) return tmp.meta.draftId;
   const d = draftsIndex().find(x => x.slug === slug && (!site || x.site === site)); return d ? d.id : null;
 }
 function persistSiteCssFor(st){ const ref = siteRefOf(st); if (ref && siteCssMem[ref] !== undefined) storeSiteCss(ref, siteCssMem[ref], true); }
@@ -839,6 +839,11 @@ section{padding:var(--secpad) 0}
 .feat.has-img{padding-top:0;overflow:hidden}
 .feat .feat-img{display:block;width:calc(100% + 48px);max-width:none;margin:0 -24px 18px;aspect-ratio:16/10;object-fit:cover}
 .feat.has-img .ic{margin-top:0}
+.feat .feat-img.fit-contain{object-fit:contain;padding:18px;background:color-mix(in srgb, var(--accent) 6%, var(--bg))}
+.feat-link{text-decoration:none;color:inherit;display:block;cursor:pointer}
+.feat-link:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:color-mix(in srgb, var(--accent) 45%, var(--line))}
+.feat-link h3{transition:color .2s}
+.feat-link:hover h3{color:var(--accent)}
 .feat h3{font-size:1.02rem;margin-bottom:8px}
 .feat p{font-size:.9rem;color:var(--muted)}
 
@@ -947,6 +952,8 @@ section{padding:var(--secpad) 0}
 .vt-dark .eyebrow{background:color-mix(in srgb, var(--bg) 12%, transparent);color:var(--bg)}
 .vt-dark :is(.feat,.plan,.quote,.faq-item,.stat){background:color-mix(in srgb, var(--bg) 7%, transparent);border-color:color-mix(in srgb, var(--bg) 16%, transparent)}
 .vt-dark .plan.hot{border-color:var(--accent)}
+.vt-dark :is(.gal figcaption,.split-grid p,.split-grid .body){color:color-mix(in srgb, var(--bg) 76%, var(--ink))}
+.vt-dark .feat.has-img{background:color-mix(in srgb, var(--bg) 9%, transparent)}
 .vidwrap{position:relative;aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;background:var(--card);border:1px solid var(--line);max-width:880px;margin:0 auto}
 .vidwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .vid-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--muted);font-size:.95rem}
@@ -986,6 +993,12 @@ body.tx-dots .hero::before{background:radial-gradient(color-mix(in srgb,var(--ac
 .hero.tall{min-height:min(88svh,900px);display:flex;align-items:center}
 .hero.has-bg{background:linear-gradient(rgba(10,8,6,var(--hdim,.55)),rgba(10,8,6,var(--hdim,.55))),var(--hbg) center/cover;color:#fff}
 .hero.has-bg::before{display:none}
+.hero.hero-dark{background:color-mix(in srgb, var(--ink) 96%, black);color:var(--bg)}
+.hero.hero-dark::before{opacity:.35}
+.hero.hero-dark .lede{color:color-mix(in srgb, var(--bg) 78%, var(--ink))}
+.hero.hero-dark .eyebrow{border-color:color-mix(in srgb, var(--bg) 30%, transparent);color:var(--bg);background:color-mix(in srgb, var(--bg) 10%, transparent)}
+.hero.hero-dark .btn-ghost{border-color:color-mix(in srgb, var(--bg) 50%, transparent);color:var(--bg)}
+.hero.hero-dark .btn-ghost:hover{border-color:var(--bg)}
 .hero.has-bg .lede{color:rgba(255,255,255,.86)}
 .hero.has-bg .eyebrow{border-color:rgba(255,255,255,.35);color:#fff;background:rgba(255,255,255,.12)}
 .hero.has-bg .btn-ghost{border-color:rgba(255,255,255,.55);color:#fff}
@@ -1099,6 +1112,7 @@ const BLOCKS = {
       {k:'secondary',l:'Secondary button (blank = hidden)',t:'text'},{k:'secondaryHref',l:'Secondary link',t:'text'},
       {k:'layout',l:'Layout',t:'seg',opts:[['split','Split'],['center','Centered']]},
       {k:'size',l:'Height',t:'seg',opts:[['normal','Normal'],['tall','Full screen']]},
+      {k:'tone',l:'Tone',t:'seg',opts:[['auto','Light'],['dark','Dark']]},
       {k:'img',l:'Image URL (blank = brand placeholder)',t:'text',up:1},
       {k:'imgLabel',l:'Image alt text',t:'text'},
       {k:'bgImg',l:'Background photo (optional, sits behind the text)',t:'text',up:1},
@@ -1108,7 +1122,7 @@ const BLOCKS = {
       const title = esc(p.title).replace(/\*(.+?)\*/g,'<em>$1</em>');
       const media = p.layout==='center'?'':ph(p.img,p.imgLabel);
       const bg = p.bgImg ? ` style="--hbg:url('${escAttr(p.bgImg)}');--hdim:${(+p.bgDim||55)/100}"` : '';
-      return `<section class="hero ${p.layout==='center'?'center':''} ${p.size==='tall'?'tall':''} ${p.bgImg?'has-bg':''}"${bg}><div class="wrap"><div class="hero-grid"><div>
+      return `<section class="hero ${p.layout==='center'?'center':''} ${p.size==='tall'?'tall':''} ${p.bgImg?'has-bg':''} ${p.tone==='dark'&&!p.bgImg?'hero-dark':''}"${bg}><div class="wrap"><div class="hero-grid"><div>
         ${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}
         <h1${ed('title')}>${title}</h1>
         <p class="lede"${ed('sub')}>${esc(p.sub)}</p>
@@ -1128,12 +1142,13 @@ const BLOCKS = {
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'sub',l:'Subtitle',t:'textarea'},
       {k:'cols',l:'Columns',t:'seg',opts:[['2','2'],['3','3'],['4','4']]},
       {k:'iconStyle',l:'Icons',t:'seg',opts:[['emoji','Emoji'],['number','Numbers'],['none','None']]},
+      {k:'imgFit',l:'Pictures',t:'seg',opts:[['cover','Fill the top'],['contain','Show whole']]},
       {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]},
-      {k:'items',l:'Cards',t:'items',item:[{k:'img',l:'Picture (optional)',t:'text',up:true},{k:'icon',l:'Icon (emoji)',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Text',t:'textarea'}],titleKey:'title'}
+      {k:'items',l:'Cards',t:'items',item:[{k:'img',l:'Picture (optional)',t:'text',up:true},{k:'icon',l:'Icon (emoji)',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Text',t:'textarea'},{k:'link',l:'Link (optional, makes the card clickable)',t:'text'}],titleKey:'title'}
     ],
     render:p=>`<section id="features" class="${vtc(p)}"><div class="wrap">
       <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2>${p.sub?`<p${ed('sub')}>${esc(p.sub)}</p>`:''}</div>
-      <div class="feat-grid c${esc(p.cols)}">${p.items.map((i,n)=>`<div class="feat${i.img?' has-img':''}">${i.img?`<img class="feat-img" src="${escAttr(i.img)}" alt="${escAttr(i.title||'')}" loading="lazy" />`:''}${p.iconStyle==='none'?'':p.iconStyle==='number'?`<div class="ic num">${n+1}</div>`:`<div class="ic">${esc(i.icon)}</div>`}<h3>${esc(i.title)}</h3><p>${esc(i.text)}</p></div>`).join('')}</div>
+      <div class="feat-grid c${esc(p.cols)}">${p.items.map((i,n)=>{ const tag = i.link ? 'a' : 'div'; const inner = `${i.img?`<img class="feat-img${p.imgFit==='contain'?' fit-contain':''}" src="${escAttr(i.img)}" alt="${escAttr(i.title||'')}" loading="lazy" />`:''}${p.iconStyle==='none'?'':p.iconStyle==='number'?`<div class="ic num">${n+1}</div>`:`<div class="ic">${esc(i.icon)}</div>`}<h3>${esc(i.title)}</h3>${(i.text||'').trim()?`<p>${esc(i.text)}</p>`:''}`; return `<${tag} class="feat${i.img?' has-img':''}${i.link?' feat-link':''}"${i.link?` href="${escAttr(i.link)}"`:''}>${inner}</${tag}>`; }).join('')}</div>
     </div></section>`
   },
 
@@ -1143,12 +1158,13 @@ const BLOCKS = {
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Body text',t:'textarea'},
       {k:'cta',l:'Button (blank = hidden)',t:'text'},{k:'ctaHref',l:'Button link',t:'text'},
-      {k:'img',l:'Image URL',t:'text',up:1},{k:'alt',l:'Image alt text',t:'text'},{k:'flip',l:'Image on the left',t:'toggle'}
+      {k:'img',l:'Image URL',t:'text',up:1},{k:'alt',l:'Image alt text',t:'text'},{k:'flip',l:'Image on the left',t:'toggle'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
     ],
     render:p=>{
       const txt=`<div>${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2><p class="tx"${ed('text')}>${esc(p.text)}</p>${p.cta?`<a class="btn btn-ghost" href="${escAttr(p.ctaHref)}"${ed('cta')}>${esc(p.cta)}</a>`:''}</div>`;
       const img=ph(p.img, p.alt||'✦');
-      return `<section><div class="wrap"><div class="split-grid">${p.flip?img+txt:txt+img}</div></div></section>`;
+      return `<section class="${vtc(p)}"><div class="wrap"><div class="split-grid">${p.flip?img+txt:txt+img}</div></div></section>`;
     }
   },
 
@@ -1205,9 +1221,10 @@ const BLOCKS = {
     fields:[
       {k:'title',l:'Title',t:'text'},{k:'cols',l:'Columns',t:'seg',opts:[['2','2'],['3','3'],['4','4']]},
       {k:'ratio',l:'Image shape',t:'seg',opts:[['square','Square'],['land','Wide'],['port','Tall']]},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]},
       {k:'items',l:'Items',t:'items',item:[{k:'img',l:'Image URL (blank = placeholder)',t:'text',up:1},{k:'caption',l:'Caption',t:'text'}],titleKey:'caption'}
     ],
-    render:p=>`<section><div class="wrap">
+    render:p=>`<section class="${vtc(p)}"><div class="wrap">
       <div class="sec-head"><h2${ed('title')}>${esc(p.title)}</h2></div>
       <div class="gal-grid c${esc(p.cols)} r-${esc(p.ratio||'land')}">${p.items.map(i=>`<figure class="gal">${ph(i.img,i.caption?esc(i.caption[0]).toUpperCase():'✦')}${i.caption?`<figcaption>${esc(i.caption)}</figcaption>`:''}</figure>`).join('')}</div>
     </div></section>`
@@ -1562,8 +1579,8 @@ function wireCanvas(){
     const blk = e.target.closest('.blk');
     if (e.target.closest('a') && !e.target.closest('[data-edit]')) e.preventDefault(); // don't navigate in editor
     const root = e.target.closest('.imp-root');
-    const link = root && e.target.closest('a[href]');
-    if (link && !e.altKey){
+    const link = e.target.closest('a[href]'); // menu links between imported pages work in copies and in rebuilt blocks alike
+    if (link && !e.altKey && (root || /^\/[a-z0-9-]*(#.*)?$/i.test(link.getAttribute('href') || ''))){
       const href = link.getAttribute('href') || '';
       const [pathPart, hash] = href.split('#');
       if (/^\/[a-z0-9-]*$/i.test(pathPart)){
@@ -3480,7 +3497,7 @@ let importMode = 'exact'; let importWhole = false; let importRaw = false;
 $('#importRaw').addEventListener('click', ()=>{ importRaw = !importRaw; $('#importRaw').classList.toggle('on', importRaw); $('#importRaw').setAttribute('aria-checked', String(importRaw)); });
 $('#importSite').addEventListener('click', ()=>{ importWhole = !importWhole; $('#importSite').classList.toggle('on', importWhole); $('#importSite').setAttribute('aria-checked', String(importWhole)); $('#importResult').hidden = true; importedPage = null; });
 const IMPORT_MODE_NOTE = { exact: 'The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.', blocks: 'We read the headline, sections, prices, questions, photos and contact details and rebuild them as separate blocks in your chosen design.' };
-$$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=b.dataset.v; $$('#importMode button').forEach(x=>x.classList.toggle('on',x===b)); $('#importModeNote').textContent=t(IMPORT_MODE_NOTE[importMode]); $('#importSiteWrap').hidden = importMode!=='exact'; $('#importRawWrap').hidden = importMode!=='exact'; $('#importResult').hidden=true; importedPage=null; }));
+$$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=b.dataset.v; $$('#importMode button').forEach(x=>x.classList.toggle('on',x===b)); $('#importModeNote').textContent=t(IMPORT_MODE_NOTE[importMode]); $('#importRawWrap').hidden = importMode!=='exact'; $('#importResult').hidden=true; importedPage=null; }));
 function normaliseImported(page){
   if (page.exact){
     const x = page.exact;
@@ -3506,7 +3523,7 @@ function splitCssRules(css){
   return out;
 }
 const normUrlC = u => { try { const U = new URL(u); U.hash = ''; U.search = ''; return U.origin + U.pathname.replace(/\/index\.(html?|php)$/i, '/').replace(/\/+$/, ''); } catch { return ''; } };
-async function importWholeSite(url){
+async function importWholeSite(url, mode = 'exact'){
   const err = $('#importErr'); const prog = $('#importProgress'); const txt = $('#importProgressText'); const bar = $('#importProgressBar');
   const post = async body => { const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({ allowRaw: importRaw }, body)), signal: importAbort.signal }); if (r.status === 401) throw new Error('session'); return r.json(); };
   importAbort = new AbortController(); let stopped = false;
@@ -3518,7 +3535,13 @@ async function importWholeSite(url){
   const pages = [], skipped = [], order = [], sheetCss = {}, seenRules = new Set(); let overrides = ''; const fonts = new Set(); let rendered = !!first.rendered;
   const rewriteAll = () => {
     const target = new Map(); pages.forEach(p => target.set(normUrlC(p.url), p.slug === 'index' ? '/' : '/' + p.slug));
-    pages.forEach(p => { p.exact.html = p.exact.html.replace(/href="([^"]+)"/gi, (m, h) => { const tg = target.get(normUrlC(h)); if (!tg) return m; const hash = (h.match(/#.*$/) || [''])[0]; return `href="${tg}${hash}"`; }); });
+    const fix = h => { if (typeof h !== 'string' || !/^https?:/i.test(h)) return h; const tg = target.get(normUrlC(h)); if (!tg) return h; const hash = (h.match(/#.*$/) || [''])[0]; return tg + hash; };
+    pages.forEach(p => {
+      if (p.exact){ p.exact.html = p.exact.html.replace(/href="([^"]+)"/gi, (m, h) => { const f = fix(h); return f === h ? m : `href="${f}"`; }); return; }
+      /* blocks: every link-shaped prop, on the block and on its items, points at the new page when it named an imported one */
+      const KEYS = /^(href|link|url|primaryHref|secondaryHref|ctaHref)$/;
+      (p.blocks || []).forEach(b => { for (const k in b.props){ if (KEYS.test(k)) b.props[k] = fix(b.props[k]); if (Array.isArray(b.props[k])) b.props[k].forEach(it => { if (it && typeof it === 'object') for (const kk in it) if (KEYS.test(kk)) it[kk] = fix(it[kk]); }); } });
+    });
   };
   for (let i = 0; i < list.length; i++){
     if (stopped) break;
@@ -3526,9 +3549,13 @@ async function importWholeSite(url){
     txt.textContent = t('Copying page') + ' ' + (i+1) + ' ' + t('of') + ' ' + list.length + ': /' + (pg.slug === 'index' ? '' : pg.slug);
     bar.style.width = Math.round(4 + 94 * i / list.length) + '%';
     let d;
-    try { d = await post({ url: pg.url, mode: 'exact', split: true, scopeId, have: order }); }
+    try { d = await post(mode === 'blocks' ? { url: pg.url, mode: 'blocks' } : { url: pg.url, mode: 'exact', split: true, scopeId, have: order }); }
     catch (e){ if (stopped) break; skipped.push({ url: pg.url, reason: 'network' }); continue; }
     if (!d.ok){ skipped.push({ url: pg.url, reason: d.reason }); continue; }
+    if (mode === 'blocks'){
+      pages.push({ url: d.source || pg.url, slug: pg.slug, meta: Object.assign({}, d.page.meta, { slug: pg.slug }), blocks: d.page.blocks || [], theme: d.page.theme || null, found: (d.found || []).slice(-1) });
+      rendered = rendered || !!d.rendered; continue;
+    }
     const x = d.page.exact;
     (x.sheets || []).forEach(sh => { if (!(sh.href in sheetCss) && sh.css !== null){ sheetCss[sh.href] = sh.css; order.push(sh.href); } else if (!(sh.href in sheetCss)) { sheetCss[sh.href] = ''; order.push(sh.href); } });
     /* styles a page carries inline (CSS-in-JS apps repeat most of them on every page): each rule is kept once, shared */
@@ -3540,16 +3567,16 @@ async function importWholeSite(url){
   prog.hidden = true;
   if (!pages.length){ err.textContent = stopped ? t('Stopped before any page was copied.') : t('None of the pages could be copied.'); return null; }
   rewriteAll();
-  const sharedCss = order.map(h => sheetCss[h] || '').join('\n') + '\n' + overrides;
+  const sharedCss = mode === 'blocks' ? '' : order.map(h => sheetCss[h] || '').join('\n') + '\n' + overrides;
   const found = [
-    pages.length + ' ' + t('pages copied') + (skipped.length ? ', ' + skipped.length + ' ' + t('skipped') : '') + (stopped ? ' (' + t('stopped early') + ')' : ''),
-    order.length + ' ' + t('stylesheets shared across the pages') + ' (' + Math.round(sharedCss.length / 1024) + ' KB)' + (fonts.size ? ', ' + fonts.size + ' Google Fonts' : ''),
+    pages.length + ' ' + t(mode === 'blocks' ? 'pages rebuilt as blocks' : 'pages copied') + (skipped.length ? ', ' + skipped.length + ' ' + t('skipped') : '') + (stopped ? ' (' + t('stopped early') + ')' : ''),
+    mode === 'blocks' ? (pages.reduce((a, p) => a + (p.blocks || []).length, 0) + ' ' + t('blocks in total') + (pages[0] && pages[0].theme && pages[0].theme.accent ? ', ' + t('brand colour') + ' ' + pages[0].theme.accent : '')) : order.length + ' ' + t('stylesheets shared across the pages') + ' (' + Math.round(sharedCss.length / 1024) + ' KB)' + (fonts.size ? ', ' + fonts.size + ' Google Fonts' : ''),
     ...pages.map(p => (p.slug === 'index' ? '/' : '/' + p.slug) + ': “' + (p.meta.title || '').slice(0, 44) + '”')
   ];
   const warn = [rendered ? t('Pages were opened in a browser first, so content built by scripts is included.') : t('Pages were read as raw HTML; content built by scripts may be missing.')];
   if (skipped.length) warn.push(t('Skipped') + ': ' + skipped.slice(0, 6).map(sk => { try { return new URL(sk.url).pathname; } catch { return sk.url; } }).join(', '));
   warn.push(t('Scripts were removed: menus, sliders and forms that relied on them will not run. Links between the copied pages point at the new pages; other links still go to the original site.'));
-  return { site: { scopeId, sharedCss, fonts: [...fonts], pages, skipped }, found, warn };
+  return { site: { scopeId, sharedCss, fonts: [...fonts], pages, skipped, mode }, found, warn };
 }
 async function runImport(){
   const url = ($('#importUrl').value||'').trim();
@@ -3557,9 +3584,9 @@ async function runImport(){
   $('#importResult').hidden = true; importedPage = null;
   if (!url){ err.textContent = t('Paste a web address first.'); return; }
   const go = $('#importGo'); go.disabled = true; go.textContent = importMode==='exact' && importWhole ? t('Reading the site, this can take a while…') : t('Reading…');
-  if (importMode==='exact' && importWhole){
+  if (importWhole){
     try{
-      const r = await importWholeSite(url);
+      const r = await importWholeSite(url, importMode==='exact' ? 'exact' : 'blocks');
       if (r){
         importedPage = { site: r.site };
         $('#importUse').textContent = t('Create') + ' ' + r.site.pages.length + ' ' + t('drafts, one per page');
@@ -3595,12 +3622,24 @@ function saveDraftState(st){
   list.unshift({ id: st.meta.draftId, title: st.meta.title || 'Untitled', updated: Date.now(), blocks: st.blocks.length, slug: st.meta.slug || '', site: siteRefOf(st), from: st.meta.importedFrom || '' });
   saveDraftsIndex(list); return true;
 }
+function applyImportedTheme(fresh, th){
+  if (!th) return;
+  if (th.accent){ fresh.theme.accent = th.accent; fresh.theme.palette = 'custom'; if (th.accent2) fresh.theme.accent2 = th.accent2; }
+  if (th.bg){ fresh.theme.bg = th.bg; fresh.theme.palette = 'custom'; }
+  if (th.ink){ fresh.theme.ink = th.ink; fresh.theme.palette = 'custom'; }
+  if (th.fontCustom && th.fontCustom.disp){ fresh.theme.fontCustom = th.fontCustom; fresh.theme.font = 'custom'; }
+  else if (th.font && FONTS[th.font]) fresh.theme.font = th.font;
+  if (th.btn) fresh.theme.btn = th.btn;
+  if (th.radius !== undefined && th.radius !== null) fresh.theme.radius = th.radius;
+}
 function applyImportedSite(S){
-  storeSiteCss(S.scopeId, S.sharedCss, false);
+  if (S.sharedCss) storeSiteCss(S.scopeId, S.sharedCss, false);
   const ids = [];
+  const siteTheme = (S.pages.find(p => p.slug === 'index') || S.pages[0] || {}).theme || null;
   S.pages.forEach(pg => {
     const st = freshState(); const x = pg.exact;
     st.meta.title = pg.meta.title || pg.slug; st.meta.desc = pg.meta.desc || ''; st.meta.importedFrom = pg.url; st.meta.slug = pg.slug; st.meta.draftId = uid();
+    if (!x){ applyImportedTheme(st, siteTheme || pg.theme); st.blocks = normaliseImported({ blocks: pg.blocks }); st.meta.ephemeral = true; TEMP.pages[st.meta.draftId] = st; ids.push(st.meta.draftId); return; }
     st.blocks = [{ id: uid(), type: 'html', props: Object.assign(clone(BLOCKS.html.defaults), { scopeId: S.scopeId, cssRef: S.scopeId, rootClass: x.rootClass||'', rootStyle: x.rootStyle||'', rootLang: x.rootLang||'', rootDir: x.rootDir||'', html: x.html||'', css: x.css||'', fonts: S.fonts||[] }) }];
     st.meta.ephemeral = true; TEMP.pages[st.meta.draftId] = st; ids.push(st.meta.draftId);
   });
@@ -3621,14 +3660,7 @@ function applyImported(mode){
     fresh.meta.desc = importedPage.meta.desc || '';
     fresh.meta.importedFrom = importedPage.meta.importedFrom || '';
     if (importedPage.theme){
-      const th = importedPage.theme;
-      if (th.accent){ fresh.theme.accent = th.accent; fresh.theme.palette = 'custom'; if (th.accent2) fresh.theme.accent2 = th.accent2; }
-      if (th.bg){ fresh.theme.bg = th.bg; fresh.theme.palette = 'custom'; }
-      if (th.ink){ fresh.theme.ink = th.ink; fresh.theme.palette = 'custom'; }
-      if (th.fontCustom && th.fontCustom.disp){ fresh.theme.fontCustom = th.fontCustom; fresh.theme.font = 'custom'; }
-      else if (th.font && FONTS[th.font]) fresh.theme.font = th.font;
-      if (th.btn) fresh.theme.btn = th.btn;
-      if (th.radius !== undefined && th.radius !== null) fresh.theme.radius = th.radius;
+      applyImportedTheme(fresh, importedPage.theme);
     }
     fresh.blocks = blocks;
     fresh.meta.draftId = uid(); fresh.meta.ephemeral = true; TEMP.pages[fresh.meta.draftId] = fresh;

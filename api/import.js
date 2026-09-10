@@ -405,7 +405,8 @@ function buildFromOutline(o, html, pageUrl){
       title: cut(hero.heading, 110), sub: cut(subOf(hero) || desc || 'Tell people what you do in one honest sentence.', 300),
       primary: hero.buttons[0] ? hero.buttons[0].text : 'Get in touch', primaryHref: '#contact',
       secondary: hero.buttons[1] ? hero.buttons[1].text : '', secondaryHref: '',
-      img: !useBg && im ? im.src : '', imgLabel: clean(siteName), layout: !useBg && im ? 'split' : 'center', size: hero.height >= (o.vh || 900) * 0.85 ? 'tall' : 'normal',
+      img: !useBg && im ? im.src : '', imgLabel: clean(siteName), layout: !useBg && im ? 'split' : (hero.centered || useBg ? 'center' : 'split'), size: hero.height >= (o.vh || 900) * 0.85 ? 'tall' : 'normal',
+      tone: hero.dark && !useBg ? 'dark' : 'auto',
       bgImg: useBg ? hero.bgImage : '', bgDim: hero.dark ? '55' : '30' } });
     found.push(`Headline: “${cut(hero.heading, 50)}”` + (im || useBg ? ', with image' : ''));
   } else {
@@ -429,7 +430,7 @@ function buildFromOutline(o, html, pageUrl){
       blocks.push({ id: uid(), type: 'banner', props: { text: cut(s.imgs[0].alt || s.paras[0] || 'Announcement', 120), label: s.buttons[0] ? s.buttons[0].text : '', href: '#contact' } }); found.push('Announcement bar'); continue;
     }
     if (n === 2 && cards.every(c => c.img)){
-      blocks.push({ id: uid(), type: 'features', props: { ...props, title: title || ' ', sub: cut(subOf(s), 160), cols: '2', iconStyle: 'none', variant, items: cards.map(c => ({ icon: '✦', title: cut(c.title || c.text, 44), text: cut(c.title ? c.text : '', 170) || ' ', img: c.img })) } });
+      blocks.push({ id: uid(), type: 'features', props: { ...props, title: title || ' ', sub: cut(subOf(s), 160), cols: '2', iconStyle: 'none', imgFit: 'cover', variant, items: cards.map(c => ({ icon: '✦', title: cut(c.title || c.text, 44), text: cut(c.title ? c.text : '', 170), img: c.img, link: c.href && /^https?:/i.test(c.href) ? c.href : '' })) } });
       found.push('Two picture panels' + (title ? `: “${cut(title, 40)}”` : '')); idx++; continue;
     }
     const video = s.video && /youtube|youtu\.be|vimeo/i.test(s.video) ? s.video : '';
@@ -438,7 +439,7 @@ function buildFromOutline(o, html, pageUrl){
       const withPrice = cards.filter(c => c.price).length, withImg = cards.filter(c => c.img).length, quoteish = cards.filter(c => c.quoteLike || (!c.title && c.text.length > 60)).length, qs = cards.filter(c => c.question).length;
       /* a product shelf (many priced cards with pictures) is a gallery with captions, not a pricing table */
       if (withPrice >= Math.ceil(n / 2) && withImg >= Math.ceil(n / 2) && n >= 5){
-        blocks.push({ id: uid(), type: 'gallery', props: { title: title || 'Products', cols: String(Math.min(4, Math.max(3, s.cardCols || 4))), ratio: 'square', items: cards.filter(c => c.img).slice(0, 12).map(c => ({ img: c.img, caption: cut([c.title, c.price].filter(Boolean).join(' · '), 60) })) } });
+        blocks.push({ id: uid(), type: 'gallery', props: { variant, title: title || 'Products', cols: String(Math.min(4, Math.max(3, s.cardCols || 4))), ratio: 'square', items: cards.filter(c => c.img).slice(0, 12).map(c => ({ img: c.img, caption: cut([c.title, c.price].filter(Boolean).join(' · '), 60) })) } });
         found.push(`Products: ${Math.min(withImg, 12)} with prices`); idx++; continue;
       }
       if (withPrice >= Math.ceil(n / 2)){
@@ -460,7 +461,7 @@ function buildFromOutline(o, html, pageUrl){
         blocks.push({ id: uid(), type: 'logos', props: { title: title || 'Trusted by', items: cards.slice(0, 10).map(c => ({ img: c.img, name: c.title || 'Partner', url: c.href || '' })) } }); found.push(`Logos: ${Math.min(n, 10)}`); idx++; continue;
       }
       if (withImg >= n - 1 && cards.every(c => c.text.length < 60) && n >= 4 && cards.filter(c => c.imgH > 160).length >= Math.ceil(n / 2)){
-        blocks.push({ id: uid(), type: 'gallery', props: { title: title || 'Gallery', cols: String(Math.min(4, Math.max(2, s.cardCols || 3))), ratio: cards.some(c => c.imgH > 260) ? 'port' : 'land', items: cards.slice(0, 12).map(c => ({ img: c.img, caption: cut(c.title, 40) })) } }); found.push(`Gallery: ${Math.min(n, 12)} pictures`); idx++; continue;
+        blocks.push({ id: uid(), type: 'gallery', props: { variant, title: title || 'Gallery', cols: String(Math.min(4, Math.max(2, s.cardCols || 3))), ratio: cards.some(c => c.imgH > 260) ? 'port' : 'land', items: cards.slice(0, 12).map(c => ({ img: c.img, caption: cut(c.title, 40) })) } }); found.push(`Gallery: ${Math.min(n, 12)} pictures`); idx++; continue;
       }
       if (stepsLike(s) || (numbered(cards) && n <= 6)){
         blocks.push({ id: uid(), type: 'steps', props: { ...props, title: title || 'How it works', sub: cut(subOf(s), 160), items: cards.slice(0, 5).map(c => ({ title: cut(c.title.replace(/^(step\s*)?\d+[.)]?\s*/i, ''), 40), text: cut(c.text, 160) || ' ' })), variant } }); found.push(`Steps: ${Math.min(n, 5)}`); idx++; continue;
@@ -469,21 +470,23 @@ function buildFromOutline(o, html, pageUrl){
         blocks.push({ id: uid(), type: 'team', props: { ...props, sub: cut(subOf(s), 160), items: cards.slice(0, 6).map(c => ({ img: c.img, name: cut(c.title, 40), role: '', bio: cut(c.text, 120) })), variant } }); found.push(`Team: ${Math.min(n, 6)}`); idx++; continue;
       }
       const useImgs = withImg >= Math.ceil(n / 2) && cards.some(c => c.imgH >= 40);
-      blocks.push({ id: uid(), type: 'features', props: { ...props, title: title || 'What we offer', sub: cut(subOf(s), 160), cols: String(Math.min(4, Math.max(2, s.cardCols || (n >= 4 ? 4 : n)))), iconStyle: useImgs ? 'none' : (cards.some(c => c.icon) ? 'emoji' : 'number'), variant,
-        items: cards.slice(0, 8).map(c => ({ icon: c.icon || '✦', title: cut(c.title || c.text, 44), text: cut(c.title ? c.text : '', 170) || ' ', img: useImgs ? c.img : '' })) } });
+      const smallPics = useImgs && cards.filter(c => c.img && c.imgH < 130).length >= Math.ceil(withImg / 2); // icons and product cut-outs: show them whole
+      const linkOf = c => c.href && /^https?:/i.test(c.href) ? c.href : '';
+      blocks.push({ id: uid(), type: 'features', props: { ...props, title: title || 'What we offer', sub: cut(subOf(s), 160), cols: String(Math.min(4, Math.max(2, s.cardCols || (n >= 4 ? 4 : n)))), iconStyle: useImgs ? 'none' : (cards.some(c => c.icon) ? 'emoji' : 'number'), imgFit: smallPics ? 'contain' : 'cover', variant,
+        items: cards.slice(0, 8).map(c => ({ icon: c.icon || '✦', title: cut(c.title || c.text, 44), text: cut(c.title ? c.text : '', 170), img: useImgs ? c.img : '', link: linkOf(c) })) } });
       found.push(`Features: ${Math.min(n, 8)} cards` + (useImgs ? ' with pictures' : '')); idx++; continue;
     }
     if (s.faq && s.faq.length >= 2){ blocks.push({ id: uid(), type: 'faq', props: { title: title || 'Questions', items: s.faq.slice(0, 8), variant } }); found.push(`FAQ: ${Math.min(s.faq.length, 8)} questions`); idx++; continue; }
     if (s.quotes && s.quotes.length){ blocks.push({ id: uid(), type: 'quotes', props: { ...props, title: title || 'What people say', items: s.quotes.slice(0, 4).map(q => ({ quote: cut(q.text, 260), name: 'Customer', role: '' })), variant } }); found.push(`Testimonials: ${Math.min(s.quotes.length, 4)}`); idx++; continue; }
-    if (s.imgs.length >= 3 && s.paras.join(' ').length < 240){ blocks.push({ id: uid(), type: 'gallery', props: { title: title || 'Gallery', cols: '3', ratio: 'land', items: s.imgs.slice(0, 12).map(i => ({ img: i.src, caption: cut(i.alt, 40) })) } }); found.push(`Gallery: ${Math.min(s.imgs.length, 12)} pictures`); idx++; continue; }
-    if (s.split && title){ blocks.push({ id: uid(), type: 'split', props: { ...props, text: s.paras.slice(0, 3).join('\n\n') || ' ', cta: s.buttons[0] ? s.buttons[0].text : '', ctaHref: '#contact', img: s.split.img.src, alt: s.split.img.alt || title, flip: !!s.split.flip } }); found.push(`Image + text: “${cut(title, 40)}”`); idx++; continue; }
+    if (s.imgs.length >= 3 && s.paras.join(' ').length < 240){ blocks.push({ id: uid(), type: 'gallery', props: { variant, title: title || 'Gallery', cols: '3', ratio: 'land', items: s.imgs.slice(0, 12).map(i => ({ img: i.src, caption: cut(i.alt, 40) })) } }); found.push(`Gallery: ${Math.min(s.imgs.length, 12)} pictures`); idx++; continue; }
+    if (s.split && title){ blocks.push({ id: uid(), type: 'split', props: { ...props, variant, text: s.paras.slice(0, 3).join('\n\n') || ' ', cta: s.buttons[0] ? s.buttons[0].text : '', ctaHref: '#contact', img: s.split.img.src, alt: s.split.img.alt || title, flip: !!s.split.flip } }); found.push(`Image + text: “${cut(title, 40)}”`); idx++; continue; }
     if (title && s.buttons.length && s.paras.length <= 1 && s.height < 460){ blocks.push({ id: uid(), type: 'cta', props: { title, sub: cut(subOf(s), 200), label: s.buttons[0].text, href: '#contact' } }); found.push(`Call to action: “${cut(title, 40)}”`); idx++; continue; }
     if (title && (s.paras.length || s.imgs.length === 1)){
-      if (s.imgs.length === 1 && s.paras.length){ const im = s.imgs[0]; blocks.push({ id: uid(), type: 'split', props: { ...props, text: s.paras.slice(0, 3).join('\n\n'), cta: s.buttons[0] ? s.buttons[0].text : '', ctaHref: '#contact', img: im.src, alt: im.alt || title, flip: idx % 2 === 1 } }); found.push(`Image + text: “${cut(title, 40)}”`); }
+      if (s.imgs.length === 1 && s.paras.length){ const im = s.imgs[0]; blocks.push({ id: uid(), type: 'split', props: { ...props, variant, text: s.paras.slice(0, 3).join('\n\n'), cta: s.buttons[0] ? s.buttons[0].text : '', ctaHref: '#contact', img: im.src, alt: im.alt || title, flip: idx % 2 === 1 } }); found.push(`Image + text: “${cut(title, 40)}”`); }
       else blocks.push({ id: uid(), type: 'text', props: { eyebrow: '', title, body: s.paras.slice(0, 5).join('\n\n') || ' ', variant } }), found.push(`Text: “${cut(title, 40)}”`);
       idx++; continue;
     }
-    if (!title && s.imgs.length === 1 && s.imgs[0].w >= (o.vw || 1366) * 0.6){ blocks.push({ id: uid(), type: 'gallery', props: { title: '', cols: '2', ratio: 'land', items: s.imgs.slice(0, 1).map(i => ({ img: i.src, caption: cut(i.alt, 40) })) } }); idx++; continue; }
+    if (!title && s.imgs.length === 1 && s.imgs[0].w >= (o.vw || 1366) * 0.6){ blocks.push({ id: uid(), type: 'gallery', props: { variant, title: '', cols: '2', ratio: 'land', items: s.imgs.slice(0, 1).map(i => ({ img: i.src, caption: cut(i.alt, 40) })) } }); idx++; continue; }
   }
 
   /* ---- contact, social, footer ---- */
@@ -675,7 +678,7 @@ async function buildPage(html, pageUrl, outline){
     }
     if (imgs.length >= 3 && paras.join(' ').length < 400){
       const items = imgs.slice(0, 9).map(i => ({ img: i.src, caption: cut(i.alt, 40) }));
-      blocks.push({ id: uid(), type: 'gallery', props: { title: title || 'Gallery', cols: '3', ratio: 'land', items } }); found.push(`Gallery: ${items.length} images`); return true;
+      blocks.push({ id: uid(), type: 'gallery', props: { variant, title: title || 'Gallery', cols: '3', ratio: 'land', items } }); found.push(`Gallery: ${items.length} images`); return true;
     }
     if (h3s.length >= 2){
       const cards = headingCards(scope, 6);
@@ -698,7 +701,7 @@ async function buildPage(html, pageUrl, outline){
       found.push(`Call to action: “${cut(title, 40)}”`); return true;
     }
     if (paras.length && imgs.length === 1){
-      blocks.push({ id: uid(), type: 'split', props: { ...props, text: paras.slice(0, 3).join('\n\n'), cta: '', ctaHref: '#contact', img: imgs[0].src, alt: imgs[0].alt || title, flip: sectionCount % 2 === 1 } }); found.push(`Image + text: “${cut(title, 40)}”`); return true;
+      blocks.push({ id: uid(), type: 'split', props: { ...props, variant, text: paras.slice(0, 3).join('\n\n'), cta: '', ctaHref: '#contact', img: imgs[0].src, alt: imgs[0].alt || title, flip: sectionCount % 2 === 1 } }); found.push(`Image + text: “${cut(title, 40)}”`); return true;
     }
     if (paras.length){
       blocks.push({ id: uid(), type: 'text', props: { eyebrow: '', title, body: paras.slice(0, 4).join('\n\n') } }); found.push(`Text: “${cut(title, 40)}”`); return true;
