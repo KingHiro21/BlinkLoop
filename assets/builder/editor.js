@@ -49,7 +49,7 @@ function canvasDoc(){
   return `<!DOCTYPE html><html lang="${plang}"${pdir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="${fontLink(state.theme)}">
 <style>${siteCSS(state.theme)}${customCSS()}</style><style>${OVERLAY_CSS}</style></head>
-<body class="tx-${state.theme.texture||'glow'}${isSmallChrome()?' m-chrome':''}">${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button>${typeof privacySectionHTML==='function'?privacySectionHTML():''}${typeof waFabHTML==='function'?waFabHTML():''}</body></html>`;
+<body class="${bodyClass(state.theme)}${isSmallChrome()?' m-chrome':''}">${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button>${typeof privacySectionHTML==='function'?privacySectionHTML():''}${typeof waFabHTML==='function'?waFabHTML():''}</body></html>`;
 }
 
 let savedScroll = 0;
@@ -687,6 +687,12 @@ function syncInspectorField(key, value){
 function renderDesign(){
   const th = state.theme;
   $('#rtab-design').innerHTML = `
+    <h4>${t('Look')}</h4>
+    <div class="field"><div class="seg" data-tseg="look">${[['studio','Studio'],['clean','Clean'],['bold','Bold']].map(([v,l])=>`<button data-v="${v}" class="${(th.look||'studio')===v?'on':''}">${t(l)}</button>`).join('')}</div>
+    <div class="empty-note" style="padding:6px 0 0">${t('Studio: glass cards with a glow, gradient buttons, floating orbs, rings, grain. The BlinkLoop feel. Clean: flat and quiet. Bold: thick outlines, hard shadows, big type.')}</div></div>
+    <h4>${t('Motion')}</h4>
+    <div class="field"><div class="seg" data-tseg="motion">${[['on','On'],['off','Off']].map(([v,l])=>`<button data-v="${v}" class="${(th.motion||'on')===v?'on':''}">${t(l)}</button>`).join('')}</div>
+    <div class="empty-note" style="padding:6px 0 0">${t('Sections rise in as you scroll, headlines animate word by word, numbers count up, orbs drift. Plays in Preview and on the live site, not on this canvas. Visitors who ask their device for reduced motion get none of it.')}</div></div>
     <h4>${t('Palette')}</h4>
     <div class="swatches" style="margin-bottom:14px">${Object.entries(PALETTES).map(([k,p])=>`
       <button class="swatch ${th.palette===k?'on':''}" data-pal="${k}" title="${p.name}" style="background:linear-gradient(135deg, ${p.bg} 48%, ${p.accent} 48% 74%, ${p.accent2} 74%)"></button>`).join('')}

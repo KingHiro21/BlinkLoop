@@ -174,9 +174,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       const mk = (type, extra) => ({ id: uid(), type, props: Object.assign(clone(BLOCKS[type].defaults), extra || {}) });
       state.blocks = [mk('navbar'), mk('hero', { bgImg: 'https://example.com/a.jpg', overlay: '#112233' }), mk('features', { bg: '#0b3d2e', ink: '#ffffff', css: 'h2{letter-spacing:.1em}' }), mk('gallery', { items: [{ img: 'https://example.com/1.jpg', caption: 'One' }] }), mk('contact', { action: 'https://www.blinkloop-ph.com/api/lead?site=qa' }), mk('footer')];
       const html = exportHTML();
-      return { len: html.length, doctype: html.startsWith('<!DOCTYPE html>'), title: /<title>QA Site<\/title>/.test(html), css: /#features\{h2\{letter-spacing:\.1em\}\}/.test(html), bg: /--sbg:#0b3d2e/.test(html), overlay: /--hov:#112233/.test(html), lb: /data-lb/.test(html) && /\.gal\[data-lb\]/.test(html), lead: /data-lead/.test(html) && /name="consent"/.test(html) && /form\.cform\[data-lead\]/.test(html), noEditAttrs: !/data-edit=|contenteditable/.test(html), noEmDash: !/—/.test(html) };
+      return { len: html.length, doctype: html.startsWith('<!DOCTYPE html>'), look: /<body class="[^"]*look-studio[^"]*motion-on/.test(html) && /\.look-studio \.btn-solid\{/.test(html), motion: /IntersectionObserver/.test(html) && /classList\.add\('reveal'\)/.test(html), title: /<title>QA Site<\/title>/.test(html), css: /#features\{h2\{letter-spacing:\.1em\}\}/.test(html), bg: /--sbg:#0b3d2e/.test(html), overlay: /--hov:#112233/.test(html), lb: /data-lb/.test(html) && /\.gal\[data-lb\]/.test(html), lead: /data-lead/.test(html) && /name="consent"/.test(html) && /form\.cform\[data-lead\]/.test(html), noEditAttrs: !/data-edit=|contenteditable/.test(html), noEmDash: !/—/.test(html) };
     });
-    for (const k of ['doctype', 'title', 'css', 'bg', 'overlay', 'lb', 'lead', 'noEditAttrs', 'noEmDash']) assert(r[k], k + ' failed: ' + JSON.stringify(r));
+    for (const k of ['doctype', 'title', 'css', 'bg', 'overlay', 'lb', 'lead', 'noEditAttrs', 'noEmDash', 'look', 'motion']) assert(r[k], k + ' failed: ' + JSON.stringify(r));
     await page.close();
   });
   await test('builder: publish without VERCEL_TOKEN and AI without ANTHROPIC_API_KEY explain themselves', async () => {

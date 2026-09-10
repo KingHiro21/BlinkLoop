@@ -249,6 +249,19 @@ function exportHTML(){
     ? `<script>document.querySelectorAll('form.cform[data-lead]').forEach(function(f){f.addEventListener('submit',async function(e){e.preventDefault();var m=f.querySelector('.cf-msg'),b=f.querySelector('button[type=submit]'),d={};Array.prototype.forEach.call(f.elements,function(el){if(el.name)d[el.name]=el.type==='checkbox'?(el.checked?'yes':''):el.value});m.className='cf-msg';m.textContent='';if(!d.name||d.name.trim().length<2||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email||'')||!d.message||d.message.trim().length<5){m.className='cf-msg err';m.textContent='Please fill in your name, a working email and a short message.';return}if(!d.consent){m.className='cf-msg err';m.textContent='Please tick the box so we may reply to you.';return}b.disabled=true;var old=b.textContent;b.textContent='Sending\\u2026';try{d.consentAt=new Date().toISOString();d.page=location.href;var r=await fetch(f.getAttribute('action'),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)});var j=await r.json();if(!j.ok)throw new Error(j.reason||'failed');f.reset();m.className='cf-msg ok';m.textContent='Thank you, '+d.name.trim().split(' ')[0]+'. We will get back to you soon.'}catch(err){m.className='cf-msg err';m.textContent='That did not send. Please email us instead.'}b.disabled=false;b.textContent=old})});<\/script>` : '';
   const lbJS = state.blocks.some(b=>b.type==='gallery' && b.props.lightbox!==false && (b.props.items||[]).some(i=>i.img))
     ? `<script>document.querySelectorAll('.gal[data-lb]').forEach(function(f){f.addEventListener('click',function(){var im=f.querySelector('img');if(!im)return;var o=document.createElement('div');o.className='lb';o.innerHTML='<button class="lb-x" aria-label="Close">\\u00d7</button><img alt="">'+(f.querySelector('figcaption')?'<div class="lb-cap"></div>':'');o.querySelector('img').src=im.currentSrc||im.src;o.querySelector('img').alt=im.alt||'';var c=o.querySelector('.lb-cap');if(c)c.textContent=f.querySelector('figcaption').textContent;var close=function(){o.remove();document.removeEventListener('keydown',k)};var k=function(e){if(e.key==='Escape')close()};o.addEventListener('click',close);document.addEventListener('keydown',k);document.body.appendChild(o)})});<\/script>` : '';
+  /* motion: reveals, word-by-word headlines, count-ups, progress bar. Classes are added here so a page without JS shows everything at once. */
+  const motionJS = (t.motion||'on') !== 'off' ? `<script>(function(){if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;var body=document.body;
+var sel='.sec-head, .feat, .plan, .q, .step, .stat, .faq-list details, .gal, .member, .mi, .split-grid > *, .contact-grid > *, .ctaband .inner, .map-grid > *, .rich, .logos-row .lg, .hero-grid > *, .vidwrap, .embed-wrap, .pay-grid > *, .foot .top > *';
+var last=null,i=0;document.querySelectorAll(sel).forEach(function(el){if(el.closest('.imp-root'))return;el.classList.add('reveal');var p=el.parentElement;i=(p===last)?i+1:0;last=p;el.style.transitionDelay=(Math.min(i,6)*.08)+'s'});
+var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target)}})},{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
+document.querySelectorAll('.hero h1, .sec-head h2, .ctaband h2, .split-grid h2').forEach(function(h){if(h.closest('.imp-root'))return;var nodes=Array.prototype.slice.call(h.childNodes);h.textContent='';h.classList.add('split');var k=0;
+function wrap(c){var w=document.createElement('span');w.className='w';var wi=document.createElement('span');wi.className='wi';if(typeof c==='string')wi.textContent=c;else wi.appendChild(c);wi.style.animationDelay=(k++*.07+.1)+'s';w.appendChild(wi);return w}
+nodes.forEach(function(n){if(n.nodeType===3){n.textContent.split(/(\\s+)/).forEach(function(pt){if(!pt)return;if(/^\\s+$/.test(pt))h.appendChild(document.createTextNode(' '));else h.appendChild(wrap(pt))})}else if(n.nodeType===1){if(n.nodeName==='BR')h.appendChild(n);else h.appendChild(wrap(n))}});
+var tio=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){h.classList.add('play');tio.disconnect();setTimeout(function(){h.classList.add('done')},1600)}})},{threshold:.3});tio.observe(h)});
+document.querySelectorAll('[data-count]').forEach(function(el){var m=el.textContent.match(/^([^0-9]*)([0-9][0-9,.]*)(.*)$/);if(!m)return;var target=parseFloat(m[2].replace(/,/g,''));if(!isFinite(target))return;var dec=(m[2].split('.')[1]||'').length,commas=m[2].indexOf(',')>-1;var cio=new IntersectionObserver(function(es){es.forEach(function(en){if(!en.isIntersecting)return;cio.disconnect();var t0=performance.now();(function tick(now){var p=Math.min(1,(now-t0)/1400),e=1-Math.pow(1-p,3),v=(target*e).toFixed(dec);if(commas)v=v.replace(/\\B(?=(\\d{3})+(?!\\d))/g,',');el.textContent=m[1]+v+m[3];if(p<1)requestAnimationFrame(tick)})(t0)})},{threshold:.5});cio.observe(el)});
+if(body.classList.contains('look-studio')){var bar=document.createElement('div');bar.className='progress';body.appendChild(bar);var up=function(){var d=document.documentElement,max=d.scrollHeight-innerHeight;bar.style.transform='scaleX('+(max>0?scrollY/max:0)+')'};addEventListener('scroll',up,{passive:true});addEventListener('resize',up);up()}
+})();<\/script>` : '';
   const navJS = state.blocks.some(b=>b.type==='navbar')
     ? `<script>document.querySelectorAll('.nav nav a').forEach(function(a){a.addEventListener('click',function(){var n=a.closest('nav');if(n)n.classList.remove('open')})});var nvc=document.querySelector('.nav.nv-clear');if(nvc){var nvf=function(){nvc.classList.toggle('scrolled',window.scrollY>24)};window.addEventListener('scroll',nvf,{passive:true});nvf()}<\/script>` : '';
   const plang = state.meta.lang || 'en';
@@ -265,9 +278,9 @@ function exportHTML(){
 <link href="${fontLink(t)}" rel="stylesheet" />
 <style>${siteCSS(t)}${customCSS()}</style>
 </head>
-<body class="tx-${t.texture||'glow'}">
+<body class="${bodyClass(t)}">
 ${pageBodyHTML(false)}
-${navJS}${leadJS}${lbJS}
+${navJS}${leadJS}${lbJS}${motionJS}
 <!-- Built with Loop Builder · blinkloop -->
 ${privacySectionHTML()}${waFabHTML()}</body>
 </html>`;
@@ -739,7 +752,7 @@ function openPicker(idx){
 /* =============== TEMPLATES =============== */
 function freshState(){
   return { meta:{title:'My website',desc:'',lang:'en',currency:'PHP',siteUrl:'',ogImage:''},
-    plugins:{ wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''}, priv:{on:false,email:''} }, theme:{ density:'normal', btn:'pill', width:'normal', scale:'normal', texture:'glow', ...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
+    plugins:{ wa:{on:false,phone:'',msg:''}, ms:{on:false,page:''}, vb:{on:false,number:''}, ga:{on:false,id:''}, fbp:{on:false,id:''}, custom:{on:false,head:''}, priv:{on:false,email:''} }, theme:{ density:'normal', btn:'pill', width:'normal', scale:'normal', texture:'glow', look:'studio', motion:'on', ...themeFromPalette('ember'), font:'blink', radius:22}, blocks:[] };
 }
 function tplBlocks(types, overrides={}){
   return types.map(t=>{

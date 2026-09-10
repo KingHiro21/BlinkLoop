@@ -103,6 +103,8 @@ function onAccent(hex){
   return L > 0.42 ? '#1B1410' : '#FFFDF7';
 }
 const BTN_R = { pill:'999px', soft:'12px', sharp:'3px' };
+/* body classes that switch the look (clean / studio / bold) and motion on the canvas and in the export */
+const bodyClass = t => `tx-${t.texture||'glow'} look-${t.look||'studio'}${(t.motion||'on')==='off'?'':' motion-on'}`;
 const WRAP_W = { narrow:'960px', normal:'1140px', wide:'1320px' };
 const T_SCALE = { compact:'0.94', normal:'1', large:'1.08' };
 function siteCSS(t){
@@ -185,7 +187,7 @@ section{padding:var(--secpad) 0}
 .feat-grid.c3{grid-template-columns:repeat(3,1fr)}
 .feat-grid.c4{grid-template-columns:repeat(4,1fr)}
 .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px;transition:transform .3s cubic-bezier(.22,.8,.24,1),box-shadow .3s}
-.feat:hover{transform:translateY(-4px);box-shadow:0 14px 34px color-mix(in srgb,var(--ink) 10%, transparent)}
+.feat:hover{translate:0 -4px;box-shadow:0 14px 34px color-mix(in srgb,var(--ink) 10%, transparent)}
 .feat .ic{font-size:1.6rem;margin-bottom:14px}
 .feat.has-img{padding-top:0;overflow:hidden}
 .feat .feat-img{display:block;width:calc(100% + 48px);max-width:none;margin:0 -24px 18px;aspect-ratio:16/10;object-fit:cover}
@@ -309,8 +311,97 @@ section{padding:var(--secpad) 0}
   .feat-grid.c2,.feat-grid.c3,.feat-grid.c4,.gal-grid.c2,.gal-grid.c3,.gal-grid.c4{grid-template-columns:1fr}
   .ctaband .inner{padding:46px 24px}
 }
+/* ---------- looks ---------- */
+.hero .wrap{z-index:1}
+.hero-media{position:relative}
+.hero-badges{position:absolute;inset:0;pointer-events:none}
+.hb{position:absolute;padding:8px 14px;border-radius:999px;background:var(--bg);border:1px solid var(--line);box-shadow:0 12px 30px color-mix(in srgb,var(--ink) 18%, transparent);font-size:.8rem;font-weight:700;white-space:nowrap}
+.hb:nth-child(1){left:-6%;top:9%}.hb:nth-child(2){right:-5%;top:38%}.hb:nth-child(3){left:5%;bottom:7%}.hb:nth-child(4){right:9%;bottom:-4%}
+.orb{display:none}
+.look-studio .hero:not(.has-bg) .orb{display:block;position:absolute;border-radius:50%;filter:blur(64px);opacity:.42;pointer-events:none;z-index:0}
+.look-studio .hero .o1{width:540px;height:540px;right:-180px;top:-200px;background:color-mix(in srgb,var(--accent) 60%, transparent)}
+.look-studio .hero .o2{width:440px;height:440px;left:-160px;bottom:-220px;background:color-mix(in srgb,var(--accent2) 55%, transparent)}
+.look-studio.motion-on .hero .o1{animation:floaty 16s ease-in-out infinite alternate}
+.look-studio.motion-on .hero .o2{animation:floaty 21s ease-in-out infinite alternate-reverse}
+@keyframes floaty{to{transform:translate(-70px,50px) scale(1.14)}}
+.motion-on .hb{animation:bob 6s ease-in-out infinite;animation-delay:calc(var(--i, 0) * -1.4s)}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -12px}}
+.ring{display:none}
+.ctaband .inner{position:relative;overflow:hidden}
+.ctaband .inner > :not(.ring){position:relative;z-index:1}
+.look-studio .ring{display:block;position:absolute;border-radius:50%;border:1px solid color-mix(in srgb,var(--on-accent) 32%, transparent);pointer-events:none}
+.look-studio .ring.r1{width:640px;height:640px;left:-220px;top:-260px;border-style:dashed}
+.look-studio .ring.r2{width:520px;height:520px;right:-180px;bottom:-240px}
+.look-studio.motion-on .ring{animation:spinSlow 60s linear infinite}
+.look-studio.motion-on .ring.r2{animation-direction:reverse}
+@keyframes spinSlow{to{transform:rotate(360deg)}}
+.marquee{overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.marquee-track{display:flex;gap:56px;width:max-content;align-items:center;animation:marquee 36s linear infinite}
+.marquee-track > :last-child{margin-right:56px}
+.marquee-track .lg{height:44px;display:flex;align-items:center;opacity:.72;flex:none}
+.marquee-track .lg img{max-height:44px;width:auto;max-width:150px;object-fit:contain}
+.marquee-track .lg span{font-family:${f.disp};font-weight:700;font-size:1rem;color:var(--muted);padding:8px 16px;border:1px dashed var(--line);border-radius:12px}
+.marquee:hover .marquee-track{animation-play-state:paused}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+/* studio: the BlinkLoop feel. glass cards with a glow in the corner, gradient buttons with a shine, pulsing eyebrow dot, grain */
+.look-studio{--glass:color-mix(in srgb, var(--card) 62%, transparent)}
+.look-studio :is(.feat,.plan,.q,.step,.member,.faq-list details,.cform,.mi){background:radial-gradient(340px 340px at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 65%), var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.look-studio :is(.feat,.plan,.q,.step,.member,.cform){border-radius:calc(var(--r) + 6px);transition:translate .45s cubic-bezier(.22,.8,.24,1), border-color .45s, box-shadow .45s}
+.look-studio :is(.feat,.plan,.q,.step,.member):hover{translate:0 -6px;transform:none;border-color:color-mix(in srgb, var(--accent) 38%, var(--line));box-shadow:0 22px 52px color-mix(in srgb, var(--ink) 14%, transparent)}
+.look-studio .mi{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+.look-studio .vt-dark :is(.feat,.plan,.q,.step,.member,.faq-list details,.cform){background:radial-gradient(340px 340px at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 65%), color-mix(in srgb, var(--bg) 8%, transparent)}
+.look-studio .btn-solid{background:linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 62%, var(--accent2)));box-shadow:0 6px 24px color-mix(in srgb, var(--accent) 32%, transparent);position:relative;overflow:hidden}
+.look-studio .btn-solid::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg, transparent 40%, rgba(255,255,255,.38) 50%, transparent 60%);transform:translateX(-130%);transition:transform .6s}
+.look-studio .btn-solid:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 14px 40px color-mix(in srgb, var(--accent) 42%, transparent)}
+.look-studio .btn-solid:hover::after{transform:translateX(130%)}
+.look-studio .eyebrow{display:inline-flex;align-items:center;gap:9px;background:var(--glass);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.look-studio .eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);flex:none}
+.look-studio.motion-on .eyebrow::before{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35;transform:scale(.75)}}
+.look-studio .hero h1 em,.look-bold .hero h1 em{background:linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent2)));-webkit-background-clip:text;background-clip:text;color:transparent}
+.look-studio .ph{box-shadow:0 30px 80px -30px color-mix(in srgb, var(--ink) 45%, transparent);border:1px solid color-mix(in srgb, var(--ink) 10%, transparent)}
+.look-studio .nav nav a:not(.btn){position:relative}
+.look-studio .nav nav a:not(.btn)::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.look-studio .nav nav a:not(.btn):hover::after{transform:scaleX(1)}
+.look-studio .step{overflow:hidden}
+.look-studio .step::before{content:counter(step, decimal-leading-zero);counter-increment:step;position:absolute;right:14px;top:2px;font-family:${f.disp};font-size:3.6rem;font-weight:700;line-height:1;color:var(--accent);opacity:.12;pointer-events:none}
+.look-studio .stat .v{background:linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent2)));-webkit-background-clip:text;background-clip:text;color:transparent}
+.look-studio .ctaband .inner{background:radial-gradient(720px 380px at 20% -20%, color-mix(in srgb, var(--on-accent) 16%, transparent), transparent 60%), radial-gradient(640px 360px at 90% 130%, color-mix(in srgb, var(--ink) 30%, transparent), transparent 60%), linear-gradient(120deg, color-mix(in srgb,var(--accent) 88%, var(--ink)), var(--accent2));border-radius:calc(var(--r) + 14px)}
+.look-studio::after{content:"";position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+
+/* bold: big type, thick outlines, hard offset shadows */
+.look-bold h1,.look-bold h2,.look-bold h3{font-weight:800;letter-spacing:-.03em}
+.look-bold .hero h1{font-size:clamp(2.7rem,6.4vw,5rem);line-height:1.02}
+.look-bold .sec-head h2{font-size:clamp(2rem,4vw,3rem)}
+.look-bold :is(.feat,.plan,.q,.step,.member,.faq-list details,.cform,.vidwrap,.embed-wrap iframe,.gal .ph,.split-grid .ph,.hero .ph){border:2px solid var(--ink);border-radius:calc(var(--r) * .6);box-shadow:6px 6px 0 var(--ink)}
+.look-bold :is(.feat,.plan,.q,.step,.member,.faq-list details,.cform){background:var(--bg)}
+.look-bold :is(.feat,.plan,.q,.step,.member){transition:transform .25s, box-shadow .25s}
+.look-bold :is(.feat,.plan,.q,.step,.member):hover{transform:translate(-3px,-3px);translate:0 0;box-shadow:10px 10px 0 var(--ink)}
+.look-bold .plan.hot{background:color-mix(in srgb, var(--accent) 14%, var(--bg))}
+.look-bold .btn{border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+.look-bold .btn:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--ink)}
+.look-bold .btn-ghost{background:var(--bg)}
+.look-bold .eyebrow{border:2px solid var(--ink);color:var(--ink);background:var(--bg);font-weight:800;border-radius:6px}
+.look-bold .nav{border-bottom:2px solid var(--ink)}
+.look-bold .ctaband .inner{border:2px solid var(--ink);box-shadow:8px 8px 0 var(--ink);border-radius:calc(var(--r) * .6)}
+.look-bold .vt-dark :is(.feat,.plan,.q,.step,.member,.faq-list details){background:transparent;border-color:var(--bg);box-shadow:6px 6px 0 var(--bg)}
+.look-bold .vt-dark :is(.feat,.plan,.q,.step,.member):hover{box-shadow:10px 10px 0 var(--bg)}
+
+/* motion: reveal on scroll, headline words that rise, a thin progress bar (classes are added by the export script) */
+.motion-on .reveal{opacity:0;transform:translateY(34px);filter:blur(10px);transition:opacity .95s cubic-bezier(.22,.8,.24,1), transform .95s cubic-bezier(.22,.8,.24,1), filter .95s cubic-bezier(.22,.8,.24,1)}
+.motion-on .reveal.in{opacity:1;transform:none;filter:blur(0)}
+.split .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding:0 .05em .1em;margin:0 -.05em -.1em}
+.split .wi{display:inline-block;transform:translateY(118%)}
+.split.play .wi{animation:riseUp .85s cubic-bezier(.22,.8,.24,1) forwards}
+.split.done .w{overflow:visible}
+@keyframes riseUp{to{transform:translateY(0)}}
+.progress{position:fixed;top:0;left:0;height:3px;width:100%;z-index:70;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg, var(--accent), var(--accent2));box-shadow:0 0 12px color-mix(in srgb, var(--accent) 40%, transparent)}
+@media (max-width:860px){ .hb{font-size:.72rem;padding:6px 11px} .look-studio .hero .o1{width:340px;height:340px} .look-studio .hero .o2{width:280px;height:280px} }
+
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
+  .motion-on .reveal{opacity:1;transform:none;filter:none} .split .wi{transform:none}
   html{scroll-behavior:auto}
 }
 
@@ -517,19 +608,21 @@ const BLOCKS = {
       {k:'img',l:'Image URL (blank = brand placeholder)',t:'text',up:1},
       {k:'imgLabel',l:'Image alt text',t:'text'},
       {k:'bgImg',l:'Background photo (optional, sits behind the text)',t:'text',up:1},
+      {k:'badges',l:'Floating badges beside the picture (comma separated, up to 4, e.g. Since 1996, 4.9★ on Google)',t:'text'},
       {k:'bgVideo',l:'Background video (.mp4 or .webm link, plays muted behind the text)',t:'text'},
       {k:'overlay',l:'Overlay colour on the background photo or video',t:'color'},
       {k:'bgDim',l:'Overlay strength',t:'seg',opts:[['30','Light'],['55','Medium'],['75','Strong']]}
     ],
     render:p=>{
       const title = esc(p.title).replace(/\*(.+?)\*/g,'<em>$1</em>');
-      const media = p.layout==='center'?'':ph(p.img,p.imgLabel);
+      const badges = String(p.badges||'').split(',').map(s=>s.trim()).filter(Boolean).slice(0,4);
+      const media = p.layout==='center'?'':`<div class="hero-media">${ph(p.img,p.imgLabel)}${badges.length?`<div class="hero-badges" aria-hidden="true">${badges.map((b,i)=>`<span class="hb" style="--i:${i}">${esc(b)}</span>`).join('')}</div>`:''}</div>`;
       const vidSrc = /^https?:\/\/.+\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(String(p.bgVideo||'').trim()) ? String(p.bgVideo).trim() : '';
       const ov = /^#[0-9a-f]{3,8}$/i.test(String(p.overlay||'').trim()) ? String(p.overlay).trim() : '';
       const hasBg = !!(p.bgImg || vidSrc);
       const bg = hasBg ? ` style="${p.bgImg?`--hbg:url('${escAttr(p.bgImg)}');`:''}--hdim:${(+p.bgDim||55)/100}${ov?`;--hov:${ov}`:''}"` : '';
       const vid = vidSrc ? `<video class="hero-vid" autoplay muted loop playsinline preload="metadata"${p.bgImg?` poster="${escAttr(p.bgImg)}"`:''} aria-hidden="true"><source src="${escAttr(vidSrc)}" /></video>` : '';
-      return `<section class="hero ${p.layout==='center'?'center':''} ${p.size==='tall'?'tall':''} ${hasBg?'has-bg':''} ${vidSrc?'has-video':''} ${p.tone==='dark'&&!hasBg?'hero-dark':''}"${bg}>${vid}<div class="wrap"><div class="hero-grid"><div>
+      return `<section class="hero ${p.layout==='center'?'center':''} ${p.size==='tall'?'tall':''} ${hasBg?'has-bg':''} ${vidSrc?'has-video':''} ${p.tone==='dark'&&!hasBg?'hero-dark':''}"${bg}>${vid}<i class="orb o1" aria-hidden="true"></i><i class="orb o2" aria-hidden="true"></i><div class="wrap"><div class="hero-grid"><div>
         ${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}
         <h1${ed('title')}>${title}</h1>
         <p class="lede"${ed('sub')}>${esc(p.sub)}</p>
@@ -579,7 +672,7 @@ const BLOCKS = {
     name:'Stats', icon:'📈', desc:'Numbers that prove it',
     defaults:{ items:[{value:'10+',label:'Years in business'},{value:'1,200+',label:'Happy customers'},{value:'4.9★',label:'Average rating'},{value:'24h',label:'Reply time'}] },
     fields:[{k:'items',l:'Stats',t:'items',item:[{k:'value',l:'Value',t:'text'},{k:'label',l:'Label',t:'text'}],titleKey:'label'},{k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}],
-    render:p=>`<section class="stats ${vtc(p)}"><div class="wrap"><div class="stats-grid">${p.items.map(i=>`<div class="stat"><div class="v">${esc(i.value)}</div><div class="l">${esc(i.label)}</div></div>`).join('')}</div></div></section>`
+    render:p=>`<section class="stats ${vtc(p)}"><div class="wrap"><div class="stats-grid">${p.items.map(i=>`<div class="stat"><div class="v" data-count>${esc(i.value)}</div><div class="l">${esc(i.label)}</div></div>`).join('')}</div></div></section>`
   },
 
   pricing: {
@@ -718,7 +811,7 @@ const BLOCKS = {
     name:'CTA Band', icon:'📣', desc:'The big ask',
     defaults:{ title:'Ready when you are', sub:'Tell us what you\u2019re building. We\u2019ll reply within a day with a plan and a price.', label:'Start your loop', href:'#contact' },
     fields:[{k:'title',l:'Title',t:'text'},{k:'sub',l:'Subtitle',t:'textarea'},{k:'label',l:'Button',t:'text'},{k:'href',l:'Button link',t:'text'}],
-    render:p=>`<section class="ctaband"><div class="wrap"><div class="inner">
+    render:p=>`<section class="ctaband"><div class="wrap"><div class="inner"><span class="ring r1" aria-hidden="true"></span><span class="ring r2" aria-hidden="true"></span>
       <h2${ed('title')}>${esc(p.title)}</h2><p${ed('sub')}>${esc(p.sub)}</p>
       <a class="btn" href="${escAttr(p.href)}"${ed('label')}>${esc(p.label)}</a>
     </div></div></section>`
@@ -789,11 +882,12 @@ const BLOCKS = {
     defaults:{ title:'Trusted by', items:[{img:'',name:'Client one',url:''},{img:'',name:'Client two',url:''},{img:'',name:'Client three',url:''},{img:'',name:'Client four',url:''}] },
     fields:[
       {k:'title',l:'Small title above the logos (blank = none)',t:'text'},
-      {k:'items',l:'Logos',t:'items',item:[{k:'img',l:'Logo image URL (blank = name as text)',t:'text',up:1},{k:'name',l:'Name (used as alt text)',t:'text'},{k:'url',l:'Link (optional)',t:'text'}],titleKey:'name'}
+      {k:'items',l:'Logos',t:'items',item:[{k:'img',l:'Logo image URL (blank = name as text)',t:'text',up:1},{k:'name',l:'Name (used as alt text)',t:'text'},{k:'url',l:'Link (optional)',t:'text'}],titleKey:'name'},
+      {k:'scroll',l:'Scroll the logos continuously (pauses on hover)',t:'toggle'}
     ],
     render:p=>`<section class="pad-sm"><div class="wrap">
       ${p.title?`<div class="sec-head center" style="margin-bottom:26px"><span class="eyebrow"${ed('title')}>${esc(p.title)}</span></div>`:''}
-      <div class="logos-row">${p.items.map(i=>{ const inner = i.img ? `<img src="${escAttr(i.img)}" alt="${escAttr(i.name)}" loading="lazy" />` : `<span>${esc(i.name)}</span>`; return i.url ? `<a class="lg" href="${escAttr(i.url)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="lg">${inner}</div>`; }).join('')}</div>
+      ${(()=>{ const row = p.items.map(i=>{ const inner = i.img ? `<img src="${escAttr(i.img)}" alt="${escAttr(i.name)}" loading="lazy" />` : `<span>${esc(i.name)}</span>`; return i.url ? `<a class="lg" href="${escAttr(i.url)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="lg">${inner}</div>`; }).join(''); return p.scroll && p.items.length > 1 ? `<div class="marquee"><div class="marquee-track">${row}${row}</div></div>` : `<div class="logos-row">${row}</div>`; })()}
     </div></section>`
   },
 

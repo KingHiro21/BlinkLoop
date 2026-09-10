@@ -186,6 +186,30 @@ mail setup. Other actions keep the plain HTML form (mailto GET or a custom POST 
   `BLOB_READ_WRITE_TOKEN` (reason `no-blob-store` otherwise). Staff codes are not for clients: send them a preview link,
   or publish the site.
 
+## Looks and motion (builder output)
+
+The founder wants client sites to carry the same creativity as blinkloop-ph.com, so the exported design language is
+switchable in the Design tab (theme keys `look` and `motion`, written as body classes by `bodyClass(t)` in blocks.js on
+both the canvas and the export; new drafts default to `look:'studio', motion:'on'`, and old drafts without the keys get the
+same defaults).
+- **Studio** (the BlinkLoop feel): glass cards (`--glass`, backdrop blur) with a radial accent glow in the top-right corner,
+  hover lift via `translate` (never `transform`, which the reveal owns), gradient buttons with a shine sweep on hover, an
+  eyebrow pill with a pulsing accent dot, gradient-text accent word in the hero, two blurred drifting orbs behind the hero
+  (`.orb`, hidden when the hero has a photo or video), hover underline on nav links, faint big numerals on Steps
+  (`counter(step)`), gradient stat values, dashed spinning rings in the CTA band (`.ring`), a fixed film grain
+  (`.look-studio::after`, SVG turbulence at 3.5%) and a thin scroll progress bar. **Bold**: 800-weight tighter type, 2px
+  ink outlines with hard offset shadows on cards, buttons and pictures, square-ish eyebrow. **Clean**: the previous flat look.
+  Dark-variant sections have their own glass/outline rules (`.look-studio .vt-dark …`, `.look-bold .vt-dark …`).
+- **Motion** lives in `motionJS` (exportHTML, only when `motion !== 'off'`) so a page without JS shows everything at once:
+  it adds `.reveal` to section heads, cards, grid children and so on with a stagger delay per sibling, an
+  IntersectionObserver adds `.in` (blur + 34px rise, .95s); `.hero h1`, `.sec-head h2`, `.ctaband h2` and split headings are
+  split into masked words (`.split .w > .wi`) that rise in sequence, keeping `<em>` and `<br>`; `[data-count]` stat values
+  count up from 0 (commas and decimals preserved); the Studio look gets the `.progress` bar. Imported `html` blocks
+  (`.imp-root`) are skipped. Everything is off under `prefers-reduced-motion`. The canvas never runs motionJS (editing
+  would fight the word spans), so motion is judged in Preview or on the live site; the Design tab says so.
+- Extras that came with it: hero `badges` (comma separated, up to 4 floating pills over the picture, bobbing when motion is
+  on), Partner logos `scroll` toggle (a `.marquee` with the row duplicated, masked edges, pauses on hover).
+
 ## Conventions (the founder cares about these)
 
 - **No em dashes anywhere in copy.** Use commas, periods, or colons.
