@@ -167,6 +167,20 @@ body.hide-left .edge-toggle.left::before{content:"›"} body.hide-right .edge-to
 /* ---------- inspector ---------- */
 .field{margin-bottom:13px}
 .field label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.03em;color:var(--muted);margin-bottom:5px}
+.lab-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px}
+.lab-row label{margin:0;min-width:0}
+.ai-btn{flex:none;font-size:.7rem;line-height:1;padding:3px 7px;border-radius:999px;border:1px solid var(--line);background:var(--glass);color:var(--muted);cursor:pointer}
+.ai-btn:hover{color:var(--ink);border-color:var(--rust)}
+.ai-btn.busy{opacity:.6;pointer-events:none}
+.ai-menu{position:fixed;z-index:400;min-width:170px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:0 12px 34px rgba(0,0,0,.35);padding:6px;display:grid;gap:2px}
+.ai-menu button{text-align:left;font-size:.78rem;padding:7px 10px;border-radius:8px;border:0;background:none;color:var(--ink);cursor:pointer}
+.ai-menu button:hover{background:var(--glass)}
+.ai-menu .hd{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:4px 10px 2px}
+.color-row{display:flex;gap:6px;align-items:center}
+.color-row .cpick{flex:none;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:8px;background:none;cursor:pointer}
+.color-row .cpick::-webkit-color-swatch-wrapper{padding:3px}
+.color-row .cpick::-webkit-color-swatch{border:0;border-radius:5px}
+.color-row .in{flex:1;min-width:0}
 .in,.field select,.field textarea{
   width:100%;background:var(--glass-strong);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:8px 11px;font-size:.84rem;transition:border-color .25s;
@@ -816,6 +830,11 @@ section{padding:var(--secpad) 0}
 .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:72px}
 .nav .logo{font-family:${f.disp};font-weight:700;font-size:1.08rem;display:inline-flex;align-items:center;gap:10px}
 .nav .logo img,.foot .logo img{height:34px;width:auto;display:block}
+.nav.lg-sm .logo img{height:26px}.nav.lg-lg .logo img{height:48px}
+.nav.lg-sm .logo{font-size:.95rem}.nav.lg-lg .logo{font-size:1.3rem}
+.nav.nv-static{position:static}
+.nav.nv-solid{background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none}
+.nav.nv-clear:not(.scrolled){background:transparent;border-bottom-color:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 .foot .logo{display:inline-flex;align-items:center;gap:10px}
 .nav .logo b{color:var(--accent);font-weight:700}
 .nav nav{display:flex;align-items:center;gap:30px;font-size:.9rem;color:var(--muted)}
@@ -887,7 +906,10 @@ section{padding:var(--secpad) 0}
 .q{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px}
 .q .mark{color:var(--accent);font-family:${f.disp};font-size:2rem;line-height:.6;display:block;margin-bottom:14px}
 .q p{font-size:.96rem;margin-bottom:18px}
-.q .who{font-size:.82rem;color:var(--muted)}
+.q .who{font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:12px}
+.q .av{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:none}
+.q .stars{color:var(--accent);letter-spacing:2px;font-size:.92rem;margin:-6px 0 10px}
+.q .stars span{opacity:.25}
 .q .who b{color:var(--ink);display:block;font-size:.88rem}
 
 /* gallery */
@@ -897,6 +919,11 @@ section{padding:var(--secpad) 0}
 .gal-grid.c4{grid-template-columns:repeat(4,1fr)}
 .gal .ph{aspect-ratio:1/0.8;font-size:1.4rem}
 .gal figcaption{font-size:.82rem;color:var(--muted);margin-top:9px}
+.gal[data-lb]{cursor:zoom-in}
+.lb{position:fixed;inset:0;z-index:1000;background:rgba(8,6,4,.92);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+.lb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.lb .lb-cap{position:absolute;left:0;right:0;bottom:18px;text-align:center;color:#fff;font-size:.9rem}
+.lb .lb-x{position:absolute;top:14px;right:18px;font-size:2rem;color:#fff;background:none;border:0;cursor:pointer;line-height:1}
 
 /* faq */
 .faq-list{max-width:760px;margin:0 auto}
@@ -937,6 +964,10 @@ section{padding:var(--secpad) 0}
 .foot .tag{color:var(--muted);font-size:.88rem;max-width:26rem;margin-top:8px}
 .foot nav{display:flex;gap:24px;flex-wrap:wrap;font-size:.88rem;color:var(--muted)}
 .foot nav a:hover{color:var(--ink)}
+.foot-cols{display:flex;gap:44px;flex-wrap:wrap}
+.fcol h4{font-size:.74rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink);margin:0 0 12px}
+.fcol a{display:block;font-size:.88rem;color:var(--muted);margin:0 0 9px}
+.fcol a:hover{color:var(--ink)}
 .foot .fine{color:var(--muted);font-size:.78rem;border-top:1px solid var(--line);padding-top:22px}
 
 @media (max-width:860px){
@@ -945,6 +976,7 @@ section{padding:var(--secpad) 0}
   .hero-grid,.split-grid,.contact-grid{grid-template-columns:1fr;gap:36px}
   .feat-grid.c3,.feat-grid.c4{grid-template-columns:repeat(2,1fr)}
   .gal-grid.c3,.gal-grid.c4{grid-template-columns:repeat(2,1fr)}
+  .menu-grid.c2{grid-template-columns:1fr}
   .pay-grid.has-qr{grid-template-columns:1fr}
   .nav nav{position:fixed;inset:72px 0 auto 0;background:var(--bg);border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start;padding:22px 26px;gap:18px;display:none}
   .nav nav.open{display:flex}
@@ -960,6 +992,10 @@ section{padding:var(--secpad) 0}
 }
 
 .vt-tint{background:color-mix(in srgb, var(--accent) 7%, var(--bg))}
+.has-bg-c{--bg:var(--sbg);background:var(--sbg)!important}
+.has-ink-c{--ink:var(--sink);color:var(--sink)}
+.has-ink-c :is(h1,h2,h3,h4,.stat .v,.price,.q .who b,.faq-item summary){color:var(--sink)}
+.has-bg-c,.has-ink-c{--muted:color-mix(in srgb, var(--ink) 58%, var(--bg));--line:color-mix(in srgb, var(--ink) 16%, transparent);--card:color-mix(in srgb, var(--ink) 5%, var(--bg));--card-2:color-mix(in srgb, var(--ink) 9%, var(--bg))}
 .vt-dark{background:color-mix(in srgb, var(--ink) 96%, black);color:var(--bg)}
 .vt-dark :is(h2,h3,.stat .v,.price){color:var(--bg)}
 .vt-dark :is(p,.sec-head p,.stat .l,.faq-item p,.quote p,.plan .period,.plan li){color:color-mix(in srgb, var(--bg) 76%, var(--ink))}
@@ -1005,7 +1041,11 @@ body.tx-none .hero::before{display:none}
 body.tx-grid .hero::before{background:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(70% 70% at 60% 30%,#000 30%,transparent 100%);mask-image:radial-gradient(70% 70% at 60% 30%,#000 30%,transparent 100%)}
 body.tx-dots .hero::before{background:radial-gradient(color-mix(in srgb,var(--accent) 45%, transparent) 1.4px, transparent 1.8px);background-size:24px 24px;opacity:.7;-webkit-mask-image:radial-gradient(70% 80% at 70% 30%,#000 20%,transparent 100%);mask-image:radial-gradient(70% 80% at 70% 30%,#000 20%,transparent 100%)}
 .hero.tall{min-height:min(88svh,900px);display:flex;align-items:center}
-.hero.has-bg{background:linear-gradient(rgba(10,8,6,var(--hdim,.55)),rgba(10,8,6,var(--hdim,.55))),var(--hbg) center/cover;color:#fff}
+.hero.has-bg{--hovc:color-mix(in srgb, var(--hov,#0a0806) calc(var(--hdim,.55)*100%), transparent);background:linear-gradient(var(--hovc),var(--hovc)),var(--hbg,none) center/cover;color:#fff}
+.hero.has-video{background:var(--hov,#0a0806)}
+.hero.has-video .hero-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.hero.has-video::after{content:"";position:absolute;inset:0;background:var(--hovc);z-index:0;pointer-events:none}
+.hero.has-bg .wrap{z-index:1}
 .hero.has-bg::before{display:none}
 .hero.hero-dark{background:color-mix(in srgb, var(--ink) 96%, black);color:var(--bg)}
 .hero.hero-dark::before{opacity:.35}
@@ -1073,6 +1113,27 @@ body.tx-dots .hero::before{background:radial-gradient(color-mix(in srgb,var(--ac
 
 /* spacer */
 .spacer{height:24px}.spacer.sp-md{height:56px}.spacer.sp-lg{height:112px}
+/* menu */
+.menu-grid{display:grid;gap:6px 48px}
+.menu-grid.c2{grid-template-columns:1fr 1fr}
+.mi{padding:16px 0;border-bottom:1px solid var(--line)}
+.mi-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mi-h b{font-size:1.02rem;font-family:${f.disp}}
+.mi-dots{flex:1;min-width:24px;border-bottom:2px dotted var(--line);transform:translateY(-5px)}
+.mi-p{font-weight:700;color:var(--accent);white-space:nowrap}
+.mi-tag{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;background:color-mix(in srgb, var(--accent) 14%, transparent);color:var(--accent);padding:3px 8px;border-radius:999px}
+.mi p{color:var(--muted);font-size:.88rem;margin:6px 0 0}
+.menu-note{color:var(--muted);font-size:.84rem;margin-top:24px}
+/* embed */
+.embed-wrap iframe,.embed-ph{width:100%;border:0;display:block;border-radius:var(--r);background:var(--card)}
+.embed-ph{aspect-ratio:auto;font-size:2rem}
+/* divider */
+.divider{padding:10px 0;color:var(--line)}
+.divider hr{border:0;border-top:1px solid var(--line);margin:0}
+.divider.dv-accent hr{border-top:3px solid var(--accent);width:72px;margin:0 auto}
+.divider.dv-dots{text-align:center;color:var(--muted);letter-spacing:8px;font-size:1.1rem}
+.divider svg{display:block;width:100%;height:40px}
+.divider.dw-narrow .wrap{max-width:360px}
 
 @media (max-width:860px){ .map-grid{grid-template-columns:1fr} .hero.tall{min-height:0} }
 `;
@@ -1101,14 +1162,17 @@ const BLOCKS = {
   navbar: {
     name:'Navbar', icon:'🧭', desc:'Sticky top navigation',
     section:false,
-    defaults:{ brand:'Your', brandAccent:'Brand', logo:'', logoOnly:false, links:[{label:'Features',href:'#features'},{label:'Pricing',href:'#pricing'},{label:'Contact',href:'#contact'}], cta:'Get started', ctaHref:'#contact' },
+    defaults:{ brand:'Your', brandAccent:'Brand', logo:'', logoOnly:false, links:[{label:'Features',href:'#features'},{label:'Pricing',href:'#pricing'},{label:'Contact',href:'#contact'}], cta:'Get started', ctaHref:'#contact', style:'glass', logoSize:'md', stayTop:true },
     fields:[
       {k:'brand',l:'Brand name',t:'text'},{k:'brandAccent',l:'Brand accent word',t:'text'},
       {k:'logo',l:'Logo image (optional)',t:'text',up:1},{k:'logoOnly',l:'Show the logo image only',t:'toggle'},
       {k:'links',l:'Menu links',t:'items',item:[{k:'label',l:'Label',t:'text'},{k:'href',l:'Link (e.g. #pricing)',t:'text'}],titleKey:'label'},
-      {k:'cta',l:'Button label',t:'text'},{k:'ctaHref',l:'Button link',t:'text'}
+      {k:'cta',l:'Button label',t:'text'},{k:'ctaHref',l:'Button link',t:'text'},
+      {k:'style',l:'Bar style',t:'seg',opts:[['glass','Glass'],['solid','Solid'],['clear','Transparent until scrolled']]},
+      {k:'logoSize',l:'Logo size',t:'seg',opts:[['sm','Small'],['md','Normal'],['lg','Large']]},
+      {k:'stayTop',l:'Stays on top while scrolling',t:'toggle'}
     ],
-    render:p=>`<header class="nav"><div class="wrap">
+    render:p=>`<header class="nav nv-${esc(p.style||'glass')} lg-${esc(p.logoSize||'md')}${p.stayTop===false?' nv-static':''}"><div class="wrap">
       <a href="#" class="logo">${p.logo?`<img src="${escAttr(p.logo)}" alt="${escAttr(p.brand+(p.brandAccent||''))}" />`:''}${p.logo&&p.logoOnly?'':`<span${ed('brand')}>${esc(p.brand)}</span><b${ed('brandAccent')}>${esc(p.brandAccent)}</b>`}</a>
       <button class="mtoggle" aria-label="Menu" onclick="this.nextElementSibling.classList.toggle('open')">☰</button>
       <nav>${p.links.map(l=>`<a href="${escAttr(l.href)}">${esc(l.label)}</a>`).join('')}
@@ -1130,13 +1194,19 @@ const BLOCKS = {
       {k:'img',l:'Image URL (blank = brand placeholder)',t:'text',up:1},
       {k:'imgLabel',l:'Image alt text',t:'text'},
       {k:'bgImg',l:'Background photo (optional, sits behind the text)',t:'text',up:1},
-      {k:'bgDim',l:'Darken background photo',t:'seg',opts:[['30','Light'],['55','Medium'],['75','Strong']]}
+      {k:'bgVideo',l:'Background video (.mp4 or .webm link, plays muted behind the text)',t:'text'},
+      {k:'overlay',l:'Overlay colour on the background photo or video',t:'color'},
+      {k:'bgDim',l:'Overlay strength',t:'seg',opts:[['30','Light'],['55','Medium'],['75','Strong']]}
     ],
     render:p=>{
       const title = esc(p.title).replace(/\*(.+?)\*/g,'<em>$1</em>');
       const media = p.layout==='center'?'':ph(p.img,p.imgLabel);
-      const bg = p.bgImg ? ` style="--hbg:url('${escAttr(p.bgImg)}');--hdim:${(+p.bgDim||55)/100}"` : '';
-      return `<section class="hero ${p.layout==='center'?'center':''} ${p.size==='tall'?'tall':''} ${p.bgImg?'has-bg':''} ${p.tone==='dark'&&!p.bgImg?'hero-dark':''}"${bg}><div class="wrap"><div class="hero-grid"><div>
+      const vidSrc = /^https?:\/\/.+\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(String(p.bgVideo||'').trim()) ? String(p.bgVideo).trim() : '';
+      const ov = /^#[0-9a-f]{3,8}$/i.test(String(p.overlay||'').trim()) ? String(p.overlay).trim() : '';
+      const hasBg = !!(p.bgImg || vidSrc);
+      const bg = hasBg ? ` style="${p.bgImg?`--hbg:url('${escAttr(p.bgImg)}');`:''}--hdim:${(+p.bgDim||55)/100}${ov?`;--hov:${ov}`:''}"` : '';
+      const vid = vidSrc ? `<video class="hero-vid" autoplay muted loop playsinline preload="metadata"${p.bgImg?` poster="${escAttr(p.bgImg)}"`:''} aria-hidden="true"><source src="${escAttr(vidSrc)}" /></video>` : '';
+      return `<section class="hero ${p.layout==='center'?'center':''} ${p.size==='tall'?'tall':''} ${hasBg?'has-bg':''} ${vidSrc?'has-video':''} ${p.tone==='dark'&&!hasBg?'hero-dark':''}"${bg}>${vid}<div class="wrap"><div class="hero-grid"><div>
         ${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}
         <h1${ed('title')}>${title}</h1>
         <p class="lede"${ed('sub')}>${esc(p.sub)}</p>
@@ -1220,27 +1290,28 @@ const BLOCKS = {
       items:[{quote:'A real quote from a real customer beats anything you could write yourself. Keep it short.',name:'Customer name',role:'Their business or city'},{quote:'Two or three of these are plenty. Pick the ones that mention results.',name:'Another customer',role:'Their role'}] },
     fields:[
       {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},
-      {k:'items',l:'Quotes',t:'items',item:[{k:'quote',l:'Quote',t:'textarea'},{k:'name',l:'Name',t:'text'},{k:'role',l:'Role / company',t:'text'}],titleKey:'name'},
+      {k:'items',l:'Quotes',t:'items',item:[{k:'quote',l:'Quote',t:'textarea'},{k:'name',l:'Name',t:'text'},{k:'role',l:'Role / company',t:'text'},{k:'img',l:'Photo (optional)',t:'text',up:1},{k:'stars',l:'Stars, 1 to 5 (blank = none)',t:'text'}],titleKey:'name'},
       {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
     ],
     render:p=>`<section class="${vtc(p)}"><div class="wrap">
       <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2></div>
-      <div class="q-grid">${p.items.map(i=>`<div class="q"><span class="mark">\u201C</span><p>${esc(i.quote)}</p><div class="who"><b>${esc(i.name)}</b>${esc(i.role)}</div></div>`).join('')}</div>
+      <div class="q-grid">${p.items.map(i=>{ const n = Math.min(5, Math.max(0, parseInt(i.stars,10)||0)); return `<div class="q"><span class="mark">\u201C</span>${n?`<div class="stars" aria-label="${n} out of 5">${'★'.repeat(n)}<span>${'★'.repeat(5-n)}</span></div>`:''}<p>${esc(i.quote)}</p><div class="who">${i.img?`<img class="av" src="${escAttr(i.img)}" alt="" loading="lazy" />`:''}<div><b>${esc(i.name)}</b>${esc(i.role)}</div></div></div>`; }).join('')}</div>
     </div></section>`
   },
 
   gallery: {
     name:'Gallery', icon:'🗂️', desc:'Work, menu, or photos', alignable:true,
-    defaults:{ title:'Recent work', cols:'3', ratio:'land', items:[{img:'',caption:'Project one'},{img:'',caption:'Project two'},{img:'',caption:'Project three'}] },
+    defaults:{ title:'Recent work', cols:'3', ratio:'land', lightbox:true, items:[{img:'',caption:'Project one'},{img:'',caption:'Project two'},{img:'',caption:'Project three'}] },
     fields:[
       {k:'title',l:'Title',t:'text'},{k:'cols',l:'Columns',t:'seg',opts:[['2','2'],['3','3'],['4','4']]},
       {k:'ratio',l:'Image shape',t:'seg',opts:[['square','Square'],['land','Wide'],['port','Tall']]},
       {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]},
-      {k:'items',l:'Items',t:'items',item:[{k:'img',l:'Image URL (blank = placeholder)',t:'text',up:1},{k:'caption',l:'Caption',t:'text'}],titleKey:'caption'}
+      {k:'items',l:'Items',t:'items',item:[{k:'img',l:'Image URL (blank = placeholder)',t:'text',up:1},{k:'caption',l:'Caption',t:'text'}],titleKey:'caption'},
+      {k:'lightbox',l:'Open pictures full screen when clicked (on the live site)',t:'toggle'}
     ],
     render:p=>`<section class="${vtc(p)}"><div class="wrap">
       <div class="sec-head"><h2${ed('title')}>${esc(p.title)}</h2></div>
-      <div class="gal-grid c${esc(p.cols)} r-${esc(p.ratio||'land')}">${p.items.map(i=>`<figure class="gal">${ph(i.img,i.caption?esc(i.caption[0]).toUpperCase():'✦')}${i.caption?`<figcaption>${esc(i.caption)}</figcaption>`:''}</figure>`).join('')}</div>
+      <div class="gal-grid c${esc(p.cols)} r-${esc(p.ratio||'land')}">${p.items.map(i=>`<figure class="gal"${i.img&&p.lightbox!==false?' data-lb':''}>${ph(i.img,i.caption?esc(i.caption[0]).toUpperCase():'✦')}${i.caption?`<figcaption>${esc(i.caption)}</figcaption>`:''}</figure>`).join('')}</div>
     </div></section>`
   },
 
@@ -1358,17 +1429,21 @@ const BLOCKS = {
   footer: {
     name:'Footer', icon:'🦶', desc:'Sign-off + links',
     section:false,
-    defaults:{ brand:'Your', brandAccent:'Brand', logo:'', tagline:'One honest line about what you do and who you do it for.', links:[{label:'Features',href:'#features'},{label:'Pricing',href:'#pricing'},{label:'Contact',href:'#contact'}], fine:'© 2026 Your Brand. All rights reserved.' },
+    defaults:{ brand:'Your', brandAccent:'Brand', logo:'', tagline:'One honest line about what you do and who you do it for.', links:[{label:'Features',href:'#features'},{label:'Pricing',href:'#pricing'},{label:'Contact',href:'#contact'}], groups:[], fine:'© 2026 Your Brand. All rights reserved.' },
     fields:[
       {k:'brand',l:'Brand',t:'text'},{k:'brandAccent',l:'Brand accent word',t:'text'},{k:'logo',l:'Logo image (optional)',t:'text',up:1},{k:'tagline',l:'Tagline',t:'textarea'},
-      {k:'links',l:'Links',t:'items',item:[{k:'label',l:'Label',t:'text'},{k:'href',l:'Link',t:'text'}],titleKey:'label'},
+      {k:'links',l:'Links (one row)',t:'items',item:[{k:'label',l:'Label',t:'text'},{k:'href',l:'Link',t:'text'}],titleKey:'label'},
+      {k:'groups',l:'Link columns (replace the row when filled)',t:'items',item:[{k:'title',l:'Column title',t:'text'},{k:'links',l:'Links, one per line: Label | #anchor or https://…',t:'textarea'}],titleKey:'title'},
       {k:'fine',l:'Fine print',t:'text'}
     ],
-    render:p=>`<footer class="foot"><div class="wrap">
+    render:p=>{
+      const groups = (p.groups||[]).filter(g => (g.title||'').trim() || lines(g.links).length);
+      const cols = groups.length ? `<div class="foot-cols">${groups.map(g=>`<div class="fcol">${g.title?`<h4>${esc(g.title)}</h4>`:''}${lines(g.links).map(l=>{ const i = l.indexOf('|'); const lab = i>-1 ? l.slice(0,i).trim() : l, href = i>-1 ? l.slice(i+1).trim() : '#'; return `<a href="${escAttr(href||'#')}">${esc(lab)}</a>`; }).join('')}</div>`).join('')}</div>` : '';
+      return `<footer class="foot${groups.length?' has-cols':''}"><div class="wrap">
       <div class="top"><div><div class="logo">${p.logo?`<img src="${escAttr(p.logo)}" alt="" />`:''}<span${ed('brand')}>${esc(p.brand)}</span><b${ed('brandAccent')}>${esc(p.brandAccent)}</b></div><p class="tag"${ed('tagline')}>${esc(p.tagline)}</p></div>
-      <nav>${p.links.map(l=>`<a href="${escAttr(l.href)}">${esc(l.label)}</a>`).join('')}</nav></div>
+      ${cols || `<nav>${p.links.map(l=>`<a href="${escAttr(l.href)}">${esc(l.label)}</a>`).join('')}</nav>`}</div>
       <div class="fine"${ed('fine')}>${esc(p.fine)}</div>
-    </div></footer>`
+    </div></footer>`; }
   },
 
   team: {
@@ -1451,6 +1526,56 @@ const BLOCKS = {
     render:p=>`<div class="announce"><span${ed('text')}>${esc(p.text)}</span>${p.label?`<a href="${escAttr(p.href)}"${ed('label')}>${esc(p.label)}</a>`:''}</div>`
   },
 
+  menu: {
+    name:'Menu', icon:'🍽️', desc:'Dishes or services with prices', alignable:true,
+    defaults:{ eyebrow:'Menu', title:'What we serve', currency:'₱', cols:'2', note:'Prices include VAT. Ask us about catering and group orders.',
+      items:[{name:'Signature dish',desc:'One line on what makes it special.',price:'280',tag:'Best seller'},{name:'House favourite',desc:'Ingredients people ask about.',price:'240',tag:''},{name:'Something light',desc:'For the afternoon crowd.',price:'180',tag:'Vegetarian'},{name:'Sweet finish',desc:'Made fresh every morning.',price:'150',tag:''}] },
+    fields:[
+      {k:'eyebrow',l:'Eyebrow',t:'text'},{k:'title',l:'Title',t:'text'},
+      {k:'currency',l:'Currency symbol',t:'text'},{k:'cols',l:'Columns',t:'seg',opts:[['1','1'],['2','2']]},
+      {k:'items',l:'Items',t:'items',item:[{k:'name',l:'Name',t:'text'},{k:'desc',l:'Description',t:'textarea'},{k:'price',l:'Price (number only)',t:'text'},{k:'tag',l:'Tag (Best seller, Vegan, New…)',t:'text'}],titleKey:'name'},
+      {k:'note',l:'Note under the menu',t:'text'},
+      {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]}
+    ],
+    render:p=>`<section class="${vtc(p)}"><div class="wrap">
+      <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2></div>
+      <div class="menu-grid c${esc(p.cols||'2')}">${p.items.map(i=>`<div class="mi"><div class="mi-h"><b>${esc(i.name)}</b>${i.tag?`<span class="mi-tag">${esc(i.tag)}</span>`:''}<span class="mi-dots"></span>${i.price?`<span class="mi-p">${esc(p.currency||'')}${esc(i.price)}</span>`:''}</div>${i.desc?`<p>${esc(i.desc)}</p>`:''}</div>`).join('')}</div>
+      ${p.note?`<p class="menu-note"${ed('note')}>${esc(p.note)}</p>`:''}
+    </div></section>`
+  },
+  embed: {
+    name:'Embed', icon:'🧩', desc:'Booking calendar, form, map or any iframe',
+    defaults:{ title:'', url:'', code:'', height:'520' },
+    fields:[
+      {k:'title',l:'Title (optional)',t:'text'},
+      {k:'url',l:'Address to embed (Google Form, Calendly, YouTube, Spotify, Maps…)',t:'text'},
+      {k:'code',l:'Or paste the embed code (<iframe …>) from the service',t:'textarea'},
+      {k:'height',l:'Height',t:'seg',opts:[['360','Short'],['520','Medium'],['760','Tall']]}
+    ],
+    render:p=>{
+      const h = parseInt(p.height,10)||520;
+      let inner = '';
+      const code = String(p.code||'').trim();
+      if (/<iframe\b/i.test(code)){
+        const m = code.match(/<iframe\b[^>]*>/i); const srcm = m && m[0].match(/\ssrc=["']([^"']+)["']/i);
+        if (srcm && /^https:\/\//i.test(srcm[1])){ const allow = (m[0].match(/\sallow=["']([^"']+)["']/i)||[])[1]||''; inner = `<iframe src="${escAttr(srcm[1])}" style="height:${h}px" loading="lazy" allowfullscreen${allow?` allow="${escAttr(allow)}"`:''} title="${escAttr(p.title||'Embedded content')}"></iframe>`; }
+      } else if (/^https:\/\//i.test(String(p.url||'').trim())){
+        const v = parseVideo(p.url); const src = v ? v.src : String(p.url).trim();
+        inner = `<iframe src="${escAttr(src)}" style="height:${h}px" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; geolocation" title="${escAttr(p.title||'Embedded content')}"></iframe>`;
+      }
+      if (!inner) inner = `<div class="ph embed-ph" style="height:${h}px" aria-hidden="true"><span>🧩</span></div>`;
+      return `<section class="embed"><div class="wrap">${p.title?`<div class="sec-head"><h2${ed('title')}>${esc(p.title)}</h2></div>`:''}<div class="embed-wrap">${inner}</div></div></section>`;
+    }
+  },
+  divider: {
+    name:'Divider', icon:'➖', desc:'A line, dots or a wave between sections', section:false,
+    defaults:{ style:'line', width:'wide' },
+    fields:[
+      {k:'style',l:'Style',t:'seg',opts:[['line','Line'],['accent','Accent'],['dots','Dots'],['wave','Wave']]},
+      {k:'width',l:'Width',t:'seg',opts:[['wide','Wide'],['narrow','Narrow']]}
+    ],
+    render:p=>`<div class="divider dv-${esc(p.style||'line')} dw-${esc(p.width||'wide')}" aria-hidden="true"><div class="wrap">${p.style==='wave'?'<svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 C 150 40 300 0 450 20 S 750 40 900 20 S 1150 0 1200 20" fill="none" stroke="currentColor" stroke-width="2"/></svg>':p.style==='dots'?'<span>• • •</span>':'<hr />'}</div></div>`
+  },
   spacer: {
     name:'Spacer', icon:'↕️', desc:'Breathing room between sections', section:false,
     defaults:{ size:'md' },
@@ -1474,7 +1599,7 @@ const BLOCKS = {
   }
 };
 
-const BLOCK_ORDER = ['navbar','banner','hero','logos','features','steps','split','text','stats','pricing','payments','quotes','team','gallery','video','faq','map','cta','contact','social','spacer','html','footer'];
+const BLOCK_ORDER = ['navbar','banner','hero','logos','features','steps','split','text','stats','pricing','menu','payments','quotes','team','gallery','video','faq','map','embed','cta','contact','social','divider','spacer','html','footer'];
 /* default anchor ids, so nav links like #pricing work out of the box; editable per block in the Section group */
 const DEFAULT_ANCHOR = { features:'features', pricing:'pricing', faq:'faq', contact:'contact', payments:'pay', gallery:'gallery', quotes:'testimonials', team:'team', map:'map', steps:'how', video:'video', logos:'partners' };
 
@@ -1485,14 +1610,30 @@ function decorate(html, b){
   const cls = [];
   if (p.pad === 'sm') cls.push('pad-sm'); else if (p.pad === 'lg') cls.push('pad-lg');
   if (def.alignable && p.align === 'center') cls.push('align-c');
-  const id = (p.anchor === undefined || p.anchor === null) ? (DEFAULT_ANCHOR[b.type] || '') : String(p.anchor).trim().replace(/^#/, '');
+  const id = sectionId(b);
+  const okc = v => /^(#[0-9a-f]{3,8}|[a-z]+\(.*\)|[a-z-]+)$/i.test(String(v||'').trim()) ? String(v).trim() : '';
+  const bg = okc(p.bg), ink = okc(p.ink); const sty = [];
+  if (bg){ cls.push('has-bg-c'); sty.push('--sbg:' + bg); }
+  if (ink){ cls.push('has-ink-c'); sty.push('--sink:' + ink); }
   return html.replace(/^\s*<(section|header|footer|div)\b([^>]*)>/, (m, tag, attrs) => {
     let a = attrs;
     if (cls.length) a = /class="/.test(a) ? a.replace(/class="/, 'class="' + cls.join(' ') + ' ') : a + ' class="' + cls.join(' ') + '"';
+    if (sty.length) a = /style="/.test(a) ? a.replace(/style="/, 'style="' + sty.join(';') + ';') : a + ' style="' + sty.join(';') + '"';
     a = a.replace(/\sid="[^"]*"/, '');
     if (id) a = ' id="' + escAttr(id) + '"' + a;
     return '<' + tag + a + '>';
   });
+}
+/* the id a section gets on the page: the anchor the user typed, the default for its type, or a generated one when it needs custom CSS */
+function sectionId(b){
+  const p = b.props;
+  const id = (p.anchor === undefined || p.anchor === null) ? (DEFAULT_ANCHOR[b.type] || '') : String(p.anchor).trim().replace(/^#/, '');
+  return id || (p.css && String(p.css).trim() ? 's-' + String(b.id).replace(/[^a-z0-9-]/gi, '') : '');
+}
+/* every section's custom CSS, nested under its id so it cannot leak into the rest of the page */
+function customCSS(){
+  return state.blocks.filter(b => b.props && b.props.css && String(b.props.css).trim() && BLOCKS[b.type] && BLOCKS[b.type].section !== false)
+    .map(b => '#' + sectionId(b) + '{' + String(b.props.css).replace(/<\/style/gi, '') + '}').join('\n');
 }
 
 function renderBlockHTML(b, edit){
@@ -1568,7 +1709,7 @@ function canvasDoc(){
   const pdir = RTL[plang] ? ' dir="rtl"' : '';
   return `<!DOCTYPE html><html lang="${plang}"${pdir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="${fontLink(state.theme)}">
-<style>${siteCSS(state.theme)}</style><style>${OVERLAY_CSS}</style></head>
+<style>${siteCSS(state.theme)}${customCSS()}</style><style>${OVERLAY_CSS}</style></head>
 <body class="tx-${state.theme.texture||'glow'}${isSmallChrome()?' m-chrome':''}">${state.blocks.length ? pageBodyHTML(true) : `<div class="empty-canvas">${t('_empty')}</div>`}<button class="blk-add-end" data-action="addend">${t('＋ Add block')}</button>${typeof privacySectionHTML==='function'?privacySectionHTML():''}${typeof waFabHTML==='function'?waFabHTML():''}</body></html>`;
 }
 
@@ -1795,7 +1936,10 @@ function renderInspector(){
     html += `<h4 class="grp">${t('Section')}</h4>`
       + fieldHTML({k:'anchor',l:'Anchor id (link to it with #id)',t:'text'}, anchor, 'p.anchor')
       + fieldHTML({k:'pad',l:'Vertical spacing',t:'seg',opts:[['sm','Tight'],['md','Normal'],['lg','Roomy']]}, b.props.pad||'md', 'p.pad')
-      + (def.alignable ? fieldHTML({k:'align',l:'Heading alignment',t:'seg',opts:[['left','Left'],['center','Center']]}, b.props.align||'left', 'p.align') : '');
+      + (def.alignable ? fieldHTML({k:'align',l:'Heading alignment',t:'seg',opts:[['left','Left'],['center','Center']]}, b.props.align||'left', 'p.align') : '')
+      + fieldHTML({k:'bg',l:'Background colour',t:'color'}, b.props.bg||'', 'p.bg')
+      + fieldHTML({k:'ink',l:'Text colour',t:'color'}, b.props.ink||'', 'p.ink')
+      + fieldHTML({k:'css',l:'Custom CSS for this section only (e.g. h2{font-size:3rem} or .btn{border-radius:0})',t:'textarea'}, b.props.css||'', 'p.css');
   }
   wrap.innerHTML = html;
   wireFields(wrap, b);
@@ -1904,13 +2048,22 @@ const BLOCK_ACTIONS = {
   }
 };
 
+const AI_SKIP = /href|url|img|logo|anchor|email|phone|action|price|currency|cols|stars|height|video|link|where|fine|html|css|code|links|src|number|page|id$/i;
+function labelHTML(f, id, val){
+  const ai = f.ai !== false && !AI_SKIP.test(f.k || '') && (f.t === 'textarea' || f.t === 'text');
+  return ai ? `<div class="lab-row"><label for="${id}">${t(f.l)}</label><button type="button" class="ai-btn" data-ai="${id}" title="${t('Improve this text with AI')}">✨ ${t('AI')}</button></div>` : `<label for="${id}">${t(f.l)}</label>`;
+}
 function fieldHTML(f, val, path){
   const id = 'f_'+String(path||f.id||f.t).replace(/[^\w]/g,'_');
   if (f.t==='text'){
     const upBtn = f.up ? `<div class="up-row"><button class="up-btn" type="button" data-up="${path}">\u2b06 ${t('Upload image')}</button><input type="file" class="up-file" accept="image/jpeg,image/png,image/webp" data-path="${path}" hidden /></div>` : '';
-    return `<div class="field"><label for="${id}">${t(f.l)}</label><input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" />${upBtn}</div>`;
+    return `<div class="field">${labelHTML(f, id, val)}<input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" />${upBtn}</div>`;
   }
-  if (f.t==='textarea') return `<div class="field"><label for="${id}">${t(f.l)}</label><textarea id="${id}" data-path="${path}"${f.k==='html'||f.k==='css'?' style="font-family:ui-monospace,Consolas,monospace;font-size:.72rem;min-height:120px"':''}>${esc(val??'')}</textarea></div>`;
+  if (f.t==='color'){
+    const hex = /^#[0-9a-f]{6}$/i.test(String(val||'').trim()) ? String(val).trim() : '#ffffff';
+    return `<div class="field"><label for="${id}">${t(f.l)}</label><div class="color-row"><input type="color" class="cpick" data-for="${id}" value="${hex}" aria-label="${t('Pick a colour')}" /><input class="in" id="${id}" data-path="${path}" value="${escAttr(val??'')}" placeholder="${t('blank = theme')}" /><button type="button" class="mini" data-clear="${id}" title="${t('Clear')}">✕</button></div></div>`;
+  }
+  if (f.t==='textarea') return `<div class="field">${labelHTML(f, id, val)}<textarea id="${id}" data-path="${path}"${f.k==='html'||f.k==='css'||f.k==='code'?' style="font-family:ui-monospace,Consolas,monospace;font-size:.72rem;min-height:120px"':''}>${esc(val??'')}</textarea></div>`;
   if (f.t==='media'){
     const b = state.blocks.find(x=>x.id===selectedId); const list = b ? mediaList(b.props.html) : [];
     if (!list.length) return `<div class="field"><label>${t(f.l)}</label><div class="empty-note" style="padding:4px 0">${t('No pictures or videos found in this page yet.')}</div></div>`;
@@ -2105,6 +2258,9 @@ function wireFields(wrap, b){
     if(btn.dataset.im==='down'&&i<o.length-1) [o[i+1],o[i]]=[o[i],o[i+1]];
     renderCanvas(); renderInspector(); autosave();
   }));
+  $$('.cpick', wrap).forEach(cp=>cp.addEventListener('input',()=>{ const el = wrap.querySelector('#'+cp.dataset.for); if(!el) return; if(!typingSnap){ snapshot(); typingSnap=true; } el.value = cp.value; el.dispatchEvent(new Event('input')); clearTimeout(cp._t); cp._t = setTimeout(()=>el.dispatchEvent(new Event('change')), 250); }));
+  $$('[data-clear]', wrap).forEach(x=>x.addEventListener('click',()=>{ const el = wrap.querySelector('#'+x.dataset.clear); if(!el) return; snapshot(); el.value=''; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }));
+  $$('.ai-btn', wrap).forEach(btn=>btn.addEventListener('click', ev=>{ ev.preventDefault(); openAiMenu(btn, wrap.querySelector('#'+btn.dataset.ai), b); }));
   $$('[data-add]', wrap).forEach(btn=>btn.addEventListener('click',()=>{
     const f = BLOCKS[b.type].fields.find(x=>x.k===btn.dataset.f);
     snapshot();
@@ -2112,6 +2268,44 @@ function wireFields(wrap, b){
     b.props[f.k].push(blank);
     renderCanvas(); renderInspector(); autosave();
   }));
+}
+
+/* ---- AI copy help: a small menu on every copy field; /api/ai rewrites the text with Claude ---- */
+const AI_TASKS = [['improve','Improve'],['shorten','Make it shorter'],['expand','Say a bit more'],['punchy','Punchier'],['fix','Fix spelling and grammar'],['translate','Translate to the page language']];
+let aiMenuEl = null;
+function closeAiMenu(){ if (aiMenuEl){ aiMenuEl.remove(); aiMenuEl = null; } }
+document.addEventListener('click', e => { if (aiMenuEl && !e.target.closest('.ai-menu') && !e.target.closest('.ai-btn')) closeAiMenu(); });
+function openAiMenu(btn, el, b){
+  if (aiMenuEl && aiMenuEl._for === btn){ closeAiMenu(); return; }
+  closeAiMenu();
+  if (!el) return;
+  const m = document.createElement('div'); m.className = 'ai-menu'; m._for = btn;
+  m.innerHTML = `<div class="hd">${t('Rewrite with AI')}</div>` + AI_TASKS.map(([k,l]) => `<button type="button" data-task="${k}">${t(l)}</button>`).join('');
+  document.body.appendChild(m); aiMenuEl = m;
+  const r = btn.getBoundingClientRect(); const w = m.offsetWidth || 180;
+  m.style.top = Math.min(window.innerHeight - m.offsetHeight - 8, r.bottom + 6) + 'px';
+  m.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
+  $$('button', m).forEach(x => x.addEventListener('click', () => { closeAiMenu(); aiRewrite(btn, el, b, x.dataset.task); }));
+}
+async function aiRewrite(btn, el, b, task){
+  const text = String(el.value || '').trim();
+  if (!text){ toast(t('Type something first, then ask AI to improve it.')); return; }
+  if (!clientMode){ renderAccessModal(true); openModal('accessModal'); return; }
+  btn.classList.add('busy'); const old = btn.textContent; btn.textContent = '…';
+  try{
+    const r = await fetch('/api/ai', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ task, text, context: { site: state.meta.title || '', desc: state.meta.desc || '', block: b ? b.type : '', field: (el.dataset.path || '').split('.').pop(), lang: state.meta.lang || 'en', multiline: el.tagName === 'TEXTAREA' } }) });
+    if (r.status === 401) throw new Error(t('Your session has expired. Sign in again.'));
+    const d = await r.json();
+    if (!d.ok){
+      if (d.reason === 'no-key') throw new Error(t('AI help is not switched on yet: add ANTHROPIC_API_KEY in the Vercel project settings.'));
+      if (d.reason === 'slow-down') throw new Error(t('Too many requests. Give it a minute.'));
+      throw new Error(t('AI could not rewrite this') + (d.detail ? ': ' + d.detail : '.'));
+    }
+    const out = String(d.text || '').trim(); if (!out) throw new Error(t('AI returned nothing.'));
+    snapshot(); el.value = out; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); el.focus();
+    toast(t('Rewritten. Ctrl+Z brings the old text back.'));
+  }catch(e){ toast(e && e.message || t('AI could not rewrite this.')); }
+  finally{ btn.classList.remove('busy'); btn.textContent = old; }
 }
 
 /* live-update simple top-level text on canvas without full re-render (keeps focus) */
@@ -3294,8 +3488,10 @@ function exportHTML(){
   const t = state.theme;
   const leadJS = state.blocks.some(b=>b.type==='contact' && /\/api\/lead/.test(b.props.action||''))
     ? `<script>document.querySelectorAll('form.cform[data-lead]').forEach(function(f){f.addEventListener('submit',async function(e){e.preventDefault();var m=f.querySelector('.cf-msg'),b=f.querySelector('button[type=submit]'),d={};Array.prototype.forEach.call(f.elements,function(el){if(el.name)d[el.name]=el.type==='checkbox'?(el.checked?'yes':''):el.value});m.className='cf-msg';m.textContent='';if(!d.name||d.name.trim().length<2||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email||'')||!d.message||d.message.trim().length<5){m.className='cf-msg err';m.textContent='Please fill in your name, a working email and a short message.';return}if(!d.consent){m.className='cf-msg err';m.textContent='Please tick the box so we may reply to you.';return}b.disabled=true;var old=b.textContent;b.textContent='Sending\\u2026';try{d.consentAt=new Date().toISOString();d.page=location.href;var r=await fetch(f.getAttribute('action'),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)});var j=await r.json();if(!j.ok)throw new Error(j.reason||'failed');f.reset();m.className='cf-msg ok';m.textContent='Thank you, '+d.name.trim().split(' ')[0]+'. We will get back to you soon.'}catch(err){m.className='cf-msg err';m.textContent='That did not send. Please email us instead.'}b.disabled=false;b.textContent=old})});<\/script>` : '';
+  const lbJS = state.blocks.some(b=>b.type==='gallery' && b.props.lightbox!==false && (b.props.items||[]).some(i=>i.img))
+    ? `<script>document.querySelectorAll('.gal[data-lb]').forEach(function(f){f.addEventListener('click',function(){var im=f.querySelector('img');if(!im)return;var o=document.createElement('div');o.className='lb';o.innerHTML='<button class="lb-x" aria-label="Close">\\u00d7</button><img alt="">'+(f.querySelector('figcaption')?'<div class="lb-cap"></div>':'');o.querySelector('img').src=im.currentSrc||im.src;o.querySelector('img').alt=im.alt||'';var c=o.querySelector('.lb-cap');if(c)c.textContent=f.querySelector('figcaption').textContent;var close=function(){o.remove();document.removeEventListener('keydown',k)};var k=function(e){if(e.key==='Escape')close()};o.addEventListener('click',close);document.addEventListener('keydown',k);document.body.appendChild(o)})});<\/script>` : '';
   const navJS = state.blocks.some(b=>b.type==='navbar')
-    ? `<script>document.querySelectorAll('.nav nav a').forEach(function(a){a.addEventListener('click',function(){var n=a.closest('nav');if(n)n.classList.remove('open')})});<\/script>` : '';
+    ? `<script>document.querySelectorAll('.nav nav a').forEach(function(a){a.addEventListener('click',function(){var n=a.closest('nav');if(n)n.classList.remove('open')})});var nvc=document.querySelector('.nav.nv-clear');if(nvc){var nvf=function(){nvc.classList.toggle('scrolled',window.scrollY>24)};window.addEventListener('scroll',nvf,{passive:true});nvf()}<\/script>` : '';
   const plang = state.meta.lang || 'en';
   const pdir = RTL[plang] ? ' dir="rtl"' : '';
   return `<!DOCTYPE html>
@@ -3308,11 +3504,11 @@ function exportHTML(){
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="${fontLink(t)}" rel="stylesheet" />
-<style>${siteCSS(t)}</style>
+<style>${siteCSS(t)}${customCSS()}</style>
 </head>
 <body class="tx-${t.texture||'glow'}">
 ${pageBodyHTML(false)}
-${navJS}${leadJS}
+${navJS}${leadJS}${lbJS}
 <!-- Built with Loop Builder · blinkloop -->
 ${privacySectionHTML()}${waFabHTML()}</body>
 </html>`;
