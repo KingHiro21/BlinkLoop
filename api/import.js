@@ -44,7 +44,8 @@ async function assertPublic(hostname){
   if (!addrs.length) throw new Error('dns');
   if (addrs.some(a => privateIp(a.address))) throw new Error('private-host');
 }
-const UA = 'Mozilla/5.0 (compatible; LoopBuilderImport/1.0; +https://www.blinkloop-ph.com)';
+/* a plain browser UA: CDNs in front of stores (Akamai, Cloudflare) answer bot UAs with challenge pages instead of CSS */
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 /* Fetch one public resource with every guard applied. `accept` is a regex the content-type must match. */
 async function fetchResource(startUrl, { accept, maxBytes, timeout = 8000, acceptHeader = '*/*' }){
   let url = new URL(startUrl);
@@ -108,15 +109,40 @@ function getBrowser(){
 /* runs inside the page: fold CSSOM-inserted rules back into <style> text, pin the chosen image sources */
 const SERIALIZE = `(() => {
   for (const sh of document.styleSheets){ try { if (sh.href) continue; const node = sh.ownerNode; if (!node || node.tagName !== 'STYLE') continue; const rules = [...sh.cssRules].map(r => r.cssText).join('\\n'); if (rules && rules.length > (node.textContent || '').length) node.textContent = rules; } catch (e) {} }
-  for (const img of document.images){ try { if (img.currentSrc){ img.setAttribute('src', img.currentSrc); img.removeAttribute('srcset'); img.removeAttribute('sizes'); } img.removeAttribute('loading'); } catch (e) {} }
+  const best = set => { const c = String(set || '').split(',').map(p => p.trim()).filter(Boolean).map(p => { const [u, d] = p.split(/\\s+/); return { u, w: parseFloat(d) || 0 }; }); c.sort((a, b) => b.w - a.w); return c.length ? c[0].u : ''; };
+  for (const img of document.images){ try {
+    const placeholder = !img.currentSrc || /^data:/.test(img.currentSrc);
+    if (!placeholder){ img.setAttribute('src', img.currentSrc); img.removeAttribute('srcset'); img.removeAttribute('sizes'); }
+    else {
+      /* never loaded (lazy, offscreen, blocked): take the largest candidate the markup offers */
+      const pic = img.closest('picture'); const src = pic ? [...pic.querySelectorAll('source')].map(s => best(s.getAttribute('srcset') || s.getAttribute('data-srcset'))).find(Boolean) : '';
+      const own = best(img.getAttribute('srcset') || img.getAttribute('data-srcset')) || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.getAttribute('data-original') || '';
+      const pick = src || own; if (pick){ try { img.setAttribute('src', new URL(pick, location.href).href); } catch (e) { img.setAttribute('src', pick); } img.removeAttribute('srcset'); img.removeAttribute('sizes'); }
+    }
+    img.removeAttribute('loading');
+  } catch (e) {} }
   document.querySelectorAll('picture source').forEach(s => s.remove());
+  /* pop-ups that appeared during the visit (error dialogs, cookie walls, newsletter modals, dimming backdrops) are not the page */
+  const vw = window.innerWidth, vh = window.innerHeight;
+  for (const el of [...document.body.querySelectorAll('*')]){ try {
+    if (!el.isConnected) continue;
+    const cs = getComputedStyle(el); if (cs.position !== 'fixed' && cs.position !== 'sticky' && !el.matches('[role="dialog"],[aria-modal="true"],dialog')) continue;
+    const r = el.getBoundingClientRect(); const covers = r.width >= vw * 0.6 && r.height >= vh * 0.6;
+    const dialogish = el.matches('[role="dialog"],[aria-modal="true"],dialog,[class*="modal" i],[class*="overlay" i],[class*="backdrop" i],[class*="popup" i],[class*="cookie" i],[class*="consent" i],[class*="newsletter" i],[id*="modal" i],[id*="overlay" i],[id*="cookie" i]');
+    if (cs.position === 'fixed' && (covers || dialogish) && (parseInt(cs.zIndex) || 0) >= 10) el.remove();
+    else if (dialogish && cs.position !== 'sticky' && el.matches('[role="dialog"],[aria-modal="true"],dialog')) el.remove();
+  } catch (e) {} }
+  try { document.body.style.overflow = ''; document.documentElement.style.overflow = ''; document.body.classList.remove('modal-open', 'no-scroll', 'overflow-hidden'); } catch (e) {}
+  /* backgrounds set by scripts: keep the computed image on the element */
+  for (const el of document.querySelectorAll('div,section,header,footer,a,span,li,figure')){ try { const bg = getComputedStyle(el).backgroundImage; if (bg && bg !== 'none' && /url\\(/.test(bg) && !/url\\("?data:/.test(bg) && !(el.getAttribute('style') || '').includes('background')) el.style.backgroundImage = bg; } catch (e) {} }
   document.querySelectorAll('video[poster]').forEach(v => { try { v.setAttribute('poster', new URL(v.getAttribute('poster'), location.href).href); } catch (e) {} });
   return '<!DOCTYPE html>' + document.documentElement.outerHTML;
 })()`;
 async function autoScroll(page){
   await page.evaluate(async () => {
     const step = Math.max(400, Math.round(window.innerHeight * 0.8)); let y = 0; const limit = Math.min(document.body.scrollHeight, 20000);
-    while (y < limit){ y += step; window.scrollTo(0, y); await new Promise(r => setTimeout(r, 120)); }
+    while (y < limit){ y += step; window.scrollTo(0, y); await new Promise(r => setTimeout(r, 220)); }
+    await new Promise(r => setTimeout(r, 400));
     window.scrollTo(0, 0);
   }).catch(() => {});
 }
@@ -132,8 +158,17 @@ async function renderPage(url, budgetMs){
       const type = req.resourceType(); let host = '';
       try { host = new URL(req.url()).hostname; } catch {}
       const privateHost = !allowPrivate && (net.isIP(host) ? privateIp(host) : /^(localhost|.*\.local|.*\.internal)$/i.test(host));
-      if (privateHost || type === 'media' || type === 'font' || type === 'image') return req.abort().catch(() => {});
+      if (privateHost || type === 'media' || type === 'font') return req.abort().catch(() => {}); // images load so lazy loaders reveal their real sources
       req.continue().catch(() => {});
+    });
+    /* every stylesheet the browser receives is kept, so nothing has to be refetched (and blocked) afterwards */
+    const cssMap = new Map();
+    page.on('response', resp => {
+      try {
+        const type = resp.request().resourceType(); const ct = (resp.headers()['content-type'] || '').toLowerCase();
+        if (!resp.ok() || !(type === 'stylesheet' || /text\/css/.test(ct))) return;
+        resp.text().then(txt => { if (txt && txt.length <= CSS_FILE_MAX){ cssMap.set(resp.url(), txt); cssMap.set(resp.request().url(), txt); } }).catch(() => {});
+      } catch {}
     });
     const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: Math.max(5000, Math.min(budgetMs, 20000)) });
     await page.waitForNetworkIdle({ idleTime: 700, timeout: Math.min(8000, budgetMs) }).catch(() => {});
@@ -142,7 +177,8 @@ async function renderPage(url, budgetMs){
     const html = await page.evaluate(SERIALIZE);
     const status = resp ? resp.status() : 200;
     if (status >= 400) throw new Error('http-' + status);
-    return { html, finalUrl: page.url() };
+    await new Promise(r => setTimeout(r, 150)); // let the last stylesheet bodies land in cssMap
+    return { html, finalUrl: page.url(), cssMap };
   } finally { await page.close().catch(() => {}); }
 }
 /* the page as a browser sees it, or the raw HTML when no browser can be had */
@@ -567,13 +603,17 @@ function rootFontPx(css){
 const SHEET_ACCEPT = /text\/css|text\/plain|application\/octet-stream/;
 /* one linked stylesheet, absolutized, with one level of @import folded in; cached across pages of a site */
 function fetchCss(href, cache){
-  if (cache && cache.has(href)) return cache.get(href);
-  const p = fetchResource(href, { accept: SHEET_ACCEPT, maxBytes: CSS_FILE_MAX, timeout: 6000, acceptHeader: 'text/css,*/*;q=0.1' })
+  /* the cache may hold a finished result, a pending fetch, or raw text captured from the rendering browser */
+  const hit = cache && cache.get(href);
+  if (hit && typeof hit !== 'string') return hit;
+  const p = (hit ? Promise.resolve({ buf: Buffer.from(hit, 'utf8'), finalUrl: href }) : fetchResource(href, { accept: SHEET_ACCEPT, maxBytes: CSS_FILE_MAX, timeout: 6000, acceptHeader: 'text/css,*/*;q=0.1' }))
     .then(async r => {
       let css = r.buf.toString('utf8'); const base = r.finalUrl; const fonts = [];
       for (const im of [...css.matchAll(/@import\s+(?:url\()?\s*['"]?([^'")\s;]+)['"]?\s*\)?[^;]*;/gi)]){
         const u = abs(base, im[1]); if (!u) continue;
         if (FONT_HOST.test(u)){ fonts.push(u); continue; }
+        const cached = cache && typeof cache.get(u) === 'string' ? cache.get(u) : null;
+        if (cached){ css = cssUrls(cached, u) + '\n' + css; continue; }
         try { const r2 = await fetchResource(u, { accept: SHEET_ACCEPT, maxBytes: CSS_FILE_MAX, timeout: 5000, acceptHeader: 'text/css,*/*;q=0.1' }); css = cssUrls(r2.buf.toString('utf8'), r2.finalUrl) + '\n' + css; } catch {}
       }
       return { css: cssUrls(css, base), fonts, ok: true };
@@ -675,7 +715,7 @@ async function buildExact(html, pageUrl, opts = {}){
   const doc = parse(html, { comment: false });
   const found = []; const warn = [];
   const { title, desc, base } = pageMeta(doc, pageUrl);
-  const sheets = await collectSheets(doc, base, null);
+  const sheets = await collectSheets(doc, base, opts.cssMap || null);
   const scopeId = /^imp-[a-f0-9]{6}$/.test(opts.scopeId || '') ? opts.scopeId : 'imp-' + crypto.randomBytes(3).toString('hex');
   const scope = '#' + scopeId;
   let raw = '', total = 0;
@@ -774,10 +814,10 @@ module.exports = async (req, res) => {
     catch (e) { const msg = String(e && e.message || ''); return res.status(200).json({ ok:false, reason: /no-blob-store/.test(msg) ? 'no-blob-store' : /wrong-type/.test(msg) ? 'not-image' : /too-large/.test(msg) ? 'too-large' : 'failed' }); }
   }
   try {
-    const { html, finalUrl, rendered } = await loadPage(url);
+    const { html, finalUrl, rendered, cssMap } = await loadPage(url);
     const how = rendered ? 'Loaded in a browser first, so content built by scripts is included.' : 'Read as raw HTML (no browser available), so content built by scripts may be missing.';
     if (body.mode === 'exact'){
-      const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have });
+      const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have, cssMap });
       page.warn.unshift(how);
       return res.status(200).json({ ok:true, page, found: page.found, warn: page.warn, source: finalUrl, rendered });
     }

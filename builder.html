@@ -3464,6 +3464,20 @@ function normaliseImported(page){
 }
 let importAbort = null;
 const IMPORT_ERR = d => ({ 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.'));
+/* top-level CSS rules (at-rule blocks kept whole) so identical rules from different pages can be stored once */
+function splitCssRules(css){
+  const out = []; let depth = 0, start = 0, q = null;
+  for (let i = 0; i < css.length; i++){
+    const ch = css[i];
+    if (q){ if (ch === q && css[i-1] !== '\\') q = null; continue; }
+    if (ch === '"' || ch === "'"){ q = ch; continue; }
+    if (ch === '{') depth++;
+    else if (ch === '}'){ depth--; if (depth === 0){ const r = css.slice(start, i + 1).trim(); if (r) out.push(r); start = i + 1; } }
+    else if (ch === ';' && depth === 0){ const r = css.slice(start, i + 1).trim(); if (r) out.push(r); start = i + 1; }
+  }
+  const tail = css.slice(start).trim(); if (tail) out.push(tail);
+  return out;
+}
 const normUrlC = u => { try { const U = new URL(u); U.hash = ''; U.search = ''; return U.origin + U.pathname.replace(/\/index\.(html?|php)$/i, '/').replace(/\/+$/, ''); } catch { return ''; } };
 async function importWholeSite(url){
   const err = $('#importErr'); const prog = $('#importProgress'); const txt = $('#importProgressText'); const bar = $('#importProgressBar');
@@ -3474,7 +3488,7 @@ async function importWholeSite(url){
   const first = await post({ url, mode: 'links' });
   if (!first.ok){ prog.hidden = true; err.textContent = IMPORT_ERR(first); return null; }
   const list = first.pages; const scopeId = 'imp-' + Math.random().toString(16).slice(2, 8).padEnd(6, '0');
-  const pages = [], skipped = [], order = [], sheetCss = {}; let overrides = ''; const fonts = new Set(); let rendered = !!first.rendered;
+  const pages = [], skipped = [], order = [], sheetCss = {}, seenRules = new Set(); let overrides = ''; const fonts = new Set(); let rendered = !!first.rendered;
   const rewriteAll = () => {
     const target = new Map(); pages.forEach(p => target.set(normUrlC(p.url), p.slug === 'index' ? '/' : '/' + p.slug));
     pages.forEach(p => { p.exact.html = p.exact.html.replace(/href="([^"]+)"/gi, (m, h) => { const tg = target.get(normUrlC(h)); if (!tg) return m; const hash = (h.match(/#.*$/) || [''])[0]; return `href="${tg}${hash}"`; }); });
@@ -3490,8 +3504,11 @@ async function importWholeSite(url){
     if (!d.ok){ skipped.push({ url: pg.url, reason: d.reason }); continue; }
     const x = d.page.exact;
     (x.sheets || []).forEach(sh => { if (!(sh.href in sheetCss) && sh.css !== null){ sheetCss[sh.href] = sh.css; order.push(sh.href); } else if (!(sh.href in sheetCss)) { sheetCss[sh.href] = ''; order.push(sh.href); } });
+    /* styles a page carries inline (CSS-in-JS apps repeat most of them on every page): each rule is kept once, shared */
+    let pageCss = '';
+    if (x.css){ const own = []; for (const rule of splitCssRules(x.css)){ if (seenRules.has(rule)) continue; seenRules.add(rule); own.push(rule); } if (own.length){ const key = 'inline:' + pages.length; sheetCss[key] = own.join('\n'); order.push(key); } }
     overrides = overrides || x.overrides || ''; (x.fonts || []).forEach(f => fonts.add(f)); rendered = rendered || !!d.rendered;
-    pages.push({ url: d.source || pg.url, slug: pg.slug, meta: Object.assign({}, d.page.meta, { slug: pg.slug }), exact: { scopeId, cssRef: scopeId, rootClass: x.rootClass||'', rootStyle: x.rootStyle||'', rootLang: x.rootLang||'', rootDir: x.rootDir||'', html: x.html||'', css: x.css||'', fonts: [] }, found: d.found.slice(-1) });
+    pages.push({ url: d.source || pg.url, slug: pg.slug, meta: Object.assign({}, d.page.meta, { slug: pg.slug }), exact: { scopeId, cssRef: scopeId, rootClass: x.rootClass||'', rootStyle: x.rootStyle||'', rootLang: x.rootLang||'', rootDir: x.rootDir||'', html: x.html||'', css: pageCss, fonts: [] }, found: d.found.slice(-1) });
   }
   prog.hidden = true;
   if (!pages.length){ err.textContent = stopped ? t('Stopped before any page was copied.') : t('None of the pages could be copied.'); return null; }
