@@ -354,6 +354,22 @@ details.item-card .item-body{padding:0 11px 11px}
 .temp-head b{font-size:.84rem}
 .temp-head span{font-size:.74rem;color:var(--muted)}
 .draft.temp{background:transparent}
+.folder{border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass);margin-bottom:10px;overflow:hidden}
+.folder.has-temp{border-color:rgba(237,163,63,.7)}
+.folder summary{list-style:none;display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;user-select:none}
+.folder summary::-webkit-details-marker{display:none}
+.folder summary::before{content:"▸";color:var(--muted);font-size:.8rem;transition:transform .2s;flex:none}
+.folder[open] summary::before{transform:rotate(90deg)}
+.folder .fname{font-weight:700;font-size:.88rem;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.folder .fmeta{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.folder .fmeta em{font-style:normal;color:#EDA33F;font-weight:600}
+.folder .factions{display:flex;gap:6px;flex:none}
+.folder .factions button{padding:5px 9px;border-radius:999px;border:1px solid var(--line);font-size:.72rem;font-weight:600;color:var(--muted)}
+.folder .factions button:hover{color:var(--ink);border-color:var(--rust)}
+.folder .factions button.del:hover{color:#c0392b;border-color:#c0392b}
+.folder .frows{display:grid;gap:6px;padding:0 10px 10px}
+.folder .frows .draft{background:var(--glass-strong)}
+@media (max-width:560px){ .folder summary{flex-wrap:wrap} .folder .fmeta{order:3;width:100%} }
 .guide-steps{display:grid;gap:14px;margin-top:6px}
 .gstep{display:flex;gap:14px;align-items:flex-start;background:var(--glass);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}
 .gstep .n{font-family:'Unbounded';font-weight:700;color:var(--rust);font-size:1.05rem;line-height:1.3;flex:none}
@@ -3287,9 +3303,10 @@ function saveDraftsIndex(list){ try{ localStorage.setItem(DRAFTS_KEY, JSON.strin
 function persistDraft(json){
   if (!state.meta.draftId) state.meta.draftId = uid();
   const id = state.meta.draftId;
+  if (!state.blocks.length){ saveDraftsIndex(draftsIndex().filter(d=>d.id!==id)); try{ localStorage.removeItem(DRAFT_PREFIX+id); }catch(e){} return; }
   try{ localStorage.setItem(DRAFT_PREFIX+id, json); }catch(e){ return; }
   const list = draftsIndex().filter(d=>d.id!==id);
-  list.unshift({ id, title: state.meta.title || 'Untitled', updated: Date.now(), blocks: state.blocks.length, slug: state.meta.slug || '', site: siteRefOf(state) });
+  list.unshift({ id, title: state.meta.title || 'Untitled', updated: Date.now(), blocks: state.blocks.length, slug: state.meta.slug || '', site: siteRefOf(state), from: state.meta.importedFrom || '' });
   saveDraftsIndex(list);
 }
 function openDraft(id){
@@ -3304,31 +3321,76 @@ function deleteDraft(id){
   saveDraftsIndex(draftsIndex().filter(d=>d.id!==id));
   renderDrafts();
 }
+/* ---- Projects list: one folder per imported site, plus "My drafts" for hand-made pages ---- */
+const FOLDERS_KEY = 'loopbuilder-folders';
+function folderNames(){ try{ return JSON.parse(localStorage.getItem(FOLDERS_KEY)||'{}'); }catch(e){ return {}; } }
+function setFolderName(id, name){ const m = folderNames(); m[id] = name; try{ localStorage.setItem(FOLDERS_KEY, JSON.stringify(m)); }catch(e){} }
+const hostOf = u => { try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return ''; } };
+/* older index entries know nothing about their site: read the draft once and fill it in */
+function migrateIndex(){
+  const list = draftsIndex(); let changed = false;
+  for (const d of list){
+    if (d.site !== undefined && d.from !== undefined) continue;
+    let st = null; try{ st = JSON.parse(localStorage.getItem(DRAFT_PREFIX + d.id) || 'null'); }catch(e){}
+    d.site = st ? siteRefOf(st) : ''; d.from = st && st.meta ? (st.meta.importedFrom || '') : ''; d.slug = d.slug || (st && st.meta ? st.meta.slug || '' : ''); changed = true;
+  }
+  if (changed) saveDraftsIndex(list);
+  return list;
+}
+function deleteFolder(site){
+  const list = draftsIndex().filter(d => (d.site||'') === site);
+  let wasCurrent = (siteRefOf(state) || '') === site && !isTemp() && list.some(d => d.id === state.meta.draftId);
+  list.forEach(d => { try{ localStorage.removeItem(DRAFT_PREFIX + d.id); }catch(e){} });
+  saveDraftsIndex(draftsIndex().filter(d => (d.site||'') !== site));
+  Object.values(TEMP.pages).forEach(st => { if ((siteRefOf(st)||'') === site){ if (st.meta.draftId === state.meta.draftId) wasCurrent = true; delete TEMP.pages[st.meta.draftId]; } });
+  try{ localStorage.removeItem(SITE_CSS_PREFIX + site); }catch(e){} delete siteCssMem[site];
+  if (wasCurrent){ state = freshState(); selectedId = null; history = []; future = []; afterStateSwap(); }
+}
 function renderDrafts(){
   const box = $('#draftList'); if (!box) return;
-  const list = draftsIndex();
+  const names = folderNames();
   const when = ts => { const d = Date.now()-ts; return d<60000 ? t('just now') : d<3600000 ? Math.round(d/60000)+' min' : d<86400000 ? Math.round(d/3600000)+' h' : new Date(ts).toLocaleDateString(); };
-  const temp = Object.values(TEMP.pages).filter(st => st.meta.draftId !== state.meta.draftId || isTemp());
-  const tempHTML = temp.length ? `<div class="temp-box"><div class="temp-head"><b>${t('Imported, not saved yet')}</b><span>${t('Kept in memory only. Save the ones you want to keep; storage on a device is limited.')}</span></div>
-    ${temp.map(st=>`<div class="draft temp ${st.meta.draftId===state.meta.draftId?'on':''}">
-      <div class="dn"><b>${esc(st.meta.title||'Untitled')}</b><span>${st.meta.slug ? '/' + (st.meta.slug==='index'?'':st.meta.slug) + ' · ' : ''}${st.blocks.length} ${t('blocks')}${st.meta.draftId===state.meta.draftId?' · '+t('open now'):''}</span></div>
-      ${st.meta.draftId===state.meta.draftId?'':`<button data-open="${st.meta.draftId}">${t('Open')}</button>`}
-      <button data-tsave="${st.meta.draftId}">${t('Save')}</button>
-      <button class="del" data-tdiscard="${st.meta.draftId}" title="${t('Discard')}">✕</button>
-    </div>`).join('')}
-    <div class="row" style="margin-top:8px"><button class="tb-btn" id="tempSaveAll" style="border:1px solid var(--line)">${t('Save all')}</button><button class="tb-btn" id="tempDiscardAll" style="border:1px solid var(--line);color:#c0392b">${t('Discard all')}</button></div></div>` : '';
-  box.innerHTML = tempHTML + (list.length ? list.map(d=>`<div class="draft ${d.id===state.meta.draftId?'on':''}">
-      <div class="dn"><b>${esc(d.title||'Untitled')}</b><span>${d.blocks||0} ${t('blocks')} · ${when(d.updated)}${d.id===state.meta.draftId?' · '+t('open now'):''}</span></div>
-      ${d.id===state.meta.draftId?'':`<button data-open="${d.id}">${t('Open')}</button>`}
-      <button class="del" data-delete="${d.id}" title="${t('Delete draft')}">✕</button>
-    </div>`).join('') : `<div class="empty-note">${t('No other drafts on this device yet.')}</div>`);
+  const cur = state.meta.draftId;
+  /* rows: saved drafts (empty leftovers hidden) and unsaved imported pages, all in one shape */
+  const rows = [];
+  for (const d of migrateIndex()){ if (!d.blocks && d.id !== cur) continue; rows.push({ id: d.id, title: d.title, blocks: d.blocks||0, updated: d.updated||0, slug: d.slug||'', site: d.site||'', from: d.from||'', temp: false }); }
+  for (const st of Object.values(TEMP.pages)){ if (rows.some(r => r.id === st.meta.draftId)) continue; rows.push({ id: st.meta.draftId, title: st.meta.title, blocks: st.blocks.length, updated: Date.now(), slug: st.meta.slug||'', site: siteRefOf(st)||'', from: st.meta.importedFrom||'', temp: true }); }
+  if (isTemp() && !rows.some(r => r.id === cur)) rows.push({ id: cur, title: state.meta.title, blocks: state.blocks.length, updated: Date.now(), slug: state.meta.slug||'', site: siteRefOf(state)||'', from: state.meta.importedFrom||'', temp: true });
+  /* group by site; the folder holding the open page comes first, then newest first */
+  const groups = new Map();
+  for (const r of rows){ const k = r.site; if (!groups.has(k)) groups.set(k, { site: k, rows: [], updated: 0, from: '' }); const g = groups.get(k); g.rows.push(r); g.updated = Math.max(g.updated, r.updated); if (!g.from && r.from) g.from = r.from; }
+  const ordered = [...groups.values()].sort((a, b) => (b.rows.some(r=>r.id===cur) - a.rows.some(r=>r.id===cur)) || (b.updated - a.updated));
+  const rowHTML = r => `<div class="draft ${r.temp?'temp':''} ${r.id===cur?'on':''}">
+      <div class="dn"><b>${esc(r.title||'Untitled')}</b><span>${r.slug ? '/' + (r.slug==='index'?'':r.slug) + ' · ' : ''}${r.blocks} ${t('blocks')} · ${r.temp ? t('not saved') : when(r.updated)}${r.id===cur?' · '+t('open now'):''}</span></div>
+      ${r.id===cur?'':`<button data-open="${r.id}">${t('Open')}</button>`}
+      ${r.temp ? `<button data-tsave="${r.id}">${t('Save')}</button><button class="del" data-tdiscard="${r.id}" title="${t('Discard')}">✕</button>` : `<button class="del" data-delete="${r.id}" title="${t('Delete draft')}">✕</button>`}
+    </div>`;
+  box.innerHTML = ordered.length ? ordered.map(g => {
+    const rowsSorted = g.rows.sort((a,b) => (a.slug==='index'?-1:b.slug==='index'?1:0) || (b.updated - a.updated));
+    const unsaved = g.rows.filter(r => r.temp).length;
+    const open = g.rows.some(r => r.id===cur) || ordered.length === 1;
+    if (!g.site) return `<details class="folder" ${open?'open':''}><summary><span class="fname">📝 ${t('My drafts')}</span><span class="fmeta">${g.rows.length} ${t('pages')}</span></summary><div class="frows">${rowsSorted.map(rowHTML).join('')}</div></details>`;
+    const day = new Date(Math.min(...g.rows.map(r => r.updated || Date.now()))).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const name = names[g.site] || ((hostOf(g.from) || t('Imported site')) + ' · ' + day);
+    return `<details class="folder ${unsaved?'has-temp':''}" ${open?'open':''} data-folder="${g.site}">
+      <summary>
+        <span class="fname">📁 ${esc(name)}</span>
+        <span class="fmeta">${g.rows.length} ${t('pages')}${unsaved ? ` · <em>${unsaved} ${t('not saved')}</em>` : ''}</span>
+        <span class="factions">${unsaved ? `<button data-fsave="${g.site}">${t('Save all')}</button>` : ''}<button data-frename="${g.site}" title="${t('Rename folder')}">✎</button><button class="del" data-fdel="${g.site}" title="${t('Delete folder')}">✕</button></span>
+      </summary>
+      <div class="frows">${rowsSorted.map(rowHTML).join('')}</div>
+    </details>`;
+  }).join('') : `<div class="empty-note">${t('No other drafts on this device yet.')}</div>`;
+  const stop = fn => e => { e.preventDefault(); e.stopPropagation(); fn(e); };
   $$('[data-open]',box).forEach(b=>b.addEventListener('click',()=>openDraft(b.dataset.open)));
-  $$('[data-tsave]',box).forEach(b=>b.addEventListener('click',()=>{ if (saveTempPage(b.dataset.tsave)){ toast(t('Saved on this device')); } updateTempUI(); renderDrafts(); }));
+  $$('[data-tsave]',box).forEach(b=>b.addEventListener('click',()=>{ if (saveTempPage(b.dataset.tsave)) toast(t('Saved on this device')); updateTempUI(); renderDrafts(); }));
   $$('[data-tdiscard]',box).forEach(b=>b.addEventListener('click',()=>{ if (confirm(t('Discard this imported page? It is not stored anywhere.'))){ discardTemp(b.dataset.tdiscard); renderDrafts(); } }));
-  const sa = $('#tempSaveAll'); if (sa) sa.addEventListener('click', ()=>{ let n=0; Object.keys(TEMP.pages).forEach(id=>{ if (saveTempPage(id)) n++; }); if (isTemp()) saveTempPage(state.meta.draftId); updateTempUI(); renderDrafts(); toast(n + ' ' + t('pages saved on this device')); });
-  const da = $('#tempDiscardAll'); if (da) da.addEventListener('click', ()=>{ if (confirm(t('Discard every imported page that is not saved?'))){ Object.keys(TEMP.pages).forEach(id=>discardTemp(id)); renderDrafts(); } });
-  $$('[data-delete]',box).forEach(b=>b.addEventListener('click',()=>{ if(confirm(t('Delete this draft? This cannot be undone.'))) { const wasCurrent = b.dataset.delete===state.meta.draftId; deleteDraft(b.dataset.delete); if (wasCurrent){ state = freshState(); selectedId=null; afterStateSwap(); closeModals(); openTemplates(); } } }));
+  $$('[data-fsave]',box).forEach(b=>b.addEventListener('click', stop(()=>{ const site=b.dataset.fsave; let n=0; Object.values(TEMP.pages).filter(st=>(siteRefOf(st)||'')===site).forEach(st=>{ if (saveTempPage(st.meta.draftId)) n++; }); if (isTemp() && (siteRefOf(state)||'')===site && saveTempPage(state.meta.draftId)) n++; updateTempUI(); renderDrafts(); toast(n + ' ' + t('pages saved on this device')); })));
+  $$('[data-frename]',box).forEach(b=>b.addEventListener('click', stop(()=>{ const site=b.dataset.frename; const curName = b.closest('summary').querySelector('.fname').textContent.replace(/^📁\s*/,''); const v = prompt(t('Folder name'), curName); if (v && v.trim()){ setFolderName(site, v.trim().slice(0,40)); renderDrafts(); } })));
+  $$('[data-fdel]',box).forEach(b=>b.addEventListener('click', stop(()=>{ const n = b.closest('details').querySelectorAll('.draft').length; if (confirm(t('Delete this folder and its') + ' ' + n + ' ' + t('pages? This cannot be undone.'))){ deleteFolder(b.dataset.fdel); renderDrafts(); } })));
+  $$('[data-delete]',box).forEach(b=>b.addEventListener('click',()=>{ if(confirm(t('Delete this draft? This cannot be undone.'))) { const wasCurrent = b.dataset.delete===state.meta.draftId; deleteDraft(b.dataset.delete); if (wasCurrent){ state = freshState(); selectedId=null; history=[]; future=[]; afterStateSwap(); } renderDrafts(); } }));
 }
+
 let saveT;
 function autosave(){
   const st = $('#saveState');
@@ -3421,7 +3483,7 @@ async function runImport(){
 function saveDraftState(st){
   try{ localStorage.setItem(DRAFT_PREFIX + st.meta.draftId, JSON.stringify(st)); }catch(e){ return false; }
   const list = draftsIndex().filter(d=>d.id!==st.meta.draftId);
-  list.unshift({ id: st.meta.draftId, title: st.meta.title || 'Untitled', updated: Date.now(), blocks: st.blocks.length, slug: st.meta.slug || '', site: siteRefOf(st) });
+  list.unshift({ id: st.meta.draftId, title: st.meta.title || 'Untitled', updated: Date.now(), blocks: st.blocks.length, slug: st.meta.slug || '', site: siteRefOf(st), from: st.meta.importedFrom || '' });
   saveDraftsIndex(list); return true;
 }
 function applyImportedSite(S){
