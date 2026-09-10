@@ -77,7 +77,8 @@ a{color:inherit;text-decoration:none}
 .tb-cta svg{width:15px;height:15px}
 
 /* ---------- main ---------- */
-.main{display:grid;grid-template-columns:264px minmax(0,1fr) 300px;min-height:0;min-width:0}
+.main{--lw:264px;--rw:300px;display:grid;grid-template-columns:var(--lw) minmax(0,1fr) var(--rw);min-height:0;min-width:0}
+.main > .panel:not(.right){grid-column:1} .main > .canvas{grid-column:2} .main > .panel.right{grid-column:3} /* fixed columns, so a hidden panel never shifts the canvas */
 .panel{
   background:var(--glass);border-right:1px solid var(--line);
   display:flex;flex-direction:column;min-height:0;min-width:0;
@@ -137,6 +138,24 @@ iframe.frame{
   background:#fff;box-shadow:0 24px 60px rgba(43,20,14,.16);display:block;
   color-scheme:light; /* the preview follows the site, not the editor: a dark editor must not switch on a site's dark-mode CSS */
 }
+/* side panels collapse to give the page the whole width; a slim tab on the canvas edge brings them back */
+@media (min-width:881px){
+  body.hide-right .main{--rw:0px}
+  body.hide-right .panel.right{display:none}
+  body.hide-left .main{--lw:0px}
+  body.hide-left .panel:not(.right){display:none}
+}
+.edge-toggle{
+  position:absolute;top:50%;transform:translateY(-50%);width:18px;height:68px;z-index:30;
+  display:flex;align-items:center;justify-content:center;background:var(--glass-strong);border:1px solid var(--line);
+  color:var(--muted);font-size:1rem;line-height:1;opacity:.6;transition:opacity .2s,color .2s,background .2s;
+}
+.edge-toggle:hover{opacity:1;color:var(--ink);background:var(--bg)}
+.edge-toggle.left{left:0;border-left:none;border-radius:0 10px 10px 0}
+.edge-toggle.right{right:0;border-right:none;border-radius:10px 0 0 10px}
+.edge-toggle.left::before{content:"‹"} .edge-toggle.right::before{content:"›"}
+body.hide-left .edge-toggle.left::before{content:"›"} body.hide-right .edge-toggle.right::before{content:"‹"}
+@media (max-width:880px){ .edge-toggle{display:none} }
 .canvas-hint{
   position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
   background:var(--glass-strong);backdrop-filter:blur(12px);border:1px solid var(--line);
@@ -266,7 +285,7 @@ details.item-card .item-body{padding:0 11px 11px}
 
 /* Wide monitors: roomier panels, the canvas still caps at 1280 */
 @media (min-width:1800px){
-  .main{grid-template-columns:300px minmax(0,1fr) 340px}
+  .main{--lw:300px;--rw:340px}
 }
 /* Laptops and scaled displays (1100 to 1400 CSS px): tool buttons become icons, brand drops its word */
 @media (max-width:1400px){
@@ -281,11 +300,11 @@ details.item-card .item-body{padding:0 11px 11px}
   .savestate{min-width:0}
   .tb-cta .lbl{display:none}
   .tb-cta{padding:9px 12px}
-  .main{grid-template-columns:240px minmax(0,1fr) 280px}
+  .main{--lw:240px;--rw:280px}
   .page-title{flex:0 1 200px}
 }
 @media (max-width:1060px){
-  .main{grid-template-columns:224px minmax(0,1fr) 264px}
+  .main{--lw:224px;--rw:264px}
   .tb-group[aria-label="Device preview"]{display:none}
   .topbar{padding:0 12px}
   .brand .bword{display:none}
@@ -468,6 +487,8 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 
     <!-- CENTER: canvas -->
     <div class="canvas">
+      <button class="edge-toggle left" id="toggleLeft" title="Hide or show the blocks panel (Ctrl+[)" aria-label="Toggle blocks panel"></button>
+      <button class="edge-toggle right" id="toggleRight" title="Hide or show the editing panel (Ctrl+\)" aria-label="Toggle editing panel"></button>
       <div class="canvas-inner">
         <div class="frame-wrap" id="frameWrap">
           <iframe class="frame" id="frame" title="Page canvas"></iframe>
@@ -1480,7 +1501,7 @@ const OVERLAY_CSS = `
 .blk-tools .blk-name{font-weight:600;margin-right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
 .blk-tools{max-width:calc(100% - 20px)}
 .blk-tools .m-only{display:none}
-body.m-chrome .blk-tools .m-only{display:inline-block}
+body.m-chrome .blk-tools .m-only,body.r-hidden .blk-tools .m-only{display:inline-block}
 body.m-chrome .blk-tools .blk-name{max-width:90px}
 .blk-tools button{background:none;border:none;color:inherit;cursor:pointer;width:24px;height:24px;border-radius:50%;font-size:13px;line-height:1}
 .blk-tools button:hover{background:color-mix(in srgb, var(--bg) 25%, transparent)}
@@ -1529,7 +1550,7 @@ function markSelected(){
 
 function wireCanvas(){
   const doc = frame.contentDocument;
-  if (doc.body) doc.body.classList.toggle('m-chrome', isSmallChrome());
+  if (doc.body){ doc.body.classList.toggle('m-chrome', isSmallChrome()); doc.body.classList.toggle('r-hidden', document.body.classList.contains('hide-right') && !isSmallChrome()); }
 
   /* click: toolbar actions or select */
   doc.addEventListener('click', e => {
@@ -1669,7 +1690,7 @@ function moveBlockTo(id, idx){
 }
 function blockAction(action, id){
   if (action==='addend'){ openPicker(state.blocks.length); return; }
-  if (action==='edit'){ select(id); setView('style'); return; }
+  if (action==='edit'){ setPanel('right', false); select(id); setView('style'); return; }
   const i = state.blocks.findIndex(b=>b.id===id); if(i<0) return;
   if (action==='addat'){ openPicker(i+1); return; }
   if (action==='del'){ snapshot(); state.blocks.splice(i,1); if(selectedId===id) selectedId=null; }
@@ -2177,7 +2198,7 @@ _g1t:'Add blocks', _g1b:'Click any block in the left panel, drag it onto the pag
 _g2t:'Click text to edit it', _g2b:'Headings, paragraphs, buttons: click them right on the page and type. Lists like pricing plans are edited in the right panel.',
 _g3t:'Make it yours in Design', _g3b:'The Design tab (top right) changes colors, fonts, button shape, content width, type size and hero texture for the whole site at once. Each block also has a Section group for its anchor id, spacing and alignment.',
 _g4t:'Export when ready', _g4b:'Export gives you the finished page as one clean, self-contained HTML file, ready to drop into any BlinkLoop repo or client project.',
-_keys:'Handy keys: <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move · <kbd>Delete</kbd> removes the selected block · <kbd>Esc</kbd> deselects.',
+_keys:'Handy keys: <kbd>Ctrl</kbd>+<kbd>\\</kbd> hide or show the editing panel · <kbd>Ctrl</kbd>+<kbd>[</kbd> the blocks panel · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move · <kbd>Delete</kbd> removes the selected block · <kbd>Esc</kbd> deselects.',
 _pickS:'It will be inserted right where you clicked ＋.',
 _exS:'You get one self-contained HTML file, and that file <b>is</b> the website. No plugins, nothing to install.',
 _deploy:'<b>To put it online:</b> name the file <b>index.html</b> and drop it into your hosting. For Vercel, add it to your repo and push, or drag the file into a new Vercel project. It\u2019s live in seconds. Want BlinkLoop to host and maintain it for you? That\u2019s exactly what our <b>care plans</b> are for.',
@@ -3717,7 +3738,16 @@ $$('.mobile-nav button').forEach(b=>b.addEventListener('click', ()=>setView(b.da
 /* picking a block or a layer on a phone takes you back to the page to see it */
 $('#lib').addEventListener('click', e=>{ if (isSmallChrome() && e.target.closest('.lib-item')) setTimeout(()=>setView('page'), 60); });
 $('#layers').addEventListener('click', e=>{ if (isSmallChrome() && e.target.closest('.layer')) setTimeout(()=>setView('page'), 60); });
-function syncChrome(){ const d = frame.contentDocument; if (d && d.body) d.body.classList.toggle('m-chrome', isSmallChrome()); if (!isSmallChrome()) setView('page'); }
+function syncChrome(){ const d = frame.contentDocument; if (d && d.body){ d.body.classList.toggle('m-chrome', isSmallChrome()); d.body.classList.toggle('r-hidden', document.body.classList.contains('hide-right') && !isSmallChrome()); } if (!isSmallChrome()) setView('page'); }
+const PANELS_KEY = 'lb-panels';
+function setPanel(side, hidden){
+  document.body.classList.toggle('hide-' + side, hidden);
+  try{ localStorage.setItem(PANELS_KEY, JSON.stringify({ left: document.body.classList.contains('hide-left'), right: document.body.classList.contains('hide-right') })); }catch(e){}
+  syncChrome();
+}
+try{ const pp = JSON.parse(localStorage.getItem(PANELS_KEY) || '{}'); if (pp.left) document.body.classList.add('hide-left'); if (pp.right) document.body.classList.add('hide-right'); }catch(e){}
+$('#toggleLeft').addEventListener('click', ()=>setPanel('left', !document.body.classList.contains('hide-left')));
+$('#toggleRight').addEventListener('click', ()=>setPanel('right', !document.body.classList.contains('hide-right')));
 smallChrome.addEventListener('change', syncChrome);
 window.addEventListener('resize', syncChrome);
 document.addEventListener('visibilitychange', syncChrome);
@@ -3764,6 +3794,8 @@ document.addEventListener('keydown', e=>{
   if(mod && e.key.toLowerCase()==='z' && !e.shiftKey && !typing){ e.preventDefault(); undo(); }
   else if(mod && (e.key.toLowerCase()==='y' || (e.key.toLowerCase()==='z'&&e.shiftKey)) && !typing){ e.preventDefault(); redo(); }
   else if(mod && e.key.toLowerCase()==='s'){ e.preventDefault(); saveCurrentDraft(); }
+  else if(mod && e.key==='\\'){ e.preventDefault(); setPanel('right', !document.body.classList.contains('hide-right')); }
+  else if(mod && e.key==='['){ e.preventDefault(); setPanel('left', !document.body.classList.contains('hide-left')); }
   else if(mod && e.key.toLowerCase()==='d' && selectedId && !typing){ e.preventDefault(); blockAction('dupe', selectedId); toast(t('Duplicated')); }
   else if(e.altKey && (e.key==='ArrowUp'||e.key==='ArrowDown') && selectedId && !typing){ e.preventDefault(); blockAction(e.key==='ArrowUp'?'up':'down', selectedId); }
   else if((e.key==='Delete'||e.key==='Backspace') && selectedId && !typing){ blockAction('del', selectedId); toast(t('Block removed. Ctrl+Z to undo')); }
