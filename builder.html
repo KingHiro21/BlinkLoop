@@ -500,6 +500,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     <div class="field" style="margin-top:12px"><label>How should we bring it in?</label>
       <div class="seg" id="importMode"><button type="button" data-v="exact" class="on">Exact copy</button><button type="button" data-v="blocks">Rebuild as blocks</button></div>
       <div class="empty-note" id="importModeNote" style="padding:6px 0 0">The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.</div>
+      <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>Whole site</b>: every page linked from this address (up to 12), one draft per page, menus linking between them</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
     </div>
     <div class="access-err" id="importErr"></div>
     <div id="importResult" hidden>
@@ -630,6 +631,11 @@ const FONTS = {
   elegant: { name:'Cormorant Garamond + Lato', disp:"'Cormorant Garamond',serif", body:"'Lato',system-ui,sans-serif", url:'family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700' },
   warm:    { name:'Lora + Work Sans', disp:"'Lora',serif", body:"'Work Sans',system-ui,sans-serif", url:'family=Lora:wght@500;600;700&family=Work+Sans:wght@400;500;600' }
 };
+/* Whole-site imports share one stylesheet: stored once on this device, referenced by cssRef on each page's block.
+   Project files (.loop.json) carry it as state.siteCss so a draft can travel to another device. */
+const SITE_CSS_PREFIX = 'loopbuilder-sitecss-'; const siteCssMem = {};
+function siteCss(ref){ if (!ref) return ''; if (siteCssMem[ref] !== undefined) return siteCssMem[ref]; let v = ''; try{ v = localStorage.getItem(SITE_CSS_PREFIX + ref) || ''; }catch(e){} siteCssMem[ref] = v; return v; }
+function storeSiteCss(ref, css){ siteCssMem[ref] = css || ''; try{ localStorage.setItem(SITE_CSS_PREFIX + ref, css || ''); }catch(e){ toast(t('Not enough space on this device to keep the site styles. Export soon.')); } }
 const PALETTES = {
   ember: { name:'Ember',  bg:'#FFFCF7', ink:'#3A1B1E', accent:'#F45D2A', accent2:'#7F2027' },
   sunset:{ name:'Sunset', bg:'#FFF6F0', ink:'#33202A', accent:'#FF5E5B', accent2:'#FFB627' },
@@ -740,6 +746,9 @@ section{padding:var(--secpad) 0}
 .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px;transition:transform .3s cubic-bezier(.22,.8,.24,1),box-shadow .3s}
 .feat:hover{transform:translateY(-4px);box-shadow:0 14px 34px color-mix(in srgb,var(--ink) 10%, transparent)}
 .feat .ic{font-size:1.6rem;margin-bottom:14px}
+.feat.has-img{padding-top:0;overflow:hidden}
+.feat .feat-img{display:block;width:calc(100% + 48px);max-width:none;margin:0 -24px 18px;aspect-ratio:16/10;object-fit:cover}
+.feat.has-img .ic{margin-top:0}
 .feat h3{font-size:1.02rem;margin-bottom:8px}
 .feat p{font-size:.9rem;color:var(--muted)}
 
@@ -1030,11 +1039,11 @@ const BLOCKS = {
       {k:'cols',l:'Columns',t:'seg',opts:[['2','2'],['3','3'],['4','4']]},
       {k:'iconStyle',l:'Icons',t:'seg',opts:[['emoji','Emoji'],['number','Numbers'],['none','None']]},
       {k:'variant',l:'Style',t:'seg',opts:[['default','Default'],['tint','Tinted'],['dark','Dark']]},
-      {k:'items',l:'Cards',t:'items',item:[{k:'icon',l:'Icon (emoji)',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Text',t:'textarea'}],titleKey:'title'}
+      {k:'items',l:'Cards',t:'items',item:[{k:'img',l:'Picture (optional)',t:'text',up:true},{k:'icon',l:'Icon (emoji)',t:'text'},{k:'title',l:'Title',t:'text'},{k:'text',l:'Text',t:'textarea'}],titleKey:'title'}
     ],
     render:p=>`<section id="features" class="${vtc(p)}"><div class="wrap">
       <div class="sec-head">${p.eyebrow?`<span class="eyebrow"${ed('eyebrow')}>${esc(p.eyebrow)}</span>`:''}<h2${ed('title')}>${esc(p.title)}</h2>${p.sub?`<p${ed('sub')}>${esc(p.sub)}</p>`:''}</div>
-      <div class="feat-grid c${esc(p.cols)}">${p.items.map((i,n)=>`<div class="feat">${p.iconStyle==='none'?'':p.iconStyle==='number'?`<div class="ic num">${n+1}</div>`:`<div class="ic">${esc(i.icon)}</div>`}<h3>${esc(i.title)}</h3><p>${esc(i.text)}</p></div>`).join('')}</div>
+      <div class="feat-grid c${esc(p.cols)}">${p.items.map((i,n)=>`<div class="feat${i.img?' has-img':''}">${i.img?`<img class="feat-img" src="${escAttr(i.img)}" alt="${escAttr(i.title||'')}" loading="lazy" />`:''}${p.iconStyle==='none'?'':p.iconStyle==='number'?`<div class="ic num">${n+1}</div>`:`<div class="ic">${esc(i.icon)}</div>`}<h3>${esc(i.title)}</h3><p>${esc(i.text)}</p></div>`).join('')}</div>
     </div></section>`
   },
 
@@ -1329,13 +1338,14 @@ const BLOCKS = {
      importer, so it cannot restyle the rest of the site; a small revert block keeps our own base styles out of it. */
   html: {
     name:'Imported page', icon:'🧱', desc:'Exact copy of a page, or your own HTML', section:false,
-    defaults:{ scopeId:'', rootClass:'', rootStyle:'', rootLang:'', rootDir:'', html:'<div style="padding:60px 24px;text-align:center;font-family:system-ui"><h2>Custom HTML</h2><p>Paste markup in the panel on the right, or use Projects → Import from a website → Exact copy.</p></div>', css:'', fonts:[] },
+    defaults:{ scopeId:'', cssRef:'', rootClass:'', rootStyle:'', rootLang:'', rootDir:'', html:'<div style="padding:60px 24px;text-align:center;font-family:system-ui"><h2>Custom HTML</h2><p>Paste markup in the panel on the right, or use Projects → Import from a website → Exact copy.</p></div>', css:'', fonts:[] },
     fields:[{t:'media',l:'Pictures and videos on this page'},{k:'html',l:'HTML',t:'textarea'},{k:'css',l:'CSS (applies inside this block only)',t:'textarea'},{t:'action',id:'copyAssets',l:'Copy images and fonts to BlinkLoop storage',note:'Images and fonts still load from the original site, and fonts from another domain often refuse to load at all. This copies each file into our storage and updates the page, so the copy looks right and keeps working when the old site goes away.'}],
     render:p=>{
       const id = p.scopeId || 'imp-custom';
       const fonts = (p.fonts||[]).filter(u=>/^https:\/\/fonts\.googleapis\.com\//.test(u)).map(u=>`@import url("${escAttr(u)}");`).join('');
       const css = String(p.css||'').replace(/<\/style/gi,'<\\/style');
-      return `<section class="imp-sec">${fonts?`<style>${fonts}</style>`:''}${css?`<style>${css}</style>`:''}<div id="${escAttr(id)}" class="imp-root${p.rootClass?' '+escAttr(p.rootClass):''}"${p.rootStyle?' style="'+escAttr(p.rootStyle)+'"':''}${p.rootLang?' lang="'+escAttr(p.rootLang)+'"':''}${p.rootDir?' dir="'+escAttr(p.rootDir)+'"':''}${EDIT?' data-rawedit="html"':''}>${p.html||''}</div></section>`;
+      const shared = p.cssRef ? siteCss(p.cssRef) : '';
+      return `<section class="imp-sec">${fonts?`<style>${fonts}</style>`:''}${shared?`<style>${shared}</style>`:''}${css?`<style>${css}</style>`:''}<div id="${escAttr(id)}" class="imp-root${p.rootClass?' '+escAttr(p.rootClass):''}"${p.rootStyle?' style="'+escAttr(p.rootStyle)+'"':''}${p.rootLang?' lang="'+escAttr(p.rootLang)+'"':''}${p.rootDir?' dir="'+escAttr(p.rootDir)+'"':''}${EDIT?' data-rawedit="html"':''}>${p.html||''}</div></section>`;
     }
   }
 };
@@ -1552,6 +1562,7 @@ function snapshot(){
 function undo(){ if(!history.length) return; future.push(JSON.stringify(state)); state = JSON.parse(history.pop()); afterStateSwap(); }
 function redo(){ if(!future.length) return; history.push(JSON.stringify(state)); state = JSON.parse(future.pop()); afterStateSwap(); }
 function afterStateSwap(){
+  if (state.siteCss){ for (const [k,v] of Object.entries(state.siteCss)) storeSiteCss(k, v); delete state.siteCss; }
   if (selectedId && !state.blocks.find(b=>b.id===selectedId)) selectedId = null;
   renderCanvas(); renderLayers(); renderInspector(); renderDesign(); autosave(); updateHistoryBtns();
   $('#pageTitle').value = state.meta.title;
@@ -3178,7 +3189,7 @@ const slug = s => (s||'site').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/
 function openModal(id){ $('#'+id).classList.add('show'); }
 function closeModals(){ $$('.modal-bg').forEach(m=>m.classList.remove('show')); }
 
-$('#exportBtn').addEventListener('click', ()=>{
+$('#exportBtn').addEventListener('click', ()=>{ if (state.meta.slug) $('#exportName').value = state.meta.slug + '.html';
   if(!state.blocks.length) return toast(t('Your page is empty. Add a block first'));
   openModal('exportModal');
 });
@@ -3268,7 +3279,9 @@ function autosave(){
 $('#jsonBtn').addEventListener('click', ()=>{ renderDrafts(); openModal('jsonModal'); });
 $('#newDraft').addEventListener('click', ()=>{ closeModals(); state = freshState(); selectedId=null; history=[]; future=[]; afterStateSwap(); openTemplates(); });
 $('#dlJson').addEventListener('click', ()=>{
-  download(slug(state.meta.title)+'.loop.json', JSON.stringify(state,null,2), 'application/json');
+  const refs = {}; state.blocks.forEach(b=>{ if (b.type==='html' && b.props.cssRef) refs[b.props.cssRef] = siteCss(b.props.cssRef); });
+  const out = Object.keys(refs).length ? Object.assign({}, state, { siteCss: refs }) : state;
+  download(slug(state.meta.title)+'.loop.json', JSON.stringify(out,null,2), 'application/json');
   toast(t('Project file downloaded'));
 });
 $('#upJson').addEventListener('click', ()=> $('#jsonFile').click());
@@ -3297,9 +3310,10 @@ $('#resetBtn').addEventListener('click', ()=>{
 /* /api/import fetches the page server-side and maps it to blocks; here we only fill in defaults,
    pick a matching palette/font, and let the user decide: new draft or append. */
 let importedPage = null;
-let importMode = 'exact';
+let importMode = 'exact'; let importWhole = false;
+$('#importSite').addEventListener('click', ()=>{ importWhole = !importWhole; $('#importSite').classList.toggle('on', importWhole); $('#importSite').setAttribute('aria-checked', String(importWhole)); $('#importResult').hidden = true; importedPage = null; });
 const IMPORT_MODE_NOTE = { exact: 'The page looks the same as the original: its layout, styles and images, as one editable block. Scripts are left out.', blocks: 'We read the headline, sections, prices, questions, photos and contact details and rebuild them as separate blocks in your chosen design.' };
-$$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=b.dataset.v; $$('#importMode button').forEach(x=>x.classList.toggle('on',x===b)); $('#importModeNote').textContent=t(IMPORT_MODE_NOTE[importMode]); $('#importResult').hidden=true; importedPage=null; }));
+$$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=b.dataset.v; $$('#importMode button').forEach(x=>x.classList.toggle('on',x===b)); $('#importModeNote').textContent=t(IMPORT_MODE_NOTE[importMode]); $('#importSiteWrap').hidden = importMode!=='exact'; $('#importResult').hidden=true; importedPage=null; }));
 function normaliseImported(page){
   if (page.exact){
     const x = page.exact;
@@ -3313,24 +3327,48 @@ async function runImport(){
   const err = $('#importErr'); err.textContent = '';
   $('#importResult').hidden = true; importedPage = null;
   if (!url){ err.textContent = t('Paste a web address first.'); return; }
-  const go = $('#importGo'); go.disabled = true; go.textContent = t('Reading…');
+  const go = $('#importGo'); go.disabled = true; go.textContent = importMode==='exact' && importWhole ? t('Reading the site, this can take a while…') : t('Reading…');
   try{
-    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, mode: importMode }) });
+    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, mode: importMode==='exact' ? (importWhole ? 'site' : 'exact') : 'blocks' }) });
     if (r.status === 401){ err.textContent = t('Your session has expired. Sign in again.'); return; }
     const d = await r.json();
     if (!d.ok){
       err.textContent = { 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.');
       return;
     }
-    importedPage = d.page;
+    importedPage = d.site ? { site: d.site } : d.page;
+    $('#importUse').textContent = d.site ? t('Create') + ' ' + d.site.pages.length + ' ' + t('drafts, one per page') : t('Use this as a new draft');
+    $('#importAppend').hidden = !!d.site;
     $('#importFound').innerHTML = (d.found||[]).map(f => `<li>${esc(f)}</li>`).join('') + (d.warn||[]).map(w => `<li style="list-style:none;color:#8a5a12">⚠ ${esc(w)}</li>`).join('') || `<li>${t('A page, but no recognisable sections. You will get a headline and a footer to start from.')}</li>`;
-    $('#importNote').textContent = d.page.exact ? t('Images still load from the original site. Select the block and use “Copy images and fonts to BlinkLoop storage” to make the copy independent. Click any text on the page to edit it.') : t('Images still point at the original site. Replace them from the block panel once the page is yours. Colours and fonts are matched where the site declares them; everything else stays editable.');
+    $('#importNote').textContent = d.site ? t('Each page becomes its own draft (see Projects). Open one, edit text and pictures in place, then Export it as slug.html; the menus already link the pages to each other.') : d.page.exact ? t('Images still load from the original site. Select the block and use “Copy images and fonts to BlinkLoop storage” to make the copy independent. Click any text on the page to edit it.') : t('Images still point at the original site. Replace them from the block panel once the page is yours. Colours and fonts are matched where the site declares them; everything else stays editable.');
     $('#importResult').hidden = false;
   }catch(e){ err.textContent = t('Could not reach the server. Check your connection.'); }
   finally{ go.disabled = false; go.textContent = t('Read the site'); }
 }
+function saveDraftState(st){
+  try{ localStorage.setItem(DRAFT_PREFIX + st.meta.draftId, JSON.stringify(st)); }catch(e){ return false; }
+  const list = draftsIndex().filter(d=>d.id!==st.meta.draftId);
+  list.unshift({ id: st.meta.draftId, title: st.meta.title || 'Untitled', updated: Date.now(), blocks: st.blocks.length });
+  saveDraftsIndex(list); return true;
+}
+function applyImportedSite(S){
+  storeSiteCss(S.scopeId, S.sharedCss);
+  const ids = []; let failed = 0;
+  S.pages.forEach(pg => {
+    const st = freshState(); const x = pg.exact;
+    st.meta.title = pg.meta.title || pg.slug; st.meta.desc = pg.meta.desc || ''; st.meta.importedFrom = pg.url; st.meta.slug = pg.slug; st.meta.draftId = uid();
+    st.blocks = [{ id: uid(), type: 'html', props: Object.assign(clone(BLOCKS.html.defaults), { scopeId: S.scopeId, cssRef: S.scopeId, rootClass: x.rootClass||'', rootStyle: x.rootStyle||'', rootLang: x.rootLang||'', rootDir: x.rootDir||'', html: x.html||'', css: x.css||'', fonts: S.fonts||[] }) }];
+    if (saveDraftState(st)) ids.push(st.meta.draftId); else failed++;
+  });
+  if (!ids.length){ toast(t('Could not store the pages on this device (out of space).')); return; }
+  let data = null; try{ data = JSON.parse(localStorage.getItem(DRAFT_PREFIX + ids[0]) || 'null'); }catch(e){}
+  if (data){ state = data; history = []; future = []; selectedId = null; afterStateSwap(); }
+  importedPage = null; closeModals(); $('#importUrl').value = ''; $('#importResult').hidden = true;
+  toast(ids.length + ' ' + t('pages imported as drafts') + (failed ? ', ' + failed + ' ' + t('skipped') : '') + '. ' + t('Open them from Projects.'));
+}
 function applyImported(mode){
   if (!importedPage) return;
+  if (importedPage.site){ applyImportedSite(importedPage.site); return; }
   const blocks = normaliseImported(importedPage);
   snapshot();
   if (mode === 'append'){

@@ -237,7 +237,8 @@ async function buildPage(html, pageUrl){
     /* the card is the ancestor that holds this heading alone, plus its text */
     let card = h.parentNode;
     while (card.parentNode && card.parentNode !== scope && card.parentNode.querySelectorAll('h3, h4').length === 1) card = card.parentNode;
-    return { h, card, title: cut(h.text, 40), text: cut((card.querySelectorAll('p').map(p => textOf(p)).find(t => t && t !== clean(h.text)) || textOf(card).replace(clean(h.text), '')), 160) };
+    const im = card.querySelectorAll('img').find(i => !isDecorativeImg(i) && imgSrc(i, pageUrl));
+    return { h, card, title: cut(h.text, 40), text: cut((card.querySelectorAll('p').map(p => textOf(p)).find(t => t && t !== clean(h.text)) || textOf(card).replace(clean(h.text), '')), 160), img: im ? imgSrc(im, pageUrl) : '' };
   });
 
   /* classify one section into a block; `hero` means the h1's own section, where only list-like content counts */
@@ -300,7 +301,7 @@ async function buildPage(html, pageUrl){
         const items = cards.slice(0, 6).map((c, i) => ({ img: imgs[i] ? imgs[i].src : '', name: c.title, role: '', bio: c.text }));
         blocks.push({ id: uid(), type: 'team', props: { ...props, sub: '', items } }); found.push(`Team: ${items.length} people`); return true;
       }
-      blocks.push({ id: uid(), type: 'features', props: { ...props, title: title || 'What we offer', sub: paras[0] && !cards.some(c => c.text === paras[0]) ? cut(paras[0], 160) : '', cols: String(Math.min(4, Math.max(2, cards.length >= 4 ? 4 : cards.length))), iconStyle: 'number', items: cards.map(c => ({ icon: '✦', title: c.title, text: c.text || ' ' })) } });
+      blocks.push({ id: uid(), type: 'features', props: { ...props, title: title || 'What we offer', sub: paras[0] && !cards.some(c => c.text === paras[0]) ? cut(paras[0], 160) : '', cols: String(Math.min(4, Math.max(2, cards.length >= 4 ? 4 : cards.length))), iconStyle: cards.some(c => c.img) ? 'none' : 'number', items: cards.map(c => ({ icon: '✦', title: c.title, text: c.text || ' ', img: c.img || '' })) } });
       found.push(`Features: ${cards.length} cards`); return true;
     }
     if (hero) return false;
@@ -483,65 +484,57 @@ function rootFontPx(css){
   if (!m) return 16;
   const v = parseFloat(m[1]); return m[2] === 'px' ? v : m[2] === '%' ? 16 * v / 100 : 16 * v;
 }
-async function buildExact(html, pageUrl){
-  const doc = parse(html, { comment: false });
-  const found = []; const warn = [];
-  const meta = name => { const el = doc.querySelector(`meta[name="${name}"]`) || doc.querySelector(`meta[property="${name}"]`); return el ? clean(el.getAttribute('content')) : ''; };
-  const title = clean(doc.querySelector('title')?.text || '');
-  const desc = meta('description') || meta('og:description');
-  const base = doc.querySelector('base[href]') ? abs(pageUrl, doc.querySelector('base[href]').getAttribute('href')) || pageUrl : pageUrl;
-
-  /* stylesheets in document order: <link rel=stylesheet> and <style>, fonts from Google kept as imports */
-  const sheets = []; const fonts = [];
+const SHEET_ACCEPT = /text\/css|text\/plain|application\/octet-stream/;
+/* one linked stylesheet, absolutized, with one level of @import folded in; cached across pages of a site */
+function fetchCss(href, cache){
+  if (cache && cache.has(href)) return cache.get(href);
+  const p = fetchResource(href, { accept: SHEET_ACCEPT, maxBytes: CSS_FILE_MAX, timeout: 6000, acceptHeader: 'text/css,*/*;q=0.1' })
+    .then(async r => {
+      let css = r.buf.toString('utf8'); const base = r.finalUrl; const fonts = [];
+      for (const im of [...css.matchAll(/@import\s+(?:url\()?\s*['"]?([^'")\s;]+)['"]?\s*\)?[^;]*;/gi)]){
+        const u = abs(base, im[1]); if (!u) continue;
+        if (FONT_HOST.test(u)){ fonts.push(u); continue; }
+        try { const r2 = await fetchResource(u, { accept: SHEET_ACCEPT, maxBytes: CSS_FILE_MAX, timeout: 5000, acceptHeader: 'text/css,*/*;q=0.1' }); css = cssUrls(r2.buf.toString('utf8'), r2.finalUrl) + '\n' + css; } catch {}
+      }
+      return { css: cssUrls(css, base), fonts, ok: true };
+    }).catch(() => ({ css: '', fonts: [], ok: false }));
+  if (cache) cache.set(href, p);
+  return p;
+}
+/* every stylesheet a document uses, in order: linked files and inline <style> blocks; Google Fonts kept as links */
+async function collectSheets(doc, base, cache){
+  const linked = [], inline = [], fonts = [];
   for (const el of doc.querySelectorAll('link[rel], style')){
-    if (String(el.tagName).toUpperCase() === 'STYLE'){ sheets.push({ css: el.text || el.innerHTML || '', base }); continue; }
+    if (String(el.tagName).toUpperCase() === 'STYLE'){ inline.push(cssUrls(el.text || el.innerHTML || '', base)); continue; }
     if (!/stylesheet/i.test(el.getAttribute('rel') || '')) continue;
     const media = el.getAttribute('media'); if (media && /print/i.test(media) && !/all|screen/i.test(media)) continue;
     const href = abs(base, el.getAttribute('href')); if (!href) continue;
     if (FONT_HOST.test(href)){ fonts.push(href); continue; }
-    if (sheets.filter(s => s.href).length < CSS_FILES_MAX) sheets.push({ href, media: media && !/^(all|screen)/i.test(media) ? media : '' });
+    if (linked.length < CSS_FILES_MAX && !linked.some(l => l.href === href)) linked.push({ href, media: media && !/^(all|screen)/i.test(media) ? media : '' });
   }
-  let total = 0;
-  await Promise.all(sheets.filter(s => s.href).map(async s => {
-    try { const r = await fetchResource(s.href, { accept: /text\/css|text\/plain|application\/octet-stream/, maxBytes: CSS_FILE_MAX, timeout: 6000, acceptHeader: 'text/css,*/*;q=0.1' }); s.css = r.buf.toString('utf8'); s.base = r.finalUrl; }
-    catch (e) { s.css = ''; s.failed = true; }
-  }));
-  /* one level of @import inside fetched CSS (themes sometimes chain files) */
-  for (const s of sheets){
-    if (!s.css) continue;
-    const imports = [...s.css.matchAll(/@import\s+(?:url\()?\s*['"]?([^'")\s;]+)['"]?\s*\)?[^;]*;/gi)];
-    for (const im of imports){
-      const u = abs(s.base, im[1]); if (!u) continue;
-      if (FONT_HOST.test(u)){ fonts.push(u); continue; }
-      if (total > CSS_TOTAL_MAX) break;
-      try { const r = await fetchResource(u, { accept: /text\/css|text\/plain|application\/octet-stream/, maxBytes: CSS_FILE_MAX, timeout: 5000, acceptHeader: 'text/css,*/*;q=0.1' }); const c = r.buf.toString('utf8'); total += c.length; s.css = cssUrls(c, r.finalUrl) + '\n' + s.css; } catch {}
-    }
-  }
-  const scopeId = 'imp-' + crypto.randomBytes(3).toString('hex');
-  const scope = '#' + scopeId;
-  let css = '';
-  for (const s of sheets){
-    if (!s.css) continue;
-    total += s.css.length; if (total > CSS_TOTAL_MAX){ warn.push('Some stylesheets were skipped (size limit).'); break; }
-    let c = cssUrls(s.css, s.base || base);
-    c = s.media ? `@media ${s.media}{${c}}` : c;
-    css += c + '\n';
-  }
-  const rootPx = rootFontPx(css);
+  const results = await Promise.all(linked.map(l => fetchCss(l.href, cache)));
+  results.forEach((r, i) => { linked[i].css = r.css; linked[i].ok = r.ok; fonts.push(...r.fonts); });
+  return { linked, inline, fonts: [...new Set(fonts)] };
+}
+const wrapMedia = l => l.media ? `@media ${l.media}{${l.css}}` : l.css;
+/* what only appears once the original site's scripts run, and what should never appear in a copy */
+const OVERRIDES = scope => `\n${scope} [data-aos],${scope} .aos-init,${scope} .elementor-invisible,${scope} .wow,${scope} .animate__animated,${scope} .fade-in,${scope} .reveal,${scope} .lazyload,${scope} .lazy,${scope} .b-lazy,${scope} img[data-src],${scope} [data-animate],${scope} .sal-animate,${scope} [data-sal]{opacity:1!important;visibility:visible!important;transform:none!important;animation:none!important}`
+  + `\n${scope} .preloader,${scope} #preloader,${scope} .page-loader,${scope} .loading-overlay,${scope} .cookie-notice,${scope} #cookie-law-info-bar,${scope} .cky-consent-container,${scope} .cc-window{display:none!important}`;
+/* raw css -> css that only applies inside the wrapper; rootPx converts rem when the site sets html{font-size} */
+function finalizeCss(raw, scope, rootPx, overrides){
+  let css = raw;
   if (rootPx && Math.abs(rootPx - 16) > 0.5){
     css = css.replace(/(-?[\d.]+)rem\b/g, (m, v) => (Math.round(parseFloat(v) * rootPx * 100) / 100) + 'px');
     css = css.replace(/((?:^|[},\s])(?:html|:root)[^{]*\{[^}]*?)font-size\s*:[^;}]*;?/i, '$1');
   }
   css = scopeCSS(css, scope);
-  /* things that only appear once the original site's scripts run */
-  css += `\n${scope} [data-aos],${scope} .aos-init,${scope} .elementor-invisible,${scope} .wow,${scope} .animate__animated,${scope} .fade-in,${scope} .reveal,${scope} .lazyload,${scope} .lazy,${scope} .b-lazy,${scope} img[data-src],${scope} [data-animate],${scope} .sal-animate,${scope} [data-sal]{opacity:1!important;visibility:visible!important;transform:none!important;animation:none!important}`;
-  css += `\n${scope} .preloader,${scope} #preloader,${scope} .page-loader,${scope} .loading-overlay,${scope} .cookie-notice,${scope} #cookie-law-info-bar,${scope} .cky-consent-container,${scope} .cc-window{display:none!important}`;
-  css = css.replace(/<\/style/gi, '<\\/style');
-
-  /* body: drop what cannot run or would leak, make every address absolute */
+  if (overrides) css += OVERRIDES(scope);
+  return css.replace(/<\/style/gi, '<\\/style');
+}
+/* the body, cleaned: no scripts, no handlers, every address absolute, lazy attributes promoted */
+function cleanBody(doc, base){
   const body = doc.querySelector('body') || doc;
-  const dropSel = 'script, noscript, template, link, meta, style, base, title, object, embed, applet';
-  body.querySelectorAll(dropSel).forEach(n => n.remove());
+  body.querySelectorAll('script, noscript, template, link, meta, style, base, title, object, embed, applet').forEach(n => n.remove());
   let iframes = 0;
   for (const f of body.querySelectorAll('iframe')){
     const src = abs(base, f.getAttribute('src') || f.getAttribute('data-src'));
@@ -550,13 +543,11 @@ async function buildExact(html, pageUrl){
   }
   let imgs = 0, links = 0;
   for (const el of body.querySelectorAll('*')){
-    for (const [k] of Object.entries(el.attributes || {})){
-      if (/^on/i.test(k)) el.removeAttribute(k);
-    }
+    for (const [k] of Object.entries(el.attributes || {})) if (/^on/i.test(k)) el.removeAttribute(k);
     const tag = String(el.tagName).toUpperCase();
     const lazy = el.getAttribute('data-src') || el.getAttribute('data-lazy-src');
     const src = el.getAttribute('src');
-    if (lazy && (!src || /^data:/i.test(src))){ el.setAttribute('src', lazy); }
+    if (lazy && (!src || /^data:/i.test(src))) el.setAttribute('src', lazy);
     const lazySet = el.getAttribute('data-srcset') || el.getAttribute('data-lazy-srcset');
     if (lazySet && !el.getAttribute('srcset')) el.setAttribute('srcset', lazySet);
     for (const a of ['src', 'href', 'poster', 'action', 'data-bg', 'data-background']){
@@ -569,7 +560,6 @@ async function buildExact(html, pageUrl){
       const v = el.getAttribute(a); if (!v) continue;
       el.setAttribute(a, v.split(',').map(part => { const [u, d] = part.trim().split(/\s+/); const au = abs(base, u); return (au || u) + (d ? ' ' + d : ''); }).join(', '));
     }
-    /* lazy background images: data-bg="x.jpg" or data-bg="url(x.jpg)" become a real inline background */
     const bg = el.getAttribute('data-bg') || el.getAttribute('data-background') || el.getAttribute('data-background-image') || el.getAttribute('data-bg-url');
     if (bg && !/background/i.test(el.getAttribute('style') || '')){
       const u = abs(base, bg.replace(/^url\((['"]?)(.*)\1\)$/i, '$2'));
@@ -582,17 +572,123 @@ async function buildExact(html, pageUrl){
     if (el.getAttribute('contenteditable')) el.removeAttribute('contenteditable');
   }
   const htmlEl = doc.querySelector('html');
-  const rootClass = clean(((htmlEl && htmlEl.getAttribute('class')) || '').replace(/\bno-js\b/g, 'js') + ' ' + ((body.getAttribute && body.getAttribute('class')) || ''));
-  const rootStyle = cssUrls(clean((body.getAttribute && body.getAttribute('style')) || ''), base).replace(/"/g, "'");
-  const rootLang = clean((htmlEl && htmlEl.getAttribute('lang')) || '');
-  const rootDir = clean((htmlEl && htmlEl.getAttribute('dir')) || (body.getAttribute && body.getAttribute('dir')) || '');
-  let inner = body.innerHTML.replace(/<\/?(html|body|head)\b[^>]*>/gi, '');
+  return {
+    inner: body.innerHTML.replace(/<\/?(html|body|head)\b[^>]*>/gi, ''),
+    rootClass: clean(((htmlEl && htmlEl.getAttribute('class')) || '').replace(/\bno-js\b/g, 'js') + ' ' + ((body.getAttribute && body.getAttribute('class')) || '')),
+    rootStyle: cssUrls(clean((body.getAttribute && body.getAttribute('style')) || ''), base).replace(/"/g, "'"),
+    rootLang: clean((htmlEl && htmlEl.getAttribute('lang')) || ''),
+    rootDir: clean((htmlEl && htmlEl.getAttribute('dir')) || (body.getAttribute && body.getAttribute('dir')) || ''),
+    imgs, links, iframes
+  };
+}
+const pageMeta = (doc, pageUrl) => {
+  const meta = name => { const el = doc.querySelector(`meta[name="${name}"]`) || doc.querySelector(`meta[property="${name}"]`); return el ? clean(el.getAttribute('content')) : ''; };
+  const title = clean(doc.querySelector('title')?.text || '');
+  const base = doc.querySelector('base[href]') ? abs(pageUrl, doc.querySelector('base[href]').getAttribute('href')) || pageUrl : pageUrl;
+  return { title, desc: meta('description') || meta('og:description'), base };
+};
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+/* one page, as it is */
+async function buildExact(html, pageUrl){
+  const doc = parse(html, { comment: false });
+  const found = []; const warn = [];
+  const { title, desc, base } = pageMeta(doc, pageUrl);
+  const sheets = await collectSheets(doc, base, null);
+  let raw = '', total = 0;
+  for (const l of sheets.linked){ if (!l.css) continue; total += l.css.length; if (total > CSS_TOTAL_MAX){ warn.push('Some stylesheets were skipped (size limit).'); break; } raw += wrapMedia(l) + '\n'; }
+  raw += sheets.inline.join('\n');
+  const scopeId = 'imp-' + crypto.randomBytes(3).toString('hex');
+  const css = finalizeCss(raw, '#' + scopeId, rootFontPx(raw), true);
+  const b = cleanBody(doc, base);
+  const nSheets = sheets.linked.filter(s => s.css).length + sheets.inline.length;
   found.push(`Exact copy of ${title ? '“' + cut(title, 50) + '”' : 'the page'}`);
-  found.push(`${sheets.filter(s => s.css).length} stylesheet${sheets.filter(s => s.css).length === 1 ? '' : 's'} (${Math.round(css.length / 1024)} KB)` + (fonts.length ? `, ${fonts.length} Google Fonts link${fonts.length > 1 ? 's' : ''}` : ''));
-  found.push(`${imgs} image${imgs === 1 ? '' : 's'}, ${links} link${links === 1 ? '' : 's'}` + (iframes ? `, ${iframes} embed${iframes > 1 ? 's' : ''}` : ''));
-  if (sheets.some(s => s.failed)) warn.push('One or more stylesheets could not be fetched; parts of the page may look plain.');
+  found.push(`${plural(nSheets, 'stylesheet')} (${Math.round(css.length / 1024)} KB)` + (sheets.fonts.length ? `, ${plural(sheets.fonts.length, 'Google Fonts link')}` : ''));
+  found.push(`${plural(b.imgs, 'image')}, ${plural(b.links, 'link')}` + (b.iframes ? `, ${plural(b.iframes, 'embed')}` : ''));
+  if (sheets.linked.some(s => !s.ok)) warn.push('One or more stylesheets could not be fetched; parts of the page may look plain.');
   warn.push('Scripts were removed: menus, sliders and forms that relied on them will not run.');
-  return { meta: { title: cut(title, 70), desc: cut(desc, 160), importedFrom: pageUrl }, exact: { scopeId, rootClass, rootStyle, rootLang, rootDir, html: inner, css, fonts: [...new Set(fonts)] }, found, warn };
+  return { meta: { title: cut(title, 70), desc: cut(desc, 160), importedFrom: pageUrl }, exact: { scopeId, rootClass: b.rootClass, rootStyle: b.rootStyle, rootLang: b.rootLang, rootDir: b.rootDir, html: b.inner, css, fonts: sheets.fonts }, found, warn };
+}
+
+/* ================= WHOLE SITE =================
+   Every page linked from the start page on the same host (menu and footer links first), each copied like above.
+   Stylesheets are fetched once and returned once (sharedCss); each page carries only its own inline styles.
+   Links between the copied pages are rewritten to /slug so the exported files link to each other. */
+const SITE_MAX_PAGES = 12, SITE_BUDGET_MS = 21000, PAGE_HTML_MAX = 450*1024;
+const normUrl = u => { try { const U = new URL(u); U.hash = ''; U.search = ''; return U.origin + U.pathname.replace(/\/index\.(html?|php)$/i, '/').replace(/\/+$/, ''); } catch { return ''; } };
+function internalLinks(doc, base){
+  const origin = new URL(base).origin; const seen = new Set([normUrl(base)]); const out = [];
+  const consider = (a, priority) => {
+    const u = abs(base, a.getAttribute('href')); if (!u) return;
+    let U; try { U = new URL(u); } catch { return; }
+    if (U.origin !== origin) return;
+    if (/\.(pdf|jpe?g|png|gif|webp|svg|zip|rar|mp4|mp3|docx?|xlsx?|pptx?|xml|json|css|js|txt|ics)$/i.test(U.pathname)) return;
+    if (/\/(wp-admin|wp-login|wp-json|feed|tag|category|author|page\/\d+|cart|checkout|my-account|account|search|login|register|signup|comments|xmlrpc)(\/|$|\.)/i.test(U.pathname)) return;
+    if (U.search && /[?&](s|q|search|replytocom|add-to-cart|share)=/i.test(U.search)) return;
+    const key = normUrl(U.href); if (!key || seen.has(key)) return;
+    seen.add(key); out.push({ url: key + '/', priority });
+  };
+  doc.querySelectorAll('header a[href], nav a[href], [role="navigation"] a[href], footer a[href]').forEach(a => consider(a, 0));
+  doc.querySelectorAll('a[href]').forEach(a => consider(a, 1));
+  return out.sort((a, b) => a.priority - b.priority).map(o => o.url);
+}
+async function pool(items, n, fn){ let i = 0; await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length){ const idx = i++; await fn(items[idx], idx); } })); }
+const slugify = s => String(s || '').toLowerCase().replace(/\.(html?|php|aspx?)$/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+async function buildSite(startHtml, startUrl){
+  const t0 = Date.now(); const warn = []; const skipped = [];
+  const doc0 = parse(startHtml, { comment: false });
+  const urls = [startUrl, ...internalLinks(doc0, pageMeta(doc0, startUrl).base)].slice(0, SITE_MAX_PAGES);
+  const cache = new Map(); const pages = []; const finals = new Set();
+  await pool(urls, 4, async (u, idx) => {
+    if (Date.now() - t0 > SITE_BUDGET_MS){ skipped.push({ url: u, reason: 'time' }); return; }
+    let html = idx === 0 ? startHtml : null;
+    if (!html){
+      let finalUrl;
+      try { ({ html, finalUrl } = await fetchPage(u)); } catch (e) { skipped.push({ url: u, reason: String(e && e.message || 'failed') }); return; }
+      /* a page that redirects onto another page of the list (login walls, moved pages) is not a page of its own */
+      if (normUrl(finalUrl) !== normUrl(u)){
+        if (urls.some(x => normUrl(x) === normUrl(finalUrl)) || finals.has(normUrl(finalUrl)) || /\/(login|log-in|signin|sign-in|auth|wp-login)/i.test(new URL(finalUrl).pathname)){ skipped.push({ url: u, reason: 'redirect' }); return; }
+        finals.add(normUrl(finalUrl));
+      }
+    }
+    const doc = parse(html, { comment: false });
+    const { title, desc, base } = pageMeta(doc, u);
+    const sheets = await collectSheets(doc, base, cache);
+    const b = cleanBody(doc, base);
+    if (b.inner.length > PAGE_HTML_MAX){ skipped.push({ url: u, reason: 'too-large' }); return; }
+    pages[idx] = { url: u, title, desc, sheets, b };
+  });
+  const list = pages.filter(Boolean);
+  if (!list.length) throw new Error('failed');
+  const scopeId = 'imp-' + crypto.randomBytes(3).toString('hex'); const scope = '#' + scopeId;
+  const seen = new Set(); let raw = '', total = 0; const fonts = new Set();
+  for (const p of list){ p.sheets.fonts.forEach(f => fonts.add(f)); for (const l of p.sheets.linked){ if (seen.has(l.href) || !l.css) continue; seen.add(l.href); total += l.css.length; if (total > CSS_TOTAL_MAX){ warn.push('Some stylesheets were skipped (size limit).'); break; } raw += wrapMedia(l) + '\n'; } }
+  const rootPx = rootFontPx(raw + '\n' + list.map(p => p.sheets.inline.join('\n')).join('\n'));
+  const sharedCss = finalizeCss(raw, scope, rootPx, true);
+  /* slugs and cross links */
+  const used = new Set();
+  list.forEach((p, i) => {
+    const last = new URL(p.url).pathname.split('/').filter(Boolean).pop();
+    let s = i === 0 ? 'index' : (last ? slugify(last) || 'page' : 'home');
+    let k = 2; const b0 = s; while (used.has(s)) s = b0 + '-' + k++; used.add(s); p.slug = s;
+  });
+  const target = new Map(); for (const p of list) target.set(normUrl(p.url), p.slug === 'index' ? '/' : '/' + p.slug);
+  const rewrite = html => html.replace(/href="([^"]+)"/gi, (m, h) => { const t = target.get(normUrl(h)); if (!t) return m; const hash = (h.match(/#.*$/) || [''])[0]; return `href="${t}${hash}"`; });
+  const out = list.map(p => ({
+    url: p.url, slug: p.slug,
+    meta: { title: cut(p.title || p.slug, 70), desc: cut(p.desc, 160), importedFrom: p.url, slug: p.slug },
+    exact: { scopeId, cssRef: scopeId, rootClass: p.b.rootClass, rootStyle: p.b.rootStyle, rootLang: p.b.rootLang, rootDir: p.b.rootDir, html: rewrite(p.b.inner), css: finalizeCss(p.sheets.inline.join('\n'), scope, rootPx, false), fonts: [...fonts] },
+    found: [`${plural(p.b.imgs, 'image')}, ${plural(p.b.links, 'link')}`]
+  }));
+  const found = [
+    `${plural(out.length, 'page')} copied` + (skipped.length ? `, ${skipped.length} skipped` : '') + ` in ${Math.round((Date.now() - t0) / 100) / 10}s`,
+    `${plural(seen.size, 'stylesheet')} shared across the pages (${Math.round(sharedCss.length / 1024)} KB)` + (fonts.size ? `, ${plural(fonts.size, 'Google Fonts link')}` : ''),
+    ...out.map(p => `${p.slug === 'index' ? '/' : '/' + p.slug}: “${cut(p.meta.title, 44)}”`)
+  ];
+  if (skipped.length) warn.push('Skipped: ' + skipped.slice(0, 6).map(s => new URL(s.url).pathname + ' (' + (s.reason === 'time' ? 'ran out of time' : s.reason === 'too-large' ? 'too large' : s.reason === 'redirect' ? 'redirects to another page' : 'could not fetch') + ')').join(', '));
+  if (list.some(p => p.sheets.linked.some(s => !s.ok))) warn.push('One or more stylesheets could not be fetched; parts may look plain.');
+  warn.push('Scripts were removed: menus, sliders and forms that relied on them will not run. Links between the copied pages point at the new pages; other links still go to the original site.');
+  return { scopeId, sharedCss, fonts: [...fonts], pages: out, skipped, found, warn };
 }
 
 /* Copy one remote image into our Blob store so the copied page stops depending on the old site. */
@@ -633,6 +729,10 @@ module.exports = async (req, res) => {
     if (body.mode === 'exact'){
       const page = await buildExact(html, finalUrl);
       return res.status(200).json({ ok:true, page, found: page.found, warn: page.warn, source: finalUrl });
+    }
+    if (body.mode === 'site'){
+      const site = await buildSite(html, finalUrl);
+      return res.status(200).json({ ok:true, site, found: site.found, warn: site.warn, source: finalUrl });
     }
     const page = await buildPage(html, finalUrl);
     return res.status(200).json({ ok:true, page, found: page.found, source: finalUrl });
