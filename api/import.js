@@ -438,7 +438,8 @@ async function buildExact(html, pageUrl){
   }
   css = scopeCSS(css, scope);
   /* things that only appear once the original site's scripts run */
-  css += `\n${scope} [data-aos],${scope} .aos-init,${scope} .elementor-invisible,${scope} .wow,${scope} .animate__animated,${scope} .fade-in,${scope} .reveal{opacity:1!important;visibility:visible!important;transform:none!important;animation:none!important}`;
+  css += `\n${scope} [data-aos],${scope} .aos-init,${scope} .elementor-invisible,${scope} .wow,${scope} .animate__animated,${scope} .fade-in,${scope} .reveal,${scope} .lazyload,${scope} .lazy,${scope} .b-lazy,${scope} img[data-src],${scope} [data-animate],${scope} .sal-animate,${scope} [data-sal]{opacity:1!important;visibility:visible!important;transform:none!important;animation:none!important}`;
+  css += `\n${scope} .preloader,${scope} #preloader,${scope} .page-loader,${scope} .loading-overlay,${scope} .cookie-notice,${scope} #cookie-law-info-bar,${scope} .cky-consent-container,${scope} .cc-window{display:none!important}`;
   css = css.replace(/<\/style/gi, '<\\/style');
 
   /* body: drop what cannot run or would leak, make every address absolute */
@@ -472,6 +473,12 @@ async function buildExact(html, pageUrl){
       const v = el.getAttribute(a); if (!v) continue;
       el.setAttribute(a, v.split(',').map(part => { const [u, d] = part.trim().split(/\s+/); const au = abs(base, u); return (au || u) + (d ? ' ' + d : ''); }).join(', '));
     }
+    /* lazy background images: data-bg="x.jpg" or data-bg="url(x.jpg)" become a real inline background */
+    const bg = el.getAttribute('data-bg') || el.getAttribute('data-background') || el.getAttribute('data-background-image') || el.getAttribute('data-bg-url');
+    if (bg && !/background/i.test(el.getAttribute('style') || '')){
+      const u = abs(base, bg.replace(/^url\((['"]?)(.*)\1\)$/i, '$2'));
+      if (u) el.setAttribute('style', ((el.getAttribute('style') || '').replace(/;?\s*$/, ';') + `background-image:url("${u}")`).replace(/^;/, ''));
+    }
     const st = el.getAttribute('style');
     if (st && /url\(/i.test(st)) el.setAttribute('style', cssUrls(st, base));
     if (tag === 'IMG') imgs++; if (tag === 'A') links++;
@@ -480,24 +487,33 @@ async function buildExact(html, pageUrl){
   }
   const htmlEl = doc.querySelector('html');
   const rootClass = clean(((htmlEl && htmlEl.getAttribute('class')) || '').replace(/\bno-js\b/g, 'js') + ' ' + ((body.getAttribute && body.getAttribute('class')) || ''));
+  const rootStyle = cssUrls(clean((body.getAttribute && body.getAttribute('style')) || ''), base).replace(/"/g, "'");
+  const rootLang = clean((htmlEl && htmlEl.getAttribute('lang')) || '');
+  const rootDir = clean((htmlEl && htmlEl.getAttribute('dir')) || (body.getAttribute && body.getAttribute('dir')) || '');
   let inner = body.innerHTML.replace(/<\/?(html|body|head)\b[^>]*>/gi, '');
   found.push(`Exact copy of ${title ? '“' + cut(title, 50) + '”' : 'the page'}`);
   found.push(`${sheets.filter(s => s.css).length} stylesheet${sheets.filter(s => s.css).length === 1 ? '' : 's'} (${Math.round(css.length / 1024)} KB)` + (fonts.length ? `, ${fonts.length} Google Fonts link${fonts.length > 1 ? 's' : ''}` : ''));
   found.push(`${imgs} image${imgs === 1 ? '' : 's'}, ${links} link${links === 1 ? '' : 's'}` + (iframes ? `, ${iframes} embed${iframes > 1 ? 's' : ''}` : ''));
   if (sheets.some(s => s.failed)) warn.push('One or more stylesheets could not be fetched; parts of the page may look plain.');
   warn.push('Scripts were removed: menus, sliders and forms that relied on them will not run.');
-  return { meta: { title: cut(title, 70), desc: cut(desc, 160), importedFrom: pageUrl }, exact: { scopeId, rootClass, html: inner, css, fonts: [...new Set(fonts)] }, found, warn };
+  return { meta: { title: cut(title, 70), desc: cut(desc, 160), importedFrom: pageUrl }, exact: { scopeId, rootClass, rootStyle, rootLang, rootDir, html: inner, css, fonts: [...new Set(fonts)] }, found, warn };
 }
 
 /* Copy one remote image into our Blob store so the copied page stops depending on the old site. */
 async function copyAsset(url, client){
   const { put } = require('@vercel/blob');
   if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error('no-blob-store');
-  const r = await fetchResource(url, { accept: /^image\/(jpeg|png|webp|gif|svg\+xml|avif)/, maxBytes: 4*1024*1024, timeout: 8000, acceptHeader: 'image/*' });
-  const ext = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif', 'image/svg+xml':'svg', 'image/avif':'avif' }[r.type.split(';')[0].trim()] || 'bin';
+  /* images and web fonts. Fonts matter: a browser only loads a font from another domain when that domain allows it,
+     and most WordPress hosts do not, so a copied page's self-hosted fonts fall back until they are rehosted here. */
+  const r = await fetchResource(url, { accept: /^(image\/(jpeg|png|webp|gif|svg\+xml|avif|x-icon|vnd\.microsoft\.icon)|font\/|application\/(font-woff2?|x-font-woff|x-font-ttf|x-font-opentype|vnd\.ms-fontobject|octet-stream))/, maxBytes: 4*1024*1024, timeout: 8000, acceptHeader: 'image/*,font/*,*/*;q=0.5' });
+  const mime = r.type.split(';')[0].trim();
+  const fromUrl = (new URL(r.finalUrl).pathname.match(/\.(woff2|woff|ttf|otf|eot|svg|png|jpe?g|webp|gif|avif|ico)$/i) || [,''])[1].toLowerCase();
+  if (mime === 'application/octet-stream' && !/^(woff2?|ttf|otf|eot)$/.test(fromUrl)) throw new Error('wrong-type');
+  const ext = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif', 'image/svg+xml':'svg', 'image/avif':'avif', 'image/x-icon':'ico', 'image/vnd.microsoft.icon':'ico', 'font/woff2':'woff2', 'font/woff':'woff', 'font/ttf':'ttf', 'font/otf':'otf', 'application/font-woff2':'woff2', 'application/font-woff':'woff', 'application/x-font-woff':'woff', 'application/x-font-ttf':'ttf', 'application/x-font-opentype':'otf', 'application/vnd.ms-fontobject':'eot' }[mime] || fromUrl || 'bin';
+  const storedType = mime === 'application/octet-stream' ? ({ woff2:'font/woff2', woff:'font/woff', ttf:'font/ttf', otf:'font/otf', eot:'application/vnd.ms-fontobject' }[ext] || mime) : mime;
   const name = (new URL(r.finalUrl).pathname.split('/').pop() || 'image').toLowerCase().replace(/\.[a-z0-9]+$/, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'image';
   const hash = crypto.createHash('sha1').update(r.finalUrl).digest('hex').slice(0, 8);
-  const blob = await put(`sites/${client}/imported/${hash}-${name}.${ext}`, r.buf, { access: 'public', contentType: r.type.split(';')[0].trim(), addRandomSuffix: false });
+  const blob = await put(`sites/${client}/imported/${hash}-${name}.${ext}`, r.buf, { access: 'public', contentType: storedType, addRandomSuffix: false });
   return blob.url;
 }
 
@@ -525,6 +541,7 @@ module.exports = async (req, res) => {
     const page = buildPage(html, finalUrl);
     return res.status(200).json({ ok:true, page, found: page.found, source: finalUrl });
   } catch (e) {
+    if (process.env.IMPORT_DEBUG) console.error(e);
     const msg = String(e && e.message || '');
     const reason = /private-host/.test(msg) ? 'blocked-host' : /dns/.test(msg) ? 'unreachable' : /not-html/.test(msg) ? 'not-html' : /http-4\d\d/.test(msg) ? 'not-found' : /http-|redirects/.test(msg) ? 'unreachable' : /abort/i.test(msg) ? 'timeout' : 'failed';
     return res.status(200).json({ ok:false, reason });

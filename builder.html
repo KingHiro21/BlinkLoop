@@ -9,7 +9,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('bl-theme')}catch(e){}if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
 <link rel="stylesheet" href="/assets/fonts.css" />
 <style>
-:root{
+:root{color-scheme:light;
   --maroon:#7F2027; --rust:#F45D2A; --rust-deep:#D94E1F; --amber:#EDA33F; --rose:#E2836B; --cream:#FFF7EF;
   --bg:#FFFCF7; --bg-2:#FFF7EF; --ink:#2B140E; --muted:#7E5D4C;
   --glass:rgba(251,235,221,.5); --glass-strong:rgba(255,247,239,.78);
@@ -17,7 +17,7 @@
   --ease:cubic-bezier(.22,.8,.24,1);
   --shadow:0 10px 30px rgba(127,32,39,.10);
 }
-:root[data-theme="dark"]{
+:root[data-theme="dark"]{color-scheme:dark;
   --bg:#140806; --bg-2:#1C0C08; --ink:#FAF4EA; --muted:#C9A395;
   --glass:rgba(250,244,234,.06); --glass-strong:rgba(30,16,11,.85);
   --line:rgba(250,244,234,.13);
@@ -675,7 +675,7 @@ h1,h2,h3{font-family:${f.disp};line-height:1.14;font-weight:600;letter-spacing:-
 ::selection{background:var(--accent);color:var(--on-accent)}
 .wrap{max-width:var(--wrapw);margin:0 auto;padding:0 26px}
 section{padding:var(--secpad) 0}
-.imp-sec{padding:0;margin:0;background:transparent}
+.imp-sec{padding:0;margin:0;background:transparent;position:relative;isolation:isolate;z-index:0}
 .imp-root{font:16px/normal sans-serif;color:#000;text-align:start;letter-spacing:normal;-webkit-font-smoothing:auto;overflow-x:clip}
 .imp-root *{box-sizing:revert;margin:revert;padding:revert}
 .imp-root img{max-width:revert;display:revert}
@@ -1318,13 +1318,13 @@ const BLOCKS = {
      importer, so it cannot restyle the rest of the site; a small revert block keeps our own base styles out of it. */
   html: {
     name:'Imported page', icon:'🧱', desc:'Exact copy of a page, or your own HTML', section:false,
-    defaults:{ scopeId:'', rootClass:'', html:'<div style="padding:60px 24px;text-align:center;font-family:system-ui"><h2>Custom HTML</h2><p>Paste markup in the panel on the right, or use Projects → Import from a website → Exact copy.</p></div>', css:'', fonts:[] },
-    fields:[{k:'html',l:'HTML',t:'textarea'},{k:'css',l:'CSS (applies inside this block only)',t:'textarea'},{t:'action',id:'copyAssets',l:'Copy images to BlinkLoop storage',note:'Images still load from the original site. This copies each one into our storage and updates the page, so the copy keeps working when the old site goes away.'}],
+    defaults:{ scopeId:'', rootClass:'', rootStyle:'', rootLang:'', rootDir:'', html:'<div style="padding:60px 24px;text-align:center;font-family:system-ui"><h2>Custom HTML</h2><p>Paste markup in the panel on the right, or use Projects → Import from a website → Exact copy.</p></div>', css:'', fonts:[] },
+    fields:[{k:'html',l:'HTML',t:'textarea'},{k:'css',l:'CSS (applies inside this block only)',t:'textarea'},{t:'action',id:'copyAssets',l:'Copy images and fonts to BlinkLoop storage',note:'Images and fonts still load from the original site, and fonts from another domain often refuse to load at all. This copies each file into our storage and updates the page, so the copy looks right and keeps working when the old site goes away.'}],
     render:p=>{
       const id = p.scopeId || 'imp-custom';
       const fonts = (p.fonts||[]).filter(u=>/^https:\/\/fonts\.googleapis\.com\//.test(u)).map(u=>`@import url("${escAttr(u)}");`).join('');
       const css = String(p.css||'').replace(/<\/style/gi,'<\\/style');
-      return `<section class="imp-sec">${fonts?`<style>${fonts}</style>`:''}${css?`<style>${css}</style>`:''}<div id="${escAttr(id)}" class="imp-root${p.rootClass?' '+escAttr(p.rootClass):''}"${EDIT?' data-rawedit="html"':''}>${p.html||''}</div></section>`;
+      return `<section class="imp-sec">${fonts?`<style>${fonts}</style>`:''}${css?`<style>${css}</style>`:''}<div id="${escAttr(id)}" class="imp-root${p.rootClass?' '+escAttr(p.rootClass):''}"${p.rootStyle?' style="'+escAttr(p.rootStyle)+'"':''}${p.rootLang?' lang="'+escAttr(p.rootLang)+'"':''}${p.rootDir?' dir="'+escAttr(p.rootDir)+'"':''}${EDIT?' data-rawedit="html"':''}>${p.html||''}</div></section>`;
     }
   }
 };
@@ -1644,10 +1644,10 @@ const BLOCK_ACTIONS = {
     const doc = new DOMParser().parseFromString('<div>'+(b.props.html||'')+'</div>', 'text/html');
     doc.querySelectorAll('img[src], source[src], [poster]').forEach(el=>{ const u=el.getAttribute('src')||el.getAttribute('poster'); if(/^https?:/i.test(u)) urls.add(u); });
     doc.querySelectorAll('[srcset]').forEach(el=>el.getAttribute('srcset').split(',').forEach(p=>{ const u=p.trim().split(/\s+/)[0]; if(/^https?:/i.test(u)) urls.add(u); }));
-    for (const m of String(b.props.css||'').matchAll(/url\("?(https?:[^")]+\.(?:png|jpe?g|webp|gif|svg|avif)(?:\?[^")]*)?)"?\)/gi)) urls.add(m[1]);
+    for (const m of String(b.props.css||'').matchAll(/url\("?(https?:[^")]+\.(?:png|jpe?g|webp|gif|svg|avif|ico|woff2?|ttf|otf|eot)(?:[?#][^")]*)?)"?\)/gi)) urls.add(m[1]);
     for (const m of String(b.props.html||'').matchAll(/url\((['"]?)(https?:[^'")]+\.(?:png|jpe?g|webp|gif|svg|avif)(?:\?[^'")]*)?)\1\)/gi)) urls.add(m[2]);
     const list = [...urls].filter(u => !/vercel-storage\.com/i.test(u)).slice(0, 80);
-    if (!list.length){ toast(t('No remote images left to copy.')); return; }
+    if (!list.length){ toast(t('No remote images or fonts left to copy.')); return; }
     btn.disabled = true; const label = btn.textContent;
     snapshot();
     let done = 0, failed = 0; const map = {};
@@ -1664,7 +1664,7 @@ const BLOCK_ACTIONS = {
     b.props.html = swap(b.props.html||''); b.props.css = swap(b.props.css||'');
     btn.disabled = false; btn.textContent = label;
     renderCanvas(); renderInspector(); autosave();
-    toast(done + ' ' + t('images copied') + (failed ? ', ' + failed + ' ' + t('skipped') : ''));
+    toast(done + ' ' + t('files copied') + (failed ? ', ' + failed + ' ' + t('skipped') : ''));
   }
 };
 
@@ -3203,7 +3203,7 @@ $$('#importMode button').forEach(b=>b.addEventListener('click',()=>{ importMode=
 function normaliseImported(page){
   if (page.exact){
     const x = page.exact;
-    return [{ id: uid(), type: 'html', props: Object.assign(clone(BLOCKS.html.defaults), { scopeId: x.scopeId, rootClass: x.rootClass||'', html: x.html||'', css: x.css||'', fonts: x.fonts||[] }) }];
+    return [{ id: uid(), type: 'html', props: Object.assign(clone(BLOCKS.html.defaults), { scopeId: x.scopeId, rootClass: x.rootClass||'', rootStyle: x.rootStyle||'', rootLang: x.rootLang||'', rootDir: x.rootDir||'', html: x.html||'', css: x.css||'', fonts: x.fonts||[] }) }];
   }
   const blocks = (page.blocks||[]).filter(b => BLOCKS[b.type]).map(b => ({ id: uid(), type: b.type, props: Object.assign(clone(BLOCKS[b.type].defaults), b.props||{}) }));
   return blocks;
@@ -3224,7 +3224,7 @@ async function runImport(){
     }
     importedPage = d.page;
     $('#importFound').innerHTML = (d.found||[]).map(f => `<li>${esc(f)}</li>`).join('') + (d.warn||[]).map(w => `<li style="list-style:none;color:#8a5a12">⚠ ${esc(w)}</li>`).join('') || `<li>${t('A page, but no recognisable sections. You will get a headline and a footer to start from.')}</li>`;
-    $('#importNote').textContent = d.page.exact ? t('Images still load from the original site. Select the block and use “Copy images to BlinkLoop storage” to make the copy independent. Click any text on the page to edit it.') : t('Images still point at the original site. Replace them from the block panel once the page is yours. Colours and fonts are matched where the site declares them; everything else stays editable.');
+    $('#importNote').textContent = d.page.exact ? t('Images still load from the original site. Select the block and use “Copy images and fonts to BlinkLoop storage” to make the copy independent. Click any text on the page to edit it.') : t('Images still point at the original site. Replace them from the block panel once the page is yours. Colours and fonts are matched where the site declares them; everything else stays editable.');
     $('#importResult').hidden = false;
   }catch(e){ err.textContent = t('Could not reach the server. Check your connection.'); }
   finally{ go.disabled = false; go.textContent = t('Read the site'); }
