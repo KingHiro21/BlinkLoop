@@ -75,6 +75,86 @@ async function fetchPage(startUrl){
   } catch (e) { if (String(e.message) === 'wrong-type') throw new Error('not-html'); throw e; }
 }
 
+/* ---------- headless browser: pages built by JavaScript (React, Vue, Shopify apps, Nike-style stores) only have
+   their content after scripts run, so the page is loaded in Chromium first and the live DOM is serialized.
+   On Vercel: @sparticuz/chromium (Chromium for serverless). Locally: an installed Chrome/Edge or CHROME_PATH.
+   Falls back to the raw HTML when no browser is available or rendering fails. ---------- */
+const REAL_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+function findLocalChrome(){
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  const fs = require('fs'); const path = require('path');
+  const cands = process.platform === 'win32'
+    ? [process.env.PROGRAMFILES, process.env['PROGRAMFILES(X86)'], process.env.LOCALAPPDATA].filter(Boolean).flatMap(b => [path.join(b, 'Google/Chrome/Application/chrome.exe'), path.join(b, 'Microsoft/Edge/Application/msedge.exe'), path.join(b, 'Chromium/Application/chrome.exe')])
+    : process.platform === 'darwin' ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge']
+    : ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/microsoft-edge'];
+  return cands.find(p => { try { return fs.existsSync(p); } catch { return false; } }) || '';
+}
+let browserP = null;
+function getBrowser(){
+  if (browserP) return browserP;
+  browserP = (async () => {
+    const puppeteer = require('puppeteer-core');
+    let executablePath = '', args = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--hide-scrollbars', '--lang=en-US', '--disable-blink-features=AutomationControlled'];
+    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME){
+      const mod = await import('@sparticuz/chromium'); const chromium = mod.default || mod; // ESM-only package
+      executablePath = await chromium.executablePath(); args = [...chromium.args, '--hide-scrollbars', '--lang=en-US', '--disable-blink-features=AutomationControlled'];
+    } else executablePath = findLocalChrome();
+    if (!executablePath) throw new Error('no-browser');
+    return puppeteer.launch({ executablePath, args, headless: true, defaultViewport: { width: 1366, height: 900 }, protocolTimeout: 30000 });
+  })();
+  browserP.catch(() => { browserP = null; });
+  return browserP;
+}
+/* runs inside the page: fold CSSOM-inserted rules back into <style> text, pin the chosen image sources */
+const SERIALIZE = `(() => {
+  for (const sh of document.styleSheets){ try { if (sh.href) continue; const node = sh.ownerNode; if (!node || node.tagName !== 'STYLE') continue; const rules = [...sh.cssRules].map(r => r.cssText).join('\\n'); if (rules && rules.length > (node.textContent || '').length) node.textContent = rules; } catch (e) {} }
+  for (const img of document.images){ try { if (img.currentSrc){ img.setAttribute('src', img.currentSrc); img.removeAttribute('srcset'); img.removeAttribute('sizes'); } img.removeAttribute('loading'); } catch (e) {} }
+  document.querySelectorAll('picture source').forEach(s => s.remove());
+  document.querySelectorAll('video[poster]').forEach(v => { try { v.setAttribute('poster', new URL(v.getAttribute('poster'), location.href).href); } catch (e) {} });
+  return '<!DOCTYPE html>' + document.documentElement.outerHTML;
+})()`;
+async function autoScroll(page){
+  await page.evaluate(async () => {
+    const step = Math.max(400, Math.round(window.innerHeight * 0.8)); let y = 0; const limit = Math.min(document.body.scrollHeight, 20000);
+    while (y < limit){ y += step; window.scrollTo(0, y); await new Promise(r => setTimeout(r, 120)); }
+    window.scrollTo(0, 0);
+  }).catch(() => {});
+}
+async function renderPage(url, budgetMs){
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+  const allowPrivate = process.env.IMPORT_ALLOW_PRIVATE === '1';
+  try {
+    await page.setUserAgent(REAL_UA);
+    await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' });
+    await page.setRequestInterception(true);
+    page.on('request', req => {
+      const type = req.resourceType(); let host = '';
+      try { host = new URL(req.url()).hostname; } catch {}
+      const privateHost = !allowPrivate && (net.isIP(host) ? privateIp(host) : /^(localhost|.*\.local|.*\.internal)$/i.test(host));
+      if (privateHost || type === 'media' || type === 'font' || type === 'image') return req.abort().catch(() => {});
+      req.continue().catch(() => {});
+    });
+    const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: Math.max(5000, Math.min(budgetMs, 20000)) });
+    await page.waitForNetworkIdle({ idleTime: 700, timeout: Math.min(8000, budgetMs) }).catch(() => {});
+    await autoScroll(page);
+    await page.waitForNetworkIdle({ idleTime: 500, timeout: 4000 }).catch(() => {});
+    const html = await page.evaluate(SERIALIZE);
+    const status = resp ? resp.status() : 200;
+    if (status >= 400) throw new Error('http-' + status);
+    return { html, finalUrl: page.url() };
+  } finally { await page.close().catch(() => {}); }
+}
+/* the page as a browser sees it, or the raw HTML when no browser can be had */
+async function loadPage(url, budgetMs = 25000){
+  await assertPublic(new URL(url).hostname);
+  if (process.env.IMPORT_NO_RENDER !== '1'){
+    try { const r = await renderPage(url, budgetMs); if (r.html && r.html.length > 500) return { ...r, rendered: true }; }
+    catch (e) { if (process.env.IMPORT_DEBUG) console.error('render failed, raw fetch instead:', e && e.message); if (/^http-4/.test(String(e && e.message))) throw e; }
+  }
+  const r = await fetchPage(url); return { ...r, rendered: false };
+}
+
 /* ---------- extraction helpers ---------- */
 const clean = s => String(s||'').replace(/\s+/g,' ').trim();
 const cut = (s, n) => { s = clean(s); return s.length > n ? s.slice(0, n-1).trimEnd() + '…' : s; };
@@ -589,32 +669,44 @@ const pageMeta = (doc, pageUrl) => {
 };
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
-/* one page, as it is */
-async function buildExact(html, pageUrl){
+/* one page, as it is. With opts.split (whole-site imports, one request per page) the linked stylesheets come back
+   one by one so the builder can keep a single shared copy per site; sheets listed in opts.have are not resent. */
+async function buildExact(html, pageUrl, opts = {}){
   const doc = parse(html, { comment: false });
   const found = []; const warn = [];
   const { title, desc, base } = pageMeta(doc, pageUrl);
   const sheets = await collectSheets(doc, base, null);
+  const scopeId = /^imp-[a-f0-9]{6}$/.test(opts.scopeId || '') ? opts.scopeId : 'imp-' + crypto.randomBytes(3).toString('hex');
+  const scope = '#' + scopeId;
   let raw = '', total = 0;
-  for (const l of sheets.linked){ if (!l.css) continue; total += l.css.length; if (total > CSS_TOTAL_MAX){ warn.push('Some stylesheets were skipped (size limit).'); break; } raw += wrapMedia(l) + '\n'; }
-  raw += sheets.inline.join('\n');
-  const scopeId = 'imp-' + crypto.randomBytes(3).toString('hex');
-  const css = finalizeCss(raw, '#' + scopeId, rootFontPx(raw), true);
+  for (const l of sheets.linked){ if (!l.css) continue; total += l.css.length; if (total > CSS_TOTAL_MAX){ warn.push('Some stylesheets were skipped (size limit).'); l.css = ''; continue; } raw += wrapMedia(l) + '\n'; }
+  const inline = sheets.inline.join('\n');
+  const rootPx = rootFontPx(raw + '\n' + inline);
   const b = cleanBody(doc, base);
   const nSheets = sheets.linked.filter(s => s.css).length + sheets.inline.length;
   found.push(`Exact copy of ${title ? '“' + cut(title, 50) + '”' : 'the page'}`);
-  found.push(`${plural(nSheets, 'stylesheet')} (${Math.round(css.length / 1024)} KB)` + (sheets.fonts.length ? `, ${plural(sheets.fonts.length, 'Google Fonts link')}` : ''));
+  let exact;
+  if (opts.split){
+    const have = new Set(Array.isArray(opts.have) ? opts.have : []);
+    const list = sheets.linked.filter(l => l.css).map(l => ({ href: l.href, css: have.has(l.href) ? null : finalizeCss(wrapMedia(l), scope, rootPx, false) }));
+    exact = { scopeId, rootClass: b.rootClass, rootStyle: b.rootStyle, rootLang: b.rootLang, rootDir: b.rootDir, html: b.inner, css: finalizeCss(inline, scope, rootPx, false), sheets: list, overrides: OVERRIDES(scope), fonts: sheets.fonts };
+    found.push(`${plural(nSheets, 'stylesheet')}, ${plural(list.filter(l => l.css).length, 'new')}` + (sheets.fonts.length ? `, ${plural(sheets.fonts.length, 'Google Fonts link')}` : ''));
+  } else {
+    const css = finalizeCss(raw + '\n' + inline, scope, rootPx, true);
+    exact = { scopeId, rootClass: b.rootClass, rootStyle: b.rootStyle, rootLang: b.rootLang, rootDir: b.rootDir, html: b.inner, css, fonts: sheets.fonts };
+    found.push(`${plural(nSheets, 'stylesheet')} (${Math.round(css.length / 1024)} KB)` + (sheets.fonts.length ? `, ${plural(sheets.fonts.length, 'Google Fonts link')}` : ''));
+  }
   found.push(`${plural(b.imgs, 'image')}, ${plural(b.links, 'link')}` + (b.iframes ? `, ${plural(b.iframes, 'embed')}` : ''));
   if (sheets.linked.some(s => !s.ok)) warn.push('One or more stylesheets could not be fetched; parts of the page may look plain.');
   warn.push('Scripts were removed: menus, sliders and forms that relied on them will not run.');
-  return { meta: { title: cut(title, 70), desc: cut(desc, 160), importedFrom: pageUrl }, exact: { scopeId, rootClass: b.rootClass, rootStyle: b.rootStyle, rootLang: b.rootLang, rootDir: b.rootDir, html: b.inner, css, fonts: sheets.fonts }, found, warn };
+  return { meta: { title: cut(title, 70), desc: cut(desc, 160), importedFrom: pageUrl }, exact, found, warn };
 }
 
 /* ================= WHOLE SITE =================
    Every page linked from the start page on the same host (menu and footer links first), each copied like above.
    Stylesheets are fetched once and returned once (sharedCss); each page carries only its own inline styles.
    Links between the copied pages are rewritten to /slug so the exported files link to each other. */
-const SITE_MAX_PAGES = 12, SITE_BUDGET_MS = 21000, PAGE_HTML_MAX = 450*1024;
+const SITE_MAX_PAGES = 20;
 const normUrl = u => { try { const U = new URL(u); U.hash = ''; U.search = ''; return U.origin + U.pathname.replace(/\/index\.(html?|php)$/i, '/').replace(/\/+$/, ''); } catch { return ''; } };
 function internalLinks(doc, base){
   const origin = new URL(base).origin; const seen = new Set([normUrl(base)]); const out = [];
@@ -632,63 +724,20 @@ function internalLinks(doc, base){
   doc.querySelectorAll('a[href]').forEach(a => consider(a, 1));
   return out.sort((a, b) => a.priority - b.priority).map(o => o.url);
 }
-async function pool(items, n, fn){ let i = 0; await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length){ const idx = i++; await fn(items[idx], idx); } })); }
-const slugify = s => String(s || '').toLowerCase().replace(/\.(html?|php|aspx?)$/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
-async function buildSite(startHtml, startUrl){
-  const t0 = Date.now(); const warn = []; const skipped = [];
-  const doc0 = parse(startHtml, { comment: false });
-  const urls = [startUrl, ...internalLinks(doc0, pageMeta(doc0, startUrl).base)].slice(0, SITE_MAX_PAGES);
-  const cache = new Map(); const pages = []; const finals = new Set();
-  await pool(urls, 4, async (u, idx) => {
-    if (Date.now() - t0 > SITE_BUDGET_MS){ skipped.push({ url: u, reason: 'time' }); return; }
-    let html = idx === 0 ? startHtml : null;
-    if (!html){
-      let finalUrl;
-      try { ({ html, finalUrl } = await fetchPage(u)); } catch (e) { skipped.push({ url: u, reason: String(e && e.message || 'failed') }); return; }
-      /* a page that redirects onto another page of the list (login walls, moved pages) is not a page of its own */
-      if (normUrl(finalUrl) !== normUrl(u)){
-        if (urls.some(x => normUrl(x) === normUrl(finalUrl)) || finals.has(normUrl(finalUrl)) || /\/(login|log-in|signin|sign-in|auth|wp-login)/i.test(new URL(finalUrl).pathname)){ skipped.push({ url: u, reason: 'redirect' }); return; }
-        finals.add(normUrl(finalUrl));
-      }
-    }
-    const doc = parse(html, { comment: false });
-    const { title, desc, base } = pageMeta(doc, u);
-    const sheets = await collectSheets(doc, base, cache);
-    const b = cleanBody(doc, base);
-    if (b.inner.length > PAGE_HTML_MAX){ skipped.push({ url: u, reason: 'too-large' }); return; }
-    pages[idx] = { url: u, title, desc, sheets, b };
-  });
-  const list = pages.filter(Boolean);
-  if (!list.length) throw new Error('failed');
-  const scopeId = 'imp-' + crypto.randomBytes(3).toString('hex'); const scope = '#' + scopeId;
-  const seen = new Set(); let raw = '', total = 0; const fonts = new Set();
-  for (const p of list){ p.sheets.fonts.forEach(f => fonts.add(f)); for (const l of p.sheets.linked){ if (seen.has(l.href) || !l.css) continue; seen.add(l.href); total += l.css.length; if (total > CSS_TOTAL_MAX){ warn.push('Some stylesheets were skipped (size limit).'); break; } raw += wrapMedia(l) + '\n'; } }
-  const rootPx = rootFontPx(raw + '\n' + list.map(p => p.sheets.inline.join('\n')).join('\n'));
-  const sharedCss = finalizeCss(raw, scope, rootPx, true);
-  /* slugs and cross links */
-  const used = new Set();
-  list.forEach((p, i) => {
-    const last = new URL(p.url).pathname.split('/').filter(Boolean).pop();
+const slugify = s => String(s || '').toLowerCase().replace(/.(html?|php|aspx?)$/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+/* the pages of a site: the start page plus every same-host page it links to, each with the slug it will export as.
+   The builder then asks for each page separately (mode exact + split), so no single request has to carry a whole site. */
+function listPages(html, startUrl){
+  const doc = parse(html, { comment: false });
+  const urls = [startUrl, ...internalLinks(doc, pageMeta(doc, startUrl).base)].slice(0, SITE_MAX_PAGES);
+  const used = new Set(); const pages = [];
+  urls.forEach((u, i) => {
+    const last = new URL(u).pathname.split('/').filter(Boolean).pop();
     let s = i === 0 ? 'index' : (last ? slugify(last) || 'page' : 'home');
-    let k = 2; const b0 = s; while (used.has(s)) s = b0 + '-' + k++; used.add(s); p.slug = s;
+    let k = 2; const b0 = s; while (used.has(s)) s = b0 + '-' + k++; used.add(s);
+    pages.push({ url: u, slug: s });
   });
-  const target = new Map(); for (const p of list) target.set(normUrl(p.url), p.slug === 'index' ? '/' : '/' + p.slug);
-  const rewrite = html => html.replace(/href="([^"]+)"/gi, (m, h) => { const t = target.get(normUrl(h)); if (!t) return m; const hash = (h.match(/#.*$/) || [''])[0]; return `href="${t}${hash}"`; });
-  const out = list.map(p => ({
-    url: p.url, slug: p.slug,
-    meta: { title: cut(p.title || p.slug, 70), desc: cut(p.desc, 160), importedFrom: p.url, slug: p.slug },
-    exact: { scopeId, cssRef: scopeId, rootClass: p.b.rootClass, rootStyle: p.b.rootStyle, rootLang: p.b.rootLang, rootDir: p.b.rootDir, html: rewrite(p.b.inner), css: finalizeCss(p.sheets.inline.join('\n'), scope, rootPx, false), fonts: [...fonts] },
-    found: [`${plural(p.b.imgs, 'image')}, ${plural(p.b.links, 'link')}`]
-  }));
-  const found = [
-    `${plural(out.length, 'page')} copied` + (skipped.length ? `, ${skipped.length} skipped` : '') + ` in ${Math.round((Date.now() - t0) / 100) / 10}s`,
-    `${plural(seen.size, 'stylesheet')} shared across the pages (${Math.round(sharedCss.length / 1024)} KB)` + (fonts.size ? `, ${plural(fonts.size, 'Google Fonts link')}` : ''),
-    ...out.map(p => `${p.slug === 'index' ? '/' : '/' + p.slug}: “${cut(p.meta.title, 44)}”`)
-  ];
-  if (skipped.length) warn.push('Skipped: ' + skipped.slice(0, 6).map(s => new URL(s.url).pathname + ' (' + (s.reason === 'time' ? 'ran out of time' : s.reason === 'too-large' ? 'too large' : s.reason === 'redirect' ? 'redirects to another page' : 'could not fetch') + ')').join(', '));
-  if (list.some(p => p.sheets.linked.some(s => !s.ok))) warn.push('One or more stylesheets could not be fetched; parts may look plain.');
-  warn.push('Scripts were removed: menus, sliders and forms that relied on them will not run. Links between the copied pages point at the new pages; other links still go to the original site.');
-  return { scopeId, sharedCss, fonts: [...fonts], pages: out, skipped, found, warn };
+  return pages;
 }
 
 /* Copy one remote image into our Blob store so the copied page stops depending on the old site. */
@@ -725,17 +774,18 @@ module.exports = async (req, res) => {
     catch (e) { const msg = String(e && e.message || ''); return res.status(200).json({ ok:false, reason: /no-blob-store/.test(msg) ? 'no-blob-store' : /wrong-type/.test(msg) ? 'not-image' : /too-large/.test(msg) ? 'too-large' : 'failed' }); }
   }
   try {
-    const { html, finalUrl } = await fetchPage(url);
+    const { html, finalUrl, rendered } = await loadPage(url);
+    const how = rendered ? 'Loaded in a browser first, so content built by scripts is included.' : 'Read as raw HTML (no browser available), so content built by scripts may be missing.';
     if (body.mode === 'exact'){
-      const page = await buildExact(html, finalUrl);
-      return res.status(200).json({ ok:true, page, found: page.found, warn: page.warn, source: finalUrl });
+      const page = await buildExact(html, finalUrl, { split: !!body.split, scopeId: body.scopeId, have: body.have });
+      page.warn.unshift(how);
+      return res.status(200).json({ ok:true, page, found: page.found, warn: page.warn, source: finalUrl, rendered });
     }
-    if (body.mode === 'site'){
-      const site = await buildSite(html, finalUrl);
-      return res.status(200).json({ ok:true, site, found: site.found, warn: site.warn, source: finalUrl });
+    if (body.mode === 'links'){
+      return res.status(200).json({ ok:true, pages: listPages(html, finalUrl), source: finalUrl, rendered, warn: [how] });
     }
     const page = await buildPage(html, finalUrl);
-    return res.status(200).json({ ok:true, page, found: page.found, source: finalUrl });
+    return res.status(200).json({ ok:true, page, found: page.found, warn: [how], source: finalUrl, rendered });
   } catch (e) {
     if (process.env.IMPORT_DEBUG) console.error(e);
     const msg = String(e && e.message || '');

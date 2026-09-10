@@ -23,7 +23,7 @@
   ],
   "functions": {
     "api/import.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
   "regions": [

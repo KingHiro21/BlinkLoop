@@ -527,6 +527,11 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
       <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>Whole site</b>: every page linked from this address (up to 12), one draft per page, menus linking between them</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
     </div>
     <div class="access-err" id="importErr"></div>
+    <div id="importProgress" hidden style="margin:10px 0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)">
+      <div style="display:flex;align-items:center;gap:10px"><span id="importProgressText" style="flex:1;font-size:.84rem;font-weight:600"></span><button type="button" class="tb-btn" id="importCancel" style="border:1px solid var(--line)">Stop here</button></div>
+      <div style="height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px"><i id="importProgressBar" style="display:block;height:100%;width:0;background:var(--rust);transition:width .3s"></i></div>
+      <div class="empty-note" id="importProgressNote" style="padding:8px 0 0">Each page is opened in a browser on our server, so pages built by scripts come through complete. About 10 to 20 seconds per page.</div>
+    </div>
     <div id="importResult" hidden>
       <h4 style="font-family:'Unbounded';font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 8px">Found on the page</h4>
       <ul class="access-perks" id="importFound" style="margin-top:0"></ul>
@@ -3457,12 +3462,72 @@ function normaliseImported(page){
   const blocks = (page.blocks||[]).filter(b => BLOCKS[b.type]).map(b => ({ id: uid(), type: b.type, props: Object.assign(clone(BLOCKS[b.type].defaults), b.props||{}) }));
   return blocks;
 }
+let importAbort = null;
+const IMPORT_ERR = d => ({ 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.'));
+const normUrlC = u => { try { const U = new URL(u); U.hash = ''; U.search = ''; return U.origin + U.pathname.replace(/\/index\.(html?|php)$/i, '/').replace(/\/+$/, ''); } catch { return ''; } };
+async function importWholeSite(url){
+  const err = $('#importErr'); const prog = $('#importProgress'); const txt = $('#importProgressText'); const bar = $('#importProgressBar');
+  const post = async body => { const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), signal: importAbort.signal }); if (r.status === 401) throw new Error('session'); return r.json(); };
+  importAbort = new AbortController(); let stopped = false;
+  $('#importCancel').onclick = () => { stopped = true; importAbort.abort(); };
+  prog.hidden = false; bar.style.width = '2%'; txt.textContent = t('Finding the pages of this site…');
+  const first = await post({ url, mode: 'links' });
+  if (!first.ok){ prog.hidden = true; err.textContent = IMPORT_ERR(first); return null; }
+  const list = first.pages; const scopeId = 'imp-' + Math.random().toString(16).slice(2, 8).padEnd(6, '0');
+  const pages = [], skipped = [], order = [], sheetCss = {}; let overrides = ''; const fonts = new Set(); let rendered = !!first.rendered;
+  const rewriteAll = () => {
+    const target = new Map(); pages.forEach(p => target.set(normUrlC(p.url), p.slug === 'index' ? '/' : '/' + p.slug));
+    pages.forEach(p => { p.exact.html = p.exact.html.replace(/href="([^"]+)"/gi, (m, h) => { const tg = target.get(normUrlC(h)); if (!tg) return m; const hash = (h.match(/#.*$/) || [''])[0]; return `href="${tg}${hash}"`; }); });
+  };
+  for (let i = 0; i < list.length; i++){
+    if (stopped) break;
+    const pg = list[i];
+    txt.textContent = t('Copying page') + ' ' + (i+1) + ' ' + t('of') + ' ' + list.length + ': /' + (pg.slug === 'index' ? '' : pg.slug);
+    bar.style.width = Math.round(4 + 94 * i / list.length) + '%';
+    let d;
+    try { d = await post({ url: pg.url, mode: 'exact', split: true, scopeId, have: order }); }
+    catch (e){ if (stopped) break; skipped.push({ url: pg.url, reason: 'network' }); continue; }
+    if (!d.ok){ skipped.push({ url: pg.url, reason: d.reason }); continue; }
+    const x = d.page.exact;
+    (x.sheets || []).forEach(sh => { if (!(sh.href in sheetCss) && sh.css !== null){ sheetCss[sh.href] = sh.css; order.push(sh.href); } else if (!(sh.href in sheetCss)) { sheetCss[sh.href] = ''; order.push(sh.href); } });
+    overrides = overrides || x.overrides || ''; (x.fonts || []).forEach(f => fonts.add(f)); rendered = rendered || !!d.rendered;
+    pages.push({ url: d.source || pg.url, slug: pg.slug, meta: Object.assign({}, d.page.meta, { slug: pg.slug }), exact: { scopeId, cssRef: scopeId, rootClass: x.rootClass||'', rootStyle: x.rootStyle||'', rootLang: x.rootLang||'', rootDir: x.rootDir||'', html: x.html||'', css: x.css||'', fonts: [] }, found: d.found.slice(-1) });
+  }
+  prog.hidden = true;
+  if (!pages.length){ err.textContent = stopped ? t('Stopped before any page was copied.') : t('None of the pages could be copied.'); return null; }
+  rewriteAll();
+  const sharedCss = order.map(h => sheetCss[h] || '').join('\n') + '\n' + overrides;
+  const found = [
+    pages.length + ' ' + t('pages copied') + (skipped.length ? ', ' + skipped.length + ' ' + t('skipped') : '') + (stopped ? ' (' + t('stopped early') + ')' : ''),
+    order.length + ' ' + t('stylesheets shared across the pages') + ' (' + Math.round(sharedCss.length / 1024) + ' KB)' + (fonts.size ? ', ' + fonts.size + ' Google Fonts' : ''),
+    ...pages.map(p => (p.slug === 'index' ? '/' : '/' + p.slug) + ': “' + (p.meta.title || '').slice(0, 44) + '”')
+  ];
+  const warn = [rendered ? t('Pages were opened in a browser first, so content built by scripts is included.') : t('Pages were read as raw HTML; content built by scripts may be missing.')];
+  if (skipped.length) warn.push(t('Skipped') + ': ' + skipped.slice(0, 6).map(sk => { try { return new URL(sk.url).pathname; } catch { return sk.url; } }).join(', '));
+  warn.push(t('Scripts were removed: menus, sliders and forms that relied on them will not run. Links between the copied pages point at the new pages; other links still go to the original site.'));
+  return { site: { scopeId, sharedCss, fonts: [...fonts], pages, skipped }, found, warn };
+}
 async function runImport(){
   const url = ($('#importUrl').value||'').trim();
   const err = $('#importErr'); err.textContent = '';
   $('#importResult').hidden = true; importedPage = null;
   if (!url){ err.textContent = t('Paste a web address first.'); return; }
   const go = $('#importGo'); go.disabled = true; go.textContent = importMode==='exact' && importWhole ? t('Reading the site, this can take a while…') : t('Reading…');
+  if (importMode==='exact' && importWhole){
+    try{
+      const r = await importWholeSite(url);
+      if (r){
+        importedPage = { site: r.site };
+        $('#importUse').textContent = t('Create') + ' ' + r.site.pages.length + ' ' + t('drafts, one per page');
+        $('#importAppend').hidden = true;
+        $('#importFound').innerHTML = r.found.map(f => `<li>${esc(f)}</li>`).join('') + r.warn.map(w => `<li style="list-style:none;color:#8a5a12">⚠ ${esc(w)}</li>`).join('');
+        $('#importNote').textContent = t('Each page becomes its own draft (see Projects). Open one, edit text and pictures in place, then Export it as slug.html; the menus already link the pages to each other.');
+        $('#importResult').hidden = false;
+      }
+    }catch(e){ $('#importProgress').hidden = true; err.textContent = e && e.message === 'session' ? t('Your session has expired. Sign in again.') : t('Could not reach the server. Check your connection.'); }
+    finally{ go.disabled = false; go.textContent = t('Read the site'); }
+    return;
+  }
   try{
     const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, mode: importMode==='exact' ? (importWhole ? 'site' : 'exact') : 'blocks' }) });
     if (r.status === 401){ err.textContent = t('Your session has expired. Sign in again.'); return; }

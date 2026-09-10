@@ -2,8 +2,10 @@
   "name": "blinkloop-site",
   "private": true,
   "dependencies": {
+    "@sparticuz/chromium": "^152.0.0",
     "@vercel/blob": "^0.27.0",
     "node-html-parser": "^7.1.0",
+    "puppeteer-core": "^25.10.0",
     "web-push": "^3.6.7"
   }
 }
