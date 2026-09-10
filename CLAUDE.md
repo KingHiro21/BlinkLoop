@@ -116,11 +116,17 @@ is open. iPhone gets push only after Add to Home Screen. Unread: tab title, app 
   buttons (`--on-rust #2B140E`) 5.3. Brand rust `#F45D2A` is decorative only; never use it for body text or for
   light text on rust. Every public page has a skip link; decorative links inside `aria-hidden` get `tabindex="-1"`.
 
-## Contact form
+## Contact form and leads
 
-Posts JSON (as `text/plain` to avoid a CORS preflight) to a Google Apps Script web app URL — the
-`FORM_ENDPOINT` constant near the bottom of `index.html`, `hosting.html`, `work.html`. Honeypot field `website`.
-No FormSubmit, no Resend, no serverless mail. The script must be deployed with access "Anyone".
+Every contact form posts JSON to `/api/lead` (`FORM_ENDPOINT` in `index.html`, `hosting.html`, `work.html`; published builder
+sites post to `https://www.blinkloop-ph.com/api/lead?site=<slug>`, CORS is open for POST). `api/lead.js` validates (name, email,
+message, consent; honeypot `website` returns ok and drops), rate-limits per IP, stores the lead in Supabase `leads`
+(`supabase/leads.sql`, run once) and forwards the same payload to the Google Apps Script that emails info@ (`APPS_SCRIPT_URL`
+env, defaults to the known deployment; the harness sets it to `off`). Either half may fail without failing the visitor.
+`api/leads.js` (staff session) lists and updates status (new | contacted | quoted | won | lost); `admin.html` shows the list
+under the code generator. Shared helpers: `lib/db.js` (PostgREST fetch), `lib/session.js` (code check, body parsing).
+Analytics: `window.BL_ANALYTICS = { ga4, plausible }`; a Plausible domain loads cookieless with no banner (cookies.html has a
+paragraph for it), GA4 still asks first.
 
 ## Conventions (the founder cares about these)
 

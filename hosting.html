@@ -1655,7 +1655,7 @@ body{overflow-x:clip}
   var msg = document.getElementById('cfMsg'), btn = document.getElementById('cfSend');
   var MAIL = 'info@blinkloopph.com';
   /* Google Apps Script web app URL (ends in /exec). See blinkloop-form.gs for setup. */
-  var FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwx-J8d-zI2hFkrNYOrO0pjN9OlA0ZlY5uP-fo3LV-K9Ceb0seho_wxYuZFJrDsE65hXg/exec';
+  var FORM_ENDPOINT = '/api/lead'; /* stores the lead and forwards it to the Apps Script that emails info@ */
   function bad(el){ el.classList.add('bad'); el.setAttribute('aria-invalid','true'); el.addEventListener('input', function h(){ el.classList.remove('bad'); el.removeAttribute('aria-invalid'); el.removeEventListener('input', h); }); }
   function mailtoFallback(d){
     var subject = 'Website inquiry from ' + d.name.trim();
@@ -1676,10 +1676,10 @@ body{overflow-x:clip}
     if (d.website){ f.classList.add('sent'); msg.className='cf-msg ok'; msg.textContent='Got it. We reply within one business day.'; return; }
     btn.disabled = true; var old = btn.innerHTML; btn.textContent = 'Sending\u2026';
     try{
-      if (!/^https:\/\/script\.google\.com\//.test(FORM_ENDPOINT)) throw new Error('not-configured');
+      if (!FORM_ENDPOINT) throw new Error('not-configured');
       var payload = { name: d.name.trim(), email: d.email.trim(), business: (d.business||'').trim(), service: d.service, message: d.message.trim(), website: d.website || '', consent: 'yes', consentAt: new Date().toISOString(), page: location.pathname };
       /* text/plain keeps this a "simple" request (no CORS preflight), which is what Apps Script needs */
-      var r = await fetch(FORM_ENDPOINT, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload), redirect:'follow' });
+      var r = await fetch(FORM_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
       var j = {};
       var raw = '';
       try { raw = await r.text(); j = JSON.parse(raw); }
@@ -1731,7 +1731,7 @@ window.BL_CHAT = window.BL_CHAT || { messenger: '', whatsapp: '', viber: '' };
   document.body.appendChild(col);
 })();
 </script>
-<script>window.BL_ANALYTICS = { ga4: '' }; /* paste a GA4 Measurement ID (G-XXXXXXX) to enable analytics; visitors are asked first */</script>
+<script>window.BL_ANALYTICS = { ga4: '', plausible: '' }; /* paste a GA4 Measurement ID (G-XXXXXXX) to enable analytics; visitors are asked first */</script>
 <script src="/assets/consent.js" defer></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 /* BlinkLoop cookie consent + analytics loader.
-   Asks only when there is something to consent to: set window.BL_ANALYTICS.ga4 to a GA4 Measurement ID
+   Asks only when there is something to consent to: set window.BL_ANALYTICS.ga4 to a GA4 Measurement ID.
+   window.BL_ANALYTICS.plausible = "www.blinkloop-ph.com" loads Plausible (cookieless, no personal data, no banner needed).
    and the banner appears once per visitor (choice kept 12 months in localStorage "bl-consent").
    With no ID configured nothing is stored, nothing is loaded, no banner is shown.
    Global Privacy Control is honoured as "Essential only". Public API: BLConsent.open(), .status(), .reset() */
@@ -8,6 +9,8 @@
   var KEY = 'bl-consent', TTL = 365 * 86400000;
   var cfg = window.BL_ANALYTICS || {};
   var ga = String(cfg.ga4 || '').trim();
+  var pl = String(cfg.plausible || '').trim(); // Plausible is cookieless and needs no consent: it loads right away when a domain is set
+  if (pl){ var ps = document.createElement('script'); ps.defer = true; ps.setAttribute('data-domain', pl); ps.src = 'https://plausible.io/js/script.js'; document.head.appendChild(ps); }
   var gpc = navigator.globalPrivacyControl === true;
   var loaded = false, el = null;
 

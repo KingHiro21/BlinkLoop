@@ -70,6 +70,23 @@ button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
 .result .copied{font-size:.75rem;color:#2c7a4b;font-weight:600;min-height:1.1em;margin-top:6px}
 .err{color:#c0392b;font-size:.82rem;margin-top:14px;min-height:1.2em}
 .note{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted);line-height:1.6}
+/* leads */
+.card.wide{max-width:1040px;margin-top:22px}
+.leads-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.leads-head h2{font-family:'Unbounded';font-size:1rem;flex:1;min-width:160px}
+.leads-head select,.leads-head input{width:auto;padding:8px 12px;font-size:.84rem}
+.leads-head button{width:auto;margin:0;padding:9px 16px;font-size:.84rem}
+.leads-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.leads-table th{text-align:left;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+.leads-table td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+.leads-table td.msg{max-width:360px;white-space:pre-wrap;line-height:1.45}
+.leads-table select{width:auto;padding:6px 10px;font-size:.8rem;border-radius:999px}
+.leads-table .who b{display:block}
+.leads-table .who a{color:var(--rust-ink,#BD4218)}
+.leads-table .when{white-space:nowrap;color:var(--muted);font-size:.76rem}
+.st-new{color:#8a5a12;font-weight:700}.st-won{color:#2c7a4b;font-weight:700}.st-lost{color:#c0392b}
+.leads-empty{color:var(--muted);font-size:.86rem;padding:14px 0}
+@media (max-width:760px){ .leads-table thead{display:none} .leads-table tr{display:block;padding:10px 0;border-bottom:1px solid var(--line)} .leads-table td{display:block;border:none;padding:4px 0} .leads-table td.msg{max-width:none} }
 </style>
 </head>
 <body>
@@ -116,6 +133,18 @@ button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
   </div>
 
   <p class="note">Keep this page bookmarked, not linked from the site. The key is checked on the server, so this page holds no secrets. To revoke a code before its date, rotate LOOP_SECRET in Vercel (this invalidates every code, so regenerate the active ones).</p>
+</div>
+
+<div class="card wide" id="leadsCard">
+  <div class="leads-head">
+    <h2>Leads</h2>
+    <select id="leadStatus" aria-label="Filter by status"><option value="">All statuses</option><option value="new">New</option><option value="contacted">Contacted</option><option value="quoted">Quoted</option><option value="won">Won</option><option value="lost">Lost</option></select>
+    <input id="leadSite" placeholder="Site (blank = all)" aria-label="Filter by site" />
+    <button type="button" id="leadReload">Refresh</button>
+  </div>
+  <div class="leads-empty" id="leadsNote">Loading…</div>
+  <div style="overflow-x:auto"><table class="leads-table" id="leadsTable" hidden><thead><tr><th>When</th><th>Who</th><th>Needs</th><th>Message</th><th>Site</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+  <div class="note">Every contact form, on this site and on every site published from the builder, lands here and is also emailed to info@. Change a status to keep track; it is saved right away.</div>
 </div>
 
 <script>
@@ -168,6 +197,43 @@ $('#codeOut').addEventListener('click', async ()=>{
   try{ await navigator.clipboard.writeText($('#codeOut').textContent); $('#copied').textContent='Copied to clipboard'; }
   catch(e){ $('#copied').textContent='Select and copy manually'; }
 });
+
+/* ---- leads (needs a staff session: sign in at /login first) ---- */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function when(ts){
+  const d = new Date(ts); const diff = Date.now() - d.getTime();
+  if (diff < 3600000) return Math.max(1, Math.round(diff/60000)) + ' min ago';
+  if (diff < 86400000) return Math.round(diff/3600000) + ' h ago';
+  return d.toLocaleDateString('en-PH', {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString('en-PH', {hour:'2-digit', minute:'2-digit'});
+}
+const STATUSES = ['new','contacted','quoted','won','lost'];
+async function loadLeads(){
+  const note = $('#leadsNote'), table = $('#leadsTable'), tb = table.querySelector('tbody');
+  note.hidden = false; note.textContent = 'Loading…'; table.hidden = true;
+  const q = new URLSearchParams(); if ($('#leadStatus').value) q.set('status', $('#leadStatus').value); if ($('#leadSite').value.trim()) q.set('site', $('#leadSite').value.trim());
+  let d;
+  try{ const r = await fetch('/api/leads?' + q.toString()); if (r.status === 401){ note.innerHTML = 'Sign in at <a href="/login">/login</a> with your team code to see leads.'; return; } d = await r.json(); }
+  catch(e){ note.textContent = 'Could not reach the server.'; return; }
+  if (!d.ok){ note.textContent = d.reason === 'no-table' ? 'Run supabase/leads.sql in the Supabase SQL editor once, then refresh.' : d.reason === 'no-database' ? 'Supabase is not configured on the server.' : 'Could not load leads.'; return; }
+  if (!d.leads.length){ note.textContent = 'No leads yet. Every contact form submission will show up here.'; return; }
+  tb.innerHTML = d.leads.map(l => '<tr data-id="' + esc(l.id) + '">'
+    + '<td class="when">' + esc(when(l.ts)) + '</td>'
+    + '<td class="who"><b>' + esc(l.name) + '</b><a href="mailto:' + esc(l.email) + '">' + esc(l.email) + '</a>' + (l.phone ? '<br><a href="tel:' + esc(l.phone) + '">' + esc(l.phone) + '</a>' : '') + (l.business ? '<br><span style="color:var(--muted)">' + esc(l.business) + '</span>' : '') + '</td>'
+    + '<td>' + esc(l.service || '') + '</td>'
+    + '<td class="msg">' + esc(l.message) + (l.page ? '<br><span style="color:var(--muted);font-size:.72rem">from ' + esc(l.page) + '</span>' : '') + '</td>'
+    + '<td>' + esc(l.site) + '</td>'
+    + '<td><select data-status class="st-' + esc(l.status) + '">' + STATUSES.map(st => '<option value="' + st + '"' + (st === l.status ? ' selected' : '') + '>' + st[0].toUpperCase() + st.slice(1) + '</option>').join('') + '</select></td></tr>').join('');
+  note.hidden = true; table.hidden = false;
+}
+$('#leadsTable').addEventListener('change', async e => {
+  const sel = e.target.closest('select[data-status]'); if (!sel) return;
+  const id = sel.closest('tr').dataset.id; sel.disabled = true;
+  try{ const r = await fetch('/api/leads', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, status: sel.value }) }); const d = await r.json(); if (!d.ok) throw 0; sel.className = 'st-' + sel.value; }
+  catch(err){ alert('Could not save that status.'); }
+  sel.disabled = false;
+});
+$('#leadReload').addEventListener('click', loadLeads); $('#leadStatus').addEventListener('change', loadLeads); $('#leadSite').addEventListener('change', loadLeads);
+loadLeads();
 </script>
 </body>
 </html>
