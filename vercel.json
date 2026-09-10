@@ -38,5 +38,11 @@
   },
   "regions": [
     "sin1"
+  ],
+  "rewrites": [
+    {
+      "source": "/p/:slug/:key",
+      "destination": "/api/preview?s=:slug&k=:key"
+    }
   ]
 }

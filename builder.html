@@ -560,6 +560,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     </form>
     <div class="empty-note" style="padding:8px 0 0">We open the page in a browser, read its sections, cards, pictures, colours and fonts, and rebuild it as editable blocks in your design. Only import sites you own or have permission to rebuild.</div>
     <div class="toggle" id="importSiteWrap" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)"><label style="margin:0;font-size:.8rem;color:var(--ink)"><b>All pages</b>: every page linked from this address (up to 20), one draft per page, menus linking between them</label><button type="button" class="tg" id="importSite" role="switch" aria-checked="false"></button></div>
+    <label class="consent-row" style="display:flex;gap:10px;align-items:flex-start;margin-top:10px;font-size:.8rem;color:var(--ink);cursor:pointer"><input type="checkbox" id="importConsent" style="margin-top:3px;width:auto" /><span>I own this website, or the owner has given me permission to rebuild it. BlinkLoop keeps a record of who imported which address.</span></label>
     <div class="access-err" id="importErr"></div>
     <div id="importProgress" hidden style="margin:10px 0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)">
       <div style="display:flex;align-items:center;gap:10px"><span id="importProgressText" style="flex:1;font-size:.84rem;font-weight:600"></span><button type="button" class="tb-btn" id="importCancel" style="border:1px solid var(--line)">Stop here</button></div>
@@ -627,7 +628,8 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
         <input class="in" id="pubCustom" placeholder="own domain (optional): www.client.com" autocomplete="off" style="flex:1.3;min-width:200px" />
       </div>
       <div class="toggle" id="pubAllWrap" style="margin:0 0 10px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)" hidden><label style="margin:0;font-size:.8rem;color:var(--ink)">Publish <b>all pages in this folder</b> (<span id="pubAllCount">0</span>)</label><button type="button" class="tg on" id="pubAll" role="switch" aria-checked="true"></button></div>
-      <div class="row"><button class="tb-cta" id="doPublish">Publish</button><span id="pubStatus" style="font-size:.82rem;color:var(--muted)"></span></div>
+      <div class="row"><button class="tb-cta" id="doPublish">Publish</button><button type="button" class="tb-btn" id="doPreview" style="border:1px solid var(--line)" title="A private, unlisted link the client can open on any device">Private preview link</button><span id="pubStatus" style="font-size:.82rem;color:var(--muted)"></span></div>
+      <div id="prevOut" class="deploy-note" style="margin-top:10px" hidden></div>
       <div class="access-err" id="pubErr"></div>
       <div id="pubResult" class="deploy-note" hidden></div>
     </div>

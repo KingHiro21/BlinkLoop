@@ -8,7 +8,7 @@ const findChrome = require('./chrome');
 const BASE = harness.base;
 const only = (process.argv[2] || '').toLowerCase();
 const results = []; let browser;
-const PUBLIC = ['/', '/hosting', '/work', '/privacy', '/terms', '/cookies', '/refunds'];
+const PUBLIC = ['/', '/hosting', '/work', '/case-hwasung', '/case-core-migration', '/privacy', '/terms', '/cookies', '/refunds'];
 const INTERNAL = ['/login', '/admin', '/builder', '/team'];
 
 function assert(cond, msg){ if (!cond) throw new Error(msg || 'assertion failed'); }
@@ -90,7 +90,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     for (const p of ['/login', '/admin']){ await page.goto(BASE + p, { waitUntil: 'domcontentloaded' }); const r = await page.evaluate(() => (document.querySelector('meta[name="robots"]') || {}).content || ''); assert(/noindex/.test(r), p + ' robots=' + r); }
     await page.goto(BASE + '/sitemap.xml'); const xml = await page.evaluate(() => document.documentElement.outerHTML + document.body.textContent);
     for (const p of INTERNAL) assert(!xml.includes('blinkloop-ph.com' + p + '<') && !xml.includes('blinkloop-ph.com' + p + '/<'), p + ' is in the sitemap');
-    for (const p of ['/hosting', '/work', '/privacy', '/terms']) assert(xml.includes('blinkloop-ph.com' + p), p + ' missing from sitemap');
+    for (const p of ['/hosting', '/work', '/case-hwasung', '/case-core-migration', '/privacy', '/terms']) assert(xml.includes('blinkloop-ph.com' + p), p + ' missing from sitemap');
     await page.goto(BASE + '/robots.txt'); const rob = await page.evaluate(() => document.body.textContent);
     assert(/Sitemap:/.test(rob), 'robots.txt has no Sitemap line');
     await page.close();
@@ -218,7 +218,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   /* ---------------- importer ---------------- */
   await test('import: the sample WordPress site rebuilds as blocks with nav, hero and footer (needs Chrome, ~20s)', async () => {
     const page = await newPage(); await login(page);
-    const r = await page.evaluate(async () => (await fetch('/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: location.origin + '/__sample-wp', mode: 'blocks' }) })).json());
+    const r = await page.evaluate(async () => (await fetch('/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: location.origin + '/__sample-wp', mode: 'blocks', consent: true }) })).json());
     assert(r.ok, 'import failed: ' + JSON.stringify(r).slice(0, 300));
     const pg = r.page || {}; const types = (pg.blocks || []).map(b => b.type);
     assert(types.includes('navbar') && types.includes('hero') && types.includes('footer'), 'blocks: ' + types.join(','));
@@ -230,9 +230,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const page = await newPage(); await login(page);
     const r = await page.evaluate(async () => {
       const post = b => fetch('/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(r => r.json());
-      return { ftp: await post({ url: 'ftp://example.com/', mode: 'blocks' }), links: await post({ url: location.origin + '/__sample-wp', mode: 'links' }) };
+      return { ftp: await post({ url: 'ftp://example.com/', mode: 'blocks', consent: true }), noConsent: await post({ url: location.origin + '/__sample-wp', mode: 'blocks' }), links: await post({ url: location.origin + '/__sample-wp', mode: 'links', consent: true }) };
     });
     assert(!r.ftp.ok, 'ftp accepted');
+    assert(r.noConsent.ok === false && r.noConsent.reason === 'consent', 'import without consent was accepted: ' + JSON.stringify(r.noConsent));
     assert(r.links.ok && Array.isArray(r.links.pages) && r.links.pages.some(p => /menus/.test(p.url)), 'links ' + JSON.stringify(r.links).slice(0, 300));
     await page.close();
   });
@@ -306,6 +307,26 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.goto(BASE + '/admin', { waitUntil: 'load' }); await sleep(800);
     const r = await page.evaluate(() => ({ card: !!document.getElementById('leadsCard'), rows: document.querySelectorAll('#leadsCard tbody tr').length, text: document.getElementById('leadsCard') ? document.getElementById('leadsCard').innerText : '' }));
     assert(r.card, 'no #leadsCard on admin'); assert(r.rows >= 1 || /Ana|Ben/.test(r.text), 'leads not listed: ' + r.text.slice(0, 200));
+    await page.close();
+  });
+
+  /* ---------------- preview links ---------------- */
+  await test('preview: a signed-in user stores a page and the /p/ link serves it noindex; bad keys 404', async () => {
+    const page = await newPage(); await login(page);
+    const r = await page.evaluate(async () => {
+      const made = await (await fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: 'qa-cafe', html: '<!DOCTYPE html><html><head><title>QA preview</title></head><body><h1>Hello preview</h1></body></html>' }) })).json();
+      const got = await fetch(made.url); const html = await got.text();
+      const miss = await fetch('/p/qa-cafe/000000000000');
+      const badBody = await (await fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: 'qa-cafe', html: 'nope' }) })).json();
+      return { made, status: got.status, robots: got.headers.get('x-robots-tag'), html, miss: miss.status, badBody };
+    });
+    assert(r.made.ok && /^\/p\/qa-cafe\/[a-f0-9]{12}$/.test(r.made.url), 'make ' + JSON.stringify(r.made));
+    assert(r.status === 200 && /Hello preview/.test(r.html) && /noindex/.test(r.robots || ''), 'serve ' + JSON.stringify({ status: r.status, robots: r.robots }));
+    assert(r.miss === 404, 'unknown key answered ' + r.miss);
+    assert(r.badBody.reason === 'no-html', 'bad body ' + JSON.stringify(r.badBody));
+    await page.evaluate(() => fetch('/api/logout', { method: 'POST' }));
+    const anon = await page.evaluate(async () => (await fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: 'x-y', html: '<html></html>' }) })).status);
+    assert(anon === 401, 'anonymous preview creation answered ' + anon);
     await page.close();
   });
 

@@ -1132,6 +1132,11 @@ module.exports = async (req, res) => {
   let url = String(body.url || '').trim();
   if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
   try { new URL(url); } catch { return res.status(200).json({ ok:false, reason:'bad-url' }); }
+  /* every import is consented to and logged (who, what, when) so a takedown request can be answered */
+  if (body.action !== 'asset'){
+    if (!body.consent) return res.status(200).json({ ok:false, reason:'consent' });
+    console.log(JSON.stringify({ event:'import', client, url, mode: body.mode || 'blocks', ts: new Date().toISOString() }));
+  }
   if (body.action === 'asset'){
     try { const stored = await copyAsset(url, client); return res.status(200).json({ ok:true, url: stored }); }
     catch (e) { const msg = String(e && e.message || ''); return res.status(200).json({ ok:false, reason: /no-blob-store/.test(msg) ? 'no-blob-store' : /wrong-type/.test(msg) ? 'not-image' : /too-large/.test(msg) ? 'too-large' : 'failed' }); }

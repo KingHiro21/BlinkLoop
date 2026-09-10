@@ -15,10 +15,21 @@ process.env.SUPABASE_SERVICE_KEY = 'test-key';
 process.env.SUPABASE_ANON_KEY = 'anon-test-key';
 process.env.IMPORT_ALLOW_PRIVATE = '1';   // lets /api/import read the sample site served below (never set this in Vercel)
 process.env.APPS_SCRIPT_URL = 'off';      // never email the real inbox from a test
-delete process.env.VERCEL_TOKEN; delete process.env.ANTHROPIC_API_KEY; delete process.env.BLOB_READ_WRITE_TOKEN;
+delete process.env.VERCEL_TOKEN; delete process.env.ANTHROPIC_API_KEY;
+process.env.BLOB_READ_WRITE_TOKEN = 'test-blob'; // @vercel/blob is replaced below by an in-memory store
+const blobMem = new Map();
+try {
+  const blobId = require.resolve('@vercel/blob');
+  require.cache[blobId] = { id: blobId, filename: blobId, loaded: true, exports: {
+    put: async (p, data, o) => { blobMem.set(p, { data: Buffer.isBuffer(data) ? data : Buffer.from(String(data)), type: (o && o.contentType) || 'application/octet-stream' }); return { url: `http://localhost:${PORT}/__blob/${p}`, pathname: p }; },
+    list: async (o = {}) => ({ blobs: [...blobMem.keys()].filter(k => k.startsWith(o.prefix || '')).map(k => ({ url: `http://localhost:${PORT}/__blob/${k}`, pathname: k, size: blobMem.get(k).data.length })), hasMore: false }),
+    del: async (u) => { for (const x of [].concat(u)) blobMem.delete(String(x).replace(/^.*\/__blob\//, '')); },
+    head: async (u) => { const k = String(u).replace(/^.*\/__blob\//, ''); return blobMem.has(k) ? { url: u, pathname: k, size: blobMem.get(k).data.length } : null; }
+  } };
+} catch (e) { console.error('blob stub not installed:', e.message); }
 try { const wp = require('web-push'); const k = wp.generateVAPIDKeys(); process.env.VAPID_PUBLIC_KEY = k.publicKey; process.env.VAPID_PRIVATE_KEY = k.privateKey; process.env.VAPID_SUBJECT = 'mailto:test@example.com'; } catch {}
 
-const API_NAMES = ['login', 'me', 'logout', 'verify', 'generate', 'chat', 'presence', 'push', 'realtime', 'import', 'lead', 'leads', 'publish', 'ai'];
+const API_NAMES = ['login', 'me', 'logout', 'verify', 'generate', 'chat', 'presence', 'push', 'realtime', 'import', 'lead', 'leads', 'publish', 'ai', 'preview', 'upload'];
 const apis = {};
 for (const n of API_NAMES) { try { apis[n] = require(path.join(ROOT, 'api', n + '.js')); } catch (e) { console.error('api/' + n + '.js did not load:', e.message); } }
 const SAMPLE = path.join(__dirname, 'fixtures', 'sample-wp.html');
@@ -138,6 +149,9 @@ function start(port = PORT){
           if (u.pathname === '/__stats'){ res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify({ ...stats, rows: Object.fromEntries(Object.entries(db).map(([k, v]) => [k, v.length])) })); }
           if (u.pathname === '/__reset'){ for (const k in db) db[k] = []; stats.calls = 0; stats.byTable = {}; stats.pushes = []; stats.broadcasts = []; return res.end('ok'); }
           if (u.pathname === '/__code'){ return res.end(mintCode(u.searchParams.get('name') || 'TEST')); }
+          if (u.pathname.startsWith('/__blob/')){ const k = decodeURIComponent(u.pathname.slice(8)); const b = blobMem.get(k); if (!b){ res.statusCode = 404; return res.end('no blob'); } res.setHeader('Content-Type', b.type); return res.end(b.data); }
+          const pv = u.pathname.match(/^\/p\/([^/]+)\/([^/]+)$/); // vercel.json rewrite for preview links
+          if (pv && apis.preview){ req.query = { s: pv[1], k: pv[2] }; res.status = c => { res.statusCode = c; return res; }; res.json = o => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(o)); }; return apis.preview(req, res); }
           if (u.pathname === '/__sample-wp'){ res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.end(samplePage('')); }
           const pm = u.pathname.match(/^\/(menus|packages|gallery|about|contact)\/?$/);
           if (pm){ res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.end(samplePage(pm[1])); }

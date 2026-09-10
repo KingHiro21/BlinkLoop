@@ -342,6 +342,24 @@ async function publishSite(){
   finally{ btn.disabled = false; }
 }
 $('#doPublish').addEventListener('click', publishSite);
+/* Private preview link: the exported page goes to Blob through /api/preview and comes back as /p/<slug>/<key> (noindex). */
+async function previewLink(){
+  if(!clientMode){ closeModals(); renderAccessModal(true); openModal('accessModal'); return; }
+  const out = $('#prevOut'), btn = $('#doPreview'); out.hidden = false; out.textContent = t('Making the preview link…'); btn.disabled = true;
+  const sl = (($('#pubSlug').value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '')) || slug(state.meta.title || 'site');
+  try{
+    const r = await fetch('/api/preview', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug: sl, html: exportHTML() }) });
+    if (r.status === 401) throw new Error(t('Your session has expired. Sign in again.'));
+    const d = await r.json();
+    if (!d.ok){ const m = { 'no-blob-store': t('Preview links need the Blob store: add BLOB_READ_WRITE_TOKEN in Vercel.'), 'too-large': t('This page is too large for a preview link.'), 'bad-slug': t('Pick a name of 2 to 40 letters, numbers or dashes.') }; throw new Error(m[d.reason] || (t('Could not make the preview link') + (d.detail ? ': ' + d.detail : '.'))); }
+    const full = d.full || (location.origin + d.url);
+    out.innerHTML = '<b>' + t('Preview link') + '</b> <a href="' + escAttr(full) + '" target="_blank" rel="noopener">' + esc(full) + '</a> <button type="button" class="mini" id="prevCopy" title="' + t('Copy') + '">⧉</button><br><span style="font-size:.78rem">' + t('Unlisted and not indexed. Anyone with the link can view it; it shows this page as it is right now, so make a new one after changes.') + '</span>';
+    $('#prevCopy').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(full); toast(t('Link copied')); }catch(e){ toast(full); } });
+    if (!state.meta.previews) state.meta.previews = []; state.meta.previews.push({ url: full, at: Date.now() }); autosave();
+  }catch(e){ out.textContent = e && e.message || t('Could not make the preview link.'); }
+  finally{ btn.disabled = false; }
+}
+$('#doPreview').addEventListener('click', previewLink);
 $('#doExport').addEventListener('click', ()=>{
   if(!clientMode){ closeModals(); renderAccessModal(true); openModal('accessModal'); return; }
   let name = $('#exportName').value.trim() || 'index.html';
@@ -532,7 +550,7 @@ function normaliseImported(page){
   return blocks;
 }
 let importAbort = null;
-const IMPORT_ERR = d => ({ 'no-browser': t('Our server could not open this page in a browser') + (d.detail ? ' (' + d.detail + ')' : '') + '. ' + t('Try again in a minute. If you only need the plain HTML, turn on the raw HTML option above.'), 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.'));
+const IMPORT_ERR = d => ({ 'consent': t('Please confirm you own the site or have permission to rebuild it.'), 'no-browser': t('Our server could not open this page in a browser') + (d.detail ? ' (' + d.detail + ')' : '') + '. ' + t('Try again in a minute. If you only need the plain HTML, turn on the raw HTML option above.'), 'bad-url': t('That does not look like a web address.'), 'blocked-host': t('That address cannot be fetched from our server.'), 'not-html': t('That address is not a web page.'), 'not-found': t('The page could not be found (it may block bots or need a login).'), 'unreachable': t('The site did not respond.'), 'timeout': t('The site took too long to respond.') }[d.reason] || t('Could not read that site. Try its homepage address.'));
 /* top-level CSS rules (at-rule blocks kept whole) so identical rules from different pages can be stored once */
 function splitCssRules(css){
   const out = []; let depth = 0, start = 0, q = null;
@@ -550,7 +568,7 @@ function splitCssRules(css){
 const normUrlC = u => { try { const U = new URL(u); U.hash = ''; U.search = ''; return U.origin + U.pathname.replace(/\/index\.(html?|php)$/i, '/').replace(/\/+$/, ''); } catch { return ''; } };
 async function importWholeSite(url, mode = 'exact'){
   const err = $('#importErr'); const prog = $('#importProgress'); const txt = $('#importProgressText'); const bar = $('#importProgressBar');
-  const post = async body => { const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({ allowRaw: importRaw }, body)), signal: importAbort.signal }); if (r.status === 401) throw new Error('session'); return r.json(); };
+  const post = async body => { const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({ allowRaw: importRaw, consent: true }, body)), signal: importAbort.signal }); if (r.status === 401) throw new Error('session'); return r.json(); };
   importAbort = new AbortController(); let stopped = false;
   $('#importCancel').onclick = () => { stopped = true; importAbort.abort(); };
   prog.hidden = false; bar.style.width = '2%'; txt.textContent = t('Finding the pages of this site…');
@@ -608,6 +626,7 @@ async function runImport(){
   const err = $('#importErr'); err.textContent = '';
   $('#importResult').hidden = true; importedPage = null;
   if (!url){ err.textContent = t('Paste a web address first.'); return; }
+  if (!$('#importConsent').checked){ err.textContent = t('Please confirm you own the site or have permission to rebuild it.'); return; }
   const go = $('#importGo'); go.disabled = true; go.textContent = importMode==='exact' && importWhole ? t('Reading the site, this can take a while…') : t('Reading…');
   if (importWhole){
     try{
@@ -625,7 +644,7 @@ async function runImport(){
     return;
   }
   try{
-    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, mode: importMode==='exact' ? 'exact' : 'blocks', allowRaw: importRaw }) });
+    const r = await fetch('/api/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, mode: importMode==='exact' ? 'exact' : 'blocks', allowRaw: importRaw, consent: true }) });
     if (r.status === 401){ err.textContent = t('Your session has expired. Sign in again.'); return; }
     const d = await r.json();
     if (!d.ok){

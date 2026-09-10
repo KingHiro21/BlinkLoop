@@ -548,6 +548,21 @@ section{padding:120px 0;position:relative}
 .fopt span{color:var(--muted);font-size:.8rem}
 .fopt.hi{border-style:solid;border-color:color-mix(in srgb, var(--rust) 50%, transparent);background:var(--glass-strong)}
 .f-or{display:grid;place-items:center;font-family:'Unbounded',sans-serif;font-size:.66rem;font-weight:600;letter-spacing:.16em;color:var(--muted);padding:0 4px}
+/* process timeline + payment */
+.proc{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:0 0 28px;padding:0;counter-reset:none}
+.pstep{position:relative;background:var(--glass);border:1px solid var(--line);border-radius:22px;padding:24px 22px 22px}
+.pstep .pn{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--rust);color:var(--on-rust);font-family:'Unbounded',sans-serif;font-weight:700;font-size:.9rem;margin-bottom:16px}
+.pstep h3{font-size:1.02rem;margin-bottom:8px}
+.pstep p{color:var(--muted);font-size:.9rem;line-height:1.6}
+.pay{display:grid;grid-template-columns:minmax(180px,.8fr) 1.6fr;gap:22px 32px;align-items:start;background:var(--glass-strong);border:1px solid var(--line);border-radius:22px;padding:26px 28px}
+.pay-k{display:block;font-family:'Unbounded',sans-serif;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--rose-ink);margin-bottom:8px;font-weight:600}
+.pay h3{font-size:1.05rem}
+.pay p{color:var(--muted);font-size:.92rem;margin:0}
+.pay p a{color:var(--rust-ink);font-weight:600}
+.pay-methods{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.pay-methods span{font-size:.78rem;font-weight:700;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg)}
+@media (max-width:960px){ .proc{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:640px){ .proc{grid-template-columns:1fr} .pay{grid-template-columns:1fr;padding:22px} }
 .exgrid.three{grid-template-columns:repeat(3,1fr)}
 .ex-quote{font-size:.98rem;font-weight:600;color:var(--ink);margin-bottom:18px;font-style:italic}
 .ex .row.after{border-bottom:0;padding:8px 0 0;font-size:.84rem}
@@ -1086,6 +1101,28 @@ body{overflow-x:clip}
           <h3>Want us to maintain it?</h3>
           <p>Optional. Maintenance is included in the Business and Premium hosting plans, so your website stays updated and healthy without you touching it.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROCESS + PAYMENT ============ -->
+  <section id="process" aria-label="How a project runs and how you pay">
+    <div class="wrap">
+      <div class="sec-head reveal" style="margin-left:auto;margin-right:auto;text-align:center;max-width:600px">
+        <div class="sec-eyebrow c-rose" style="justify-content:center">From hello to launch</div>
+        <h2>What happens after you say yes</h2>
+        <p>Four steps, one written quote, no surprises. The specifics of your project live in that quote.</p>
+      </div>
+      <ol class="proc">
+        <li class="pstep reveal"><div class="pn">1</div><h3>Say hello</h3><p>Tell us what your business does and what the website has to do for you. We reply with a plan and a written quote: pages, features, price, timeline and revision rounds.</p></li>
+        <li class="pstep reveal"><div class="pn">2</div><h3>Deposit and kickoff</h3><p>Your quote states the payment schedule. Once the first payment is in, we gather your text, photos and logo and start the design.</p></li>
+        <li class="pstep reveal"><div class="pn">3</div><h3>Build in the open</h3><p>You get a private preview link early and often. Change your mind while it is cheap to change. Revision rounds are the ones listed in your quote.</p></li>
+        <li class="pstep reveal"><div class="pn">4</div><h3>Launch and handover</h3><p>We go live on your domain, hand over the files and accounts, and you own the site. Stay with us on hosting and care, or take it anywhere.</p></li>
+      </ol>
+      <div class="pay reveal">
+        <div class="pay-h"><span class="pay-k">How you pay</span><h3>GCash, Maya or bank transfer</h3></div>
+        <p>Payment details are on your invoice, and you get an invoice or receipt for every payment. Whether VAT applies is stated on your quote. No card numbers ever pass through our website. Full terms are in our <a href="/terms">Terms and Conditions</a> and <a href="/refunds">Refund Policy</a>.</p>
+        <div class="pay-methods" aria-label="Accepted payment methods"><span>GCash</span><span>Maya</span><span>Bank transfer</span></div>
       </div>
     </div>
   </section>
