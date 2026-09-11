@@ -174,25 +174,26 @@ mail setup. Other actions keep the plain HTML form (mailto GET or a custom POST 
 ## Page review before export or publish (builder)
 
 The builder reviews the finished page before anyone can download or publish it, so staff who are still learning
-cannot quietly ship something broken.  renders the real export in an offscreen frame at 390px and
- reads it the way a reviewer would. The panel sits above the buttons in the export
-modal (, );  asks for one confirmation before downloading or publishing a page
-that still has blockers, so shipping a broken page is a decision rather than an accident.
+cannot quietly ship something broken. `reviewPage(html)` renders the real export in an offscreen frame at 390px
+and `runChecks(doc, win, samples)` reads it the way a reviewer would. The panel sits above the buttons in the
+export modal (`#checkBox`, `runReview()`); `reviewGate()` asks for one confirmation before downloading or
+publishing a page that still has blockers, so shipping a broken page is a decision rather than an accident.
 
-Blockers: sample copy still on the page ( harvests every default string of 22 characters or more
-straight from , so the list maintains itself as blocks change), placeholder details ( patterns like
-you@email.com and +63 900 000 0000), text under 4.5:1 contrast (3:1 for large text), pictures with no alt
-attribute, no title, no search description, no h1, and sideways scroll on a phone. Warnings: very short or long
-title, short description, several h1s, skipped heading levels, tap targets under 32px, links still pointing at #.
+Blockers: sample copy still on the page (`sampleCopy()` harvests every default string of 22 characters or more
+straight from `BLOCKS`, so the list maintains itself as blocks change), placeholder details (the `DUMMY` patterns,
+you@email.com and the like), text under 4.5:1 contrast (3:1 for large text), pictures with no alt attribute, no
+title, no search description, no h1, and sideways scroll on a phone. Warnings: very short or long title, short
+description, several h1s, skipped heading levels, tap targets under 32px, links still pointing at #.
 
-Two traps that produced nonsense before they were handled, so do not undo them. Chrome reports  results
-as  where the parts run 0 to 1, not 0 to 255, so  scales that form.
-And a gradient is a background image, never a background colour, so the backdrop behind gradient buttons and photo
-heroes cannot be read:  skips that text rather than reporting a false failure. Builder chrome (the logo
-link, the menu button, footer link lists) is excluded because staff cannot change it from the inspector.
+Two measurement traps produced nonsense before they were handled, so do not undo them. Chrome reports
+`color-mix()` results as `color(srgb 0.55 0.47 0.47 / .62)`, where the parts run 0 to 1 and not 0 to 255, so
+`parseRGB` scales that form. And a gradient is a background image, never a background colour, so the backdrop
+behind gradient buttons and photo heroes cannot be read: `onGradient()` skips that text rather than reporting a
+false failure. Builder chrome (the logo link, the menu button, footer link lists) is excluded because staff
+cannot change any of it from the inspector.
 
-Writing this found a real fault in the builder's own defaults:  mixed 58% ink with the page and landed at
-4.0:1, under the minimum. It is now 70%. Keep both copies of that value in  in step.
+Writing this found a real fault in the builder's own defaults: `--muted` mixed 58% ink with the page and landed
+at 4.0:1, under the minimum it now enforces. It is 70%. Keep both copies of that value in `siteCSS` in step.
 
 ## Small things worth knowing (public site and builder)
 
