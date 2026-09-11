@@ -6,8 +6,8 @@
   --glass:rgba(251,235,221,.5); --line:rgba(127,32,39,.16);
 }
 :root[data-theme="dark"]{
-  --bg:#140806; --ink:#FAF4EA; --muted:#C9A395; --rust-ink:#F08A50;
-  --glass:rgba(250,244,234,.06); --line:rgba(250,244,234,.13);
+  --bg:#1E110C; --ink:#F1E7DC; --muted:#C2A091; --rust-ink:#F08A50;
+  --glass:rgba(250,244,234,.07); --line:rgba(250,244,234,.16);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 [hidden]{display:none !important}

@@ -113,6 +113,7 @@ is open. iPhone gets push only after Add to Home Screen. Unread: tab title, app 
 - Fonts are self-hosted (`@font-face` inlined in every page head, files in `assets/fonts/`, SIL OFL). Do not reintroduce the
   Google Fonts `<link>`; the Cookie Policy says fonts come from our own domain. There is deliberately no Unbounded
   latin-ext face: the peso sign alone pulled a 118KB file, and Sora latin-ext (12KB) renders it instead.
+- Dark theme (revised Sep 11, 2026 after both co-founders said it read too dark and too sharp): base `--bg #1E110C`, a warm dark in the logo's maroon family at 8% lightness. The old `#140806` was 5% lightness and 1.07:1 against pure black, so its warmth was invisible and cards, glass and hairlines all sat within 1.1:1 of the page. Body ink is `#F1E7DC` (15:1, down from 18:1: near-white on near-black halates and reads harsh), muted `#C2A091` (7.7:1), hairlines .16 and glass .07/.11 alpha so panels have edges. Accents clear 6.7:1 or better. All eight files carrying a dark palette share these values; change them together, and keep the `theme-color` meta in step with `--bg`.
 - Contrast (WCAG AA 4.5:1, light theme on #FFFCF7): `--rust-ink #BD4218` 5.2, `--muted #7E5D4C` 5.8, ink on rust
   buttons (`--on-rust #2B140E`) 5.3. Brand rust `#F45D2A` is decorative only; never use it for body text or for
   light text on rust. Every public page has a skip link; decorative links inside `aria-hidden` get `tabindex="-1"`.

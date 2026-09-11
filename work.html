@@ -69,13 +69,13 @@ select option:checked{background-color:var(--ink);color:var(--bg)}
   --rose-ink:#E2836B;
   --maroon-ink:#FFF7EF;
   --rust-ink:#F08A50;
-  --bg:#140806;
-  --bg-2:#1C0C08;
-  --ink:#FAF4EA;
-  --muted:#C9A395;
-  --glass:rgba(250,244,234,.05);
-  --glass-strong:rgba(250,244,234,.085);
-  --line:rgba(250,244,234,.12);
+  --bg:#1E110C;
+  --bg-2:#2A1811;
+  --ink:#F1E7DC;
+  --muted:#C2A091;
+  --glass:rgba(250,244,234,.07);
+  --glass-strong:rgba(250,244,234,.11);
+  --line:rgba(250,244,234,.16);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 [hidden]{display:none !important}   /* the hidden attribute must beat display rules on list items and links */
@@ -1424,7 +1424,7 @@ body{overflow-x:clip}
     document.documentElement.setAttribute('data-theme', t);
     if(themeBtn) themeBtn.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
     var mt = document.getElementById('metaTheme');
-    if(mt) mt.setAttribute('content', t === 'dark' ? '#140806' : '#FFFCF7');
+    if(mt) mt.setAttribute('content', t === 'dark' ? '#1E110C' : '#FFFCF7');
     if(persist){ try{ localStorage.setItem('bl-theme', t); }catch(err){} }
   };
   setTheme(document.documentElement.getAttribute('data-theme') || 'light', false);
