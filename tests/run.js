@@ -100,6 +100,62 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     }
   });
 
+  await test('the nav highlight follows the section you are reading and the lit pill stays in view', async () => {
+    const page = await newPage({ width: 390, height: 780 });
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; }); // the page scrolls smoothly; the test should not wait for it
+    await sleep(400);
+    const lit = () => page.evaluate(() => {
+      const a = document.querySelector('.nav-links a.active'); if (!a) return { lit: null };
+      const strip = document.getElementById('navLinks'), sr = strip.getBoundingClientRect(), ar = a.getBoundingClientRect();
+      return { lit: a.textContent.trim(), scrollable: strip.scrollWidth > strip.clientWidth + 2, inView: ar.left >= sr.left - 1 && ar.right <= sr.right + 1 };
+    });
+    assert((await lit()).lit === null, 'a pill is lit while still in the hero');
+    for (const [id, want] of [['how', 'How it works'], ['features', 'Features'], ['services', 'Services'], ['hosting', 'Pricing']]){
+      await page.evaluate(i => { const el = document.getElementById(i); window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.3); }, id);
+      await sleep(380);
+      const s = await lit();
+      assert(s.lit === want, `at #${id} the lit pill is "${s.lit}", expected "${want}"`);
+      assert(!s.scrollable || s.inView, `at #${id} the lit pill is scrolled out of the strip`);
+    }
+    await page.evaluate(() => window.scrollTo(0, 0)); await sleep(380);
+    assert((await lit()).lit === null, 'a pill is still lit after scrolling back to the hero');
+    await page.close();
+  });
+
+  await test('sub-pages arrive with their own nav pill lit and already scrolled into view', async () => {
+    for (const [path, want] of [['/hosting', 'Pricing'], ['/work', 'Work']]) for (const w of [390, 768, 1366]){
+      const page = await newPage({ width: w, height: 780 });
+      await page.goto(BASE + path, { waitUntil: 'load' }); await sleep(450);
+      const s = await page.evaluate(() => {
+        const a = document.querySelector('.nav-links a.active'); if (!a) return { lit: null };
+        const strip = document.getElementById('navLinks'), sr = strip.getBoundingClientRect(), ar = a.getBoundingClientRect();
+        return { lit: a.textContent.trim(), scrollable: strip.scrollWidth > strip.clientWidth + 2, inView: ar.left >= sr.left - 1 && ar.right <= sr.right + 1 };
+      });
+      assert(s.lit === want, `${path} at ${w}px: lit pill is "${s.lit}", expected "${want}"`);
+      assert(!s.scrollable || s.inView, `${path} at ${w}px: the "${want}" pill is off the strip on arrival`);
+      await page.close();
+    }
+  });
+
+  await test('the mark and wordmark sit a real flex gap apart, not double it', async () => {
+    // .brand picture{display:contents} once made the gap apply on both sides of the picture, so the lockup
+    // rendered at twice the declared spacing. Compare the measured gap with the declared one on every page.
+    for (const p of ['/', '/hosting', '/work']) for (const theme of ['light', 'dark']){
+      const page = await newPage({ width: 390, height: 600 });
+      await page.goto(BASE + p, { waitUntil: 'load' });
+      await page.evaluate(t => document.documentElement.setAttribute('data-theme', t), theme);
+      await sleep(200);
+      const g = await page.evaluate(() => {
+        const vis = s => [...document.querySelectorAll(s)].find(e => e.getBoundingClientRect().width > 0);
+        const icon = vis('.nav .brand-icon'), word = vis('.nav .brand-word');
+        return { gap: +(word.getBoundingClientRect().left - icon.getBoundingClientRect().right).toFixed(1), css: parseFloat(getComputedStyle(document.querySelector('.nav .brand')).gap) };
+      });
+      assert(Math.abs(g.gap - g.css) <= 1, `${p} ${theme}: lockup gap renders at ${g.gap}px for a declared ${g.css}px`);
+      await page.close();
+    }
+  });
+
   await test('dark theme renders on the homepage', async () => {
     const page = await newPage();
     await page.goto(BASE + '/', { waitUntil: 'load' });

@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/blinkloop-icon.png?v=3" />
+<link rel="icon" type="image/png" href="/assets/blinkloop-icon.png?v=4" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <meta name="theme-color" content="#F45D2A" />
-<link rel="apple-touch-icon" href="/assets/icon-180.png?v=3" />
+<link rel="apple-touch-icon" href="/assets/icon-180.png?v=4" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="BL Team" />
@@ -213,7 +213,7 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 </head>
 <body>
 <header>
-  <div class="brand"><img class="bicon wl" src="/assets/blinkloop-icon.png?v=3" alt="" width="272" height="210" /><img class="bicon wd" src="/assets/blinkloop-icon-dark.png?v=3" alt="" width="272" height="210" /><img class="bword wl" src="/assets/blinkloop-wordmark-transparent.png?v=3" alt="BlinkLoop" width="962" height="305" /><img class="bword wd" src="/assets/blinkloop-wordmark-dark.png?v=3" alt="BlinkLoop" width="962" height="305" /><em>Team</em></div>
+  <div class="brand"><img class="bicon wl" src="/assets/blinkloop-icon.png?v=4" alt="" width="272" height="210" /><img class="bicon wd" src="/assets/blinkloop-icon-dark.png?v=4" alt="" width="272" height="210" /><img class="bword wl" src="/assets/blinkloop-wordmark-transparent.png?v=4" alt="BlinkLoop" width="962" height="305" /><img class="bword wd" src="/assets/blinkloop-wordmark-dark.png?v=4" alt="BlinkLoop" width="962" height="305" /><em>Team</em></div>
   <div class="hright">
     <span id="onlineBar" title="Online now"></span>
     <span id="liveDot" class="live" title="Live: new messages appear instantly" hidden>live</span>
@@ -935,7 +935,7 @@ function localNotify(list){
     const m = list.find(x => mentionsMe(x.text)) || list[list.length-1];
     const n = new Notification(m.author+(mentionsMe(m.text)?' mentioned you':'')+' · BlinkLoop Team', {
       body: list.length>1 ? list.length+' new messages' : (m.text ? m.text.slice(0,120) : '📎 '+(m.att ? m.att.name : 'attachment')),
-      icon:'/assets/icon-192.png?v=3', tag:'bl-team'
+      icon:'/assets/icon-192.png?v=4', tag:'bl-team'
     });
     n.onclick = ()=>{ window.focus(); n.close(); };
   }catch(e){}
