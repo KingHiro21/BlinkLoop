@@ -156,6 +156,23 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     }
   });
 
+  await test('the footer stacks two across on phones and nothing spills out of its column', async () => {
+    for (const p of ['/', '/hosting', '/work']){
+      const page = await newPage({ width: 390, height: 800 });
+      await page.goto(BASE + p, { waitUntil: 'load' }); await sleep(250);
+      const m = await page.evaluate(() => {
+        const cols = [...document.querySelectorAll('.foot .foot-col')];
+        const over = cols.flatMap(c => { const cr = c.getBoundingClientRect(); return [...c.querySelectorAll('a, span')].filter(e => e.getBoundingClientRect().right > cr.right + 1).map(e => e.textContent.trim().slice(0, 40)); });
+        return { tops: cols.map(c => Math.round(c.getBoundingClientRect().top)), over, footer: Math.round(document.querySelector('footer').getBoundingClientRect().height), vh: window.innerHeight };
+      });
+      assert(m.tops.length >= 4, `${p}: expected four footer groups, found ${m.tops.length}`);
+      assert(new Set(m.tops).size < m.tops.length, `${p}: every footer group is on its own row again`);
+      assert(!m.over.length, `${p}: footer text runs outside its column: ${m.over.join(', ')}`);
+      assert(m.footer < m.vh * 1.35, `${p}: the footer is ${m.footer}px tall, over 1.35 screens`);
+      await page.close();
+    }
+  });
+
   await test('dark theme renders on the homepage', async () => {
     const page = await newPage();
     await page.goto(BASE + '/', { waitUntil: 'load' });

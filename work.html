@@ -940,9 +940,15 @@ body{overflow-x:clip}
   .page-top{padding-top:116px} /* header is ~110px tall here; keep the first heading close to it */
 }
 @media (max-width:640px){
-  footer{padding-top:48px}
-  .foot{grid-template-columns:1fr;gap:30px}
-  .foot-bottom{flex-direction:column;align-items:flex-start;gap:8px;margin-top:36px}
+  /* the link groups stay two across on phones: one column ran the footer past a screen and a half of scrolling */
+  footer{padding-top:44px}
+  .foot{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 18px} /* minmax(0,1fr), or a long label widens its column and squeezes the other */
+  .foot h4{margin-bottom:10px}
+  .foot ul{gap:8px}
+  .foot li{min-width:0} /* grid item: without this it refuses to shrink below the email address */
+  .foot li a,.foot li span{min-width:0;overflow-wrap:break-word}
+  .foot-brand p{font-size:.86rem;line-height:1.6}
+  .foot-bottom{flex-direction:column;align-items:flex-start;gap:8px;margin-top:32px}
 }
 </style>
 </head>
