@@ -301,7 +301,194 @@ function closeModals(){ $$('.modal-bg').forEach(m=>m.classList.remove('show')); 
 $('#exportBtn').addEventListener('click', ()=>{ preparePublish(); if (state.meta.slug) $('#exportName').value = state.meta.slug + '.html';
   if(!state.blocks.length) return toast(t('Your page is empty. Add a block first'));
   openModal('exportModal');
+  runReview();
 });
+/* ---------------------------------------------------------------------------
+   Page review. Renders the finished export in an offscreen frame and looks at it the way a careful
+   reviewer would, so staff who are still learning cannot quietly ship a page with unreadable text,
+   leftover sample copy or missing alt text. Everything is measured on the real thing, not guessed
+   from the block tree, so it catches problems that only appear once the CSS has been applied.
+--------------------------------------------------------------------------- */
+const REVIEW_W = 390;                       // a phone: the width that finds overflow and small tap targets
+const DUMMY = [/lorem ipsum/i, /your ?brand/i, /you@email\.com/i, /hello@yourbrand/i, /\+63 ?900 ?000 ?0000/i,
+  /your city/i, /example\.com/i, /full name/i, /customer name/i, /another customer/i, /client (one|two|three|four)/i,
+  /project (one|two|three)/i, /^step \d+$/i, /signature dish|house favourite/i];
+
+/* every long sample sentence the blocks ship with, so "they never replaced it" is detectable without a word list */
+function sampleCopy(){
+  const out = new Set();
+  const walk = v => {
+    if (typeof v === 'string'){ const t = v.replace(/\s+/g, ' ').trim(); if (t.length >= 22) out.add(t.toLowerCase()); return; }
+    if (Array.isArray(v)) return v.forEach(walk);
+    if (v && typeof v === 'object') return Object.values(v).forEach(walk);
+  };
+  Object.values(BLOCKS).forEach(b => walk(b.defaults));
+  return [...out];
+}
+
+const relLum = rgb => { const f = rgb.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2]; };
+function parseRGB(str){
+  const raw = String(str), m = raw.match(/[\d.]+/g);
+  if (!m) return null;
+  const n = m.map(Number);
+  if (/^color\(/i.test(raw)) return [n[0] * 255, n[1] * 255, n[2] * 255, n.length > 3 ? n[3] : 1];  /* 0 to 1 components */
+  return [n[0], n[1], n[2], n.length > 3 ? n[3] : 1];
+}
+/* A gradient is a background image, so it never shows up as a background colour and the real backdrop
+   cannot be read. Better to say nothing about that text than to cry wolf about a gradient button. */
+function onGradient(el, win){
+  let n = el;
+  while (n && n.nodeType === 1){
+    const bi = win.getComputedStyle(n).backgroundImage;
+    if (bi && bi !== 'none' && /gradient|url\(/i.test(bi)) return true;
+    if (n.tagName === 'BODY') break;
+    n = n.parentElement;
+  }
+  return false;
+}
+function contrast(fg, bg){ const a = relLum(fg) + 0.05, b = relLum(bg) + 0.05; return a > b ? a / b : b / a; }
+/* the colour actually behind an element: walk up until something is opaque, blending anything translucent on the way */
+function behind(el, win){
+  let layers = [], node = el;
+  while (node && node.nodeType === 1){
+    const c = parseRGB(win.getComputedStyle(node).backgroundColor);
+    if (c && c[3] > 0){ layers.push(c); if (c[3] >= 0.99) break; }
+    node = node.parentElement;
+  }
+  let out = [255, 255, 255];
+  for (let i = layers.length - 1; i >= 0; i--){ const [r, g, b, a] = layers[i]; out = [r * a + out[0] * (1 - a), g * a + out[1] * (1 - a), b * a + out[2] * (1 - a)]; }
+  return out;
+}
+const shorten = (t, n = 52) => { t = String(t).replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '\u2026' : t; };
+
+/* Runs the checks inside the frame and returns plain findings. Kept in one function so it can also be
+   called from tests against any exported page. */
+function runChecks(doc, win, samples){
+  const found = [];
+  const add = (level, title, where) => found.push({ level, title, where: where || '' });
+  const visible = el => { const r = el.getBoundingClientRect(); const st = win.getComputedStyle(el); return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && st.display !== 'none'; };
+
+  /* 1. sample copy nobody replaced */
+  const body = (doc.body.innerText || '').replace(/\s+/g, ' ').toLowerCase();
+  const leftovers = samples.filter(t => body.includes(t));
+  leftovers.slice(0, 4).forEach(t => add('blocker', 'Sample text is still on the page', '"' + shorten(t, 64) + '"'));
+  if (leftovers.length > 4){ const n = leftovers.length - 4; add('blocker', n + (n === 1 ? ' more piece of sample text is' : ' more pieces of sample text are') + ' still on the page', ''); }
+  const dummies = new Set();
+  DUMMY.forEach(re => { const m = doc.body.innerText.match(re); if (m) dummies.add(m[0]); });
+  [...dummies].slice(0, 4).forEach(d => add('blocker', 'Placeholder detail left in', '"' + shorten(d, 40) + '"'));
+
+  /* 2. text nobody can read */
+  const seen = new Set(); let lowCount = 0;
+  doc.body.querySelectorAll('p, h1, h2, h3, h4, li, a, span, div, button, figcaption, label, td, th').forEach(el => {
+    if (found.length > 120) return;
+    const own = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim()).map(n => n.textContent).join(' ').trim();
+    if (own.length < 3 || !visible(el)) return;
+    const st = win.getComputedStyle(el);
+    const fg = parseRGB(st.color); if (!fg || fg[3] === 0) return;
+    if (onGradient(el, win)) return;                     /* backdrop is a gradient or photo: unmeasurable, so stay quiet */
+    const size = parseFloat(st.fontSize) || 16, weight = parseInt(st.fontWeight, 10) || 400;
+    const large = size >= 24 || (size >= 18.66 && weight >= 700);
+    const need = large ? 3 : 4.5;
+    const ratio = contrast(fg.slice(0, 3), behind(el, win));
+    if (ratio < need){
+      const key = st.color + '|' + shorten(own, 20);
+      if (seen.has(key)) return; seen.add(key);
+      lowCount++;
+      if (lowCount <= 4) add('blocker', 'Text is hard to read, contrast ' + ratio.toFixed(1) + ' to 1 where ' + need + ' is the minimum', '"' + shorten(own) + '"');
+    }
+  });
+  if (lowCount > 4){ const n = lowCount - 4; add('blocker', n + (n === 1 ? ' more piece' : ' more pieces') + ' of low contrast text', ''); }
+
+  /* 3. pictures with nothing for a screen reader, or for when they fail to load */
+  const noAlt = [...doc.querySelectorAll('img')].filter(i => !i.hasAttribute('alt') && !i.closest('[aria-hidden="true"]'));
+  if (noAlt.length) add('blocker', noAlt.length === 1 ? 'A picture has no alt text' : noAlt.length + ' pictures have no alt text', noAlt.map(i => shorten(i.getAttribute('src') || '', 34)).slice(0, 2).join(', '));
+
+  /* 4. what search engines and shared links read */
+  const title = (doc.title || '').trim();
+  if (!title) add('blocker', 'The page has no title', 'Set it in the Design tab');
+  else if (title.length < 12) add('warning', 'The page title is very short', '"' + title + '"');
+  else if (title.length > 65) add('warning', 'The page title may be cut off in search results', title.length + ' characters');
+  const desc = (doc.querySelector('meta[name="description"]') || {}).content || '';
+  if (!desc.trim()) add('blocker', 'No search description', 'Add one in the SEO tab');
+  else if (desc.trim().length < 50) add('warning', 'The search description is very short', desc.trim().length + ' characters');
+  const h1s = [...doc.querySelectorAll('h1')].filter(visible);
+  if (!h1s.length) add('blocker', 'No main heading on the page', 'Every page needs one h1');
+  else if (h1s.length > 1) add('warning', h1s.length + ' main headings, search engines expect one', '');
+
+  /* 5. heading order, which is how screen readers build their outline */
+  let last = 0, jump = null;
+  [...doc.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(visible).forEach(h => {
+    const lvl = +h.tagName[1];
+    if (last && lvl > last + 1 && !jump) jump = { from: last, to: lvl, text: h.textContent };
+    last = lvl;
+  });
+  if (jump) add('warning', 'Heading levels skip from ' + jump.from + ' to ' + jump.to, '"' + shorten(jump.text) + '"');
+
+  /* 6. things you tap on a phone */
+  const small = [...doc.querySelectorAll('a, button')].filter(el => {
+    if (!visible(el)) return false;
+    if (el.closest('p, li, figcaption')) return false;            // links inside running text are fine
+    if (el.matches('.logo, .mtoggle') || el.closest('.logo')) return false;  // builder chrome, not editable copy
+    if (el.closest('.foot')) return false;                        // footer link lists are the builder's own styling
+    const r = el.getBoundingClientRect();
+    return r.height < 32 || r.width < 32;
+  });
+  if (small.length) add('warning', small.length === 1 ? 'A button or link is small for a fingertip' : small.length + ' buttons or links are small for a fingertip', shorten(small.map(e => e.textContent.trim()).filter(Boolean).slice(0, 2).join(', '), 44));
+
+  /* 7. links that go nowhere */
+  const dead = [...doc.querySelectorAll('a')].filter(a => { const h = (a.getAttribute('href') || '').trim(); return visible(a) && (!h || h === '#') && !a.matches('.logo') && !a.closest('.logo'); });
+  if (dead.length) add('warning', dead.length === 1 ? 'A link does not point anywhere yet' : dead.length + ' links do not point anywhere yet', shorten(dead.map(a => a.textContent.trim()).filter(Boolean).slice(0, 3).join(', '), 44));
+
+  /* 8. the page must never scroll sideways on a phone */
+  if (doc.documentElement.scrollWidth > win.innerWidth + 1)
+    add('blocker', 'The page scrolls sideways on a phone', 'Something is ' + (doc.documentElement.scrollWidth - win.innerWidth) + 'px wider than the screen');
+
+  return found;
+}
+
+/* Renders the export offscreen at phone width and reviews it. */
+async function reviewPage(html){
+  const frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden', 'true'); frame.setAttribute('tabindex', '-1');
+  frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + REVIEW_W + 'px;height:900px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(frame);
+  try{
+    frame.srcdoc = html;
+    await new Promise(res => { frame.onload = res; setTimeout(res, 4000); });
+    const doc = frame.contentDocument, win = frame.contentWindow;
+    if (!doc || !doc.body) return [{ level: 'warning', title: 'The page could not be reviewed', where: '' }];
+    await new Promise(r => setTimeout(r, 220));   // let the fonts and layout settle
+    return runChecks(doc, win, sampleCopy());
+  } catch (e){
+    return [{ level: 'warning', title: 'The review could not finish', where: String(e && e.message || e).slice(0, 80) }];
+  } finally { frame.remove(); }
+}
+
+let reviewState = { blockers: 0, warnings: 0, ran: false };
+async function runReview(){
+  const box = $('#checkBox'), title = $('#checkTitle'), list = $('#checkList');
+  if (!box) return;
+  box.className = 'check-box'; title.textContent = t('Checking this page…'); list.innerHTML = '';
+  const found = await reviewPage(exportHTML());
+  const blockers = found.filter(f => f.level === 'blocker'), warnings = found.filter(f => f.level === 'warning');
+  reviewState = { blockers: blockers.length, warnings: warnings.length, ran: true };
+  box.classList.add(blockers.length ? 'bad' : warnings.length ? 'warn' : 'good');
+  title.textContent = !found.length ? t('Nothing to fix. This page is ready.')
+    : (blockers.length ? blockers.length + ' ' + t(blockers.length === 1 ? 'thing to fix' : 'things to fix') : '')
+      + (blockers.length && warnings.length ? ' \u00b7 ' : '')
+      + (warnings.length ? warnings.length + ' ' + t(warnings.length === 1 ? 'thing worth a look' : 'things worth a look') : '');
+  const rows = blockers.concat(warnings).slice(0, 10);
+  list.innerHTML = rows.map(f => '<div class="check-item"><span class="ic">' + (f.level === 'blocker' ? '\u26a0' : '\u2022') + '</span><span><b>' + esc(f.title) + '</b>'
+    + (f.where ? '<span class="where">' + esc(f.where) + '</span>' : '') + '</span></div>').join('')
+    + (found.length > rows.length ? '<div class="check-more">' + (found.length - rows.length) + ' ' + t('more') + '</div>' : '');
+}
+$('#reCheck').addEventListener('click', runReview);
+/* One confirmation when something real is wrong, so shipping a broken page is a decision and not an accident. */
+function reviewGate(what){
+  if (!reviewState.ran || !reviewState.blockers) return true;
+  return confirm(t('This page has') + ' ' + reviewState.blockers + ' ' + t('things to fix') + '.\n\n' + t('Do you want to') + ' ' + what + ' ' + t('anyway?'));
+}
+
 /* Publishing: the exported HTML of this page (or every page of the folder) goes to /api/publish, which makes a Vercel
    project per site and attaches <slug>.blinkloop-ph.com. Contact blocks are pointed at the BlinkLoop leads endpoint first. */
 const LEAD_ENDPOINT = 'https://www.blinkloop-ph.com/api/lead';
@@ -326,6 +513,7 @@ $('#pubSlug').addEventListener('input', ()=>{ $('#pubHost').textContent = ($('#p
 $('#pubAll').addEventListener('click', ()=>{ const on = !$('#pubAll').classList.contains('on'); $('#pubAll').classList.toggle('on', on); $('#pubAll').setAttribute('aria-checked', String(on)); });
 async function publishSite(){
   if(!clientMode){ closeModals(); renderAccessModal(true); openModal('accessModal'); return; }
+  if(!reviewGate(t('publish it'))) return;
   const err = $('#pubErr'), st = $('#pubStatus'), btn = $('#doPublish'); err.textContent = ''; st.textContent = '';
   const sl = ($('#pubSlug').value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '');
   if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(sl)){ err.textContent = t('Pick a name of 2 to 40 letters, numbers or dashes.'); return; }
@@ -375,6 +563,7 @@ async function previewLink(){
 $('#doPreview').addEventListener('click', previewLink);
 $('#doExport').addEventListener('click', ()=>{
   if(!clientMode){ closeModals(); renderAccessModal(true); openModal('accessModal'); return; }
+  if(!reviewGate(t('download it'))) return;
   let name = $('#exportName').value.trim() || 'index.html';
   if(!/\.html?$/i.test(name)) name += '.html';
   download(name, exportHTML());

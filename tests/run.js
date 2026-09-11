@@ -304,6 +304,50 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     assert(!page.errors.length, 'script errors: ' + page.errors.join(' | '));
     await page.close();
   });
+  await test('builder: the page review catches an unfinished page and stays silent on a finished one', async () => {
+    const page = await newPage();
+    await login(page);
+    await page.goto(BASE + '/builder', { waitUntil: 'load' }); await sleep(800);
+
+    // straight out of the template: the sample copy is still everywhere
+    const raw = await page.evaluate(async () => {
+      state = freshState(); state.meta.draftId = uid(); state.meta.desc = '';
+      const mk = ty => ({ id: uid(), type: ty, props: clone(BLOCKS[ty].defaults) });
+      state.blocks = [mk('navbar'), mk('hero'), mk('features'), mk('contact'), mk('footer')];
+      return (await reviewPage(exportHTML())).map(f => f.level + '|' + f.title);
+    });
+    assert(raw.some(f => /sample text/i.test(f)), 'the review missed the untouched sample copy: ' + raw.join(' / '));
+    assert(raw.some(f => /placeholder/i.test(f)), 'the review missed the placeholder contact details');
+    assert(raw.some(f => /search description/i.test(f)), 'the review missed the empty search description');
+
+    // the same page, genuinely finished: the review must say nothing at all
+    const clean = await page.evaluate(async () => {
+      state = freshState(); state.meta.draftId = uid();
+      state.meta.title = 'Mabuhay Catering Cebu';
+      state.meta.desc = 'Filipino catering for weddings and corporate events in Cebu City, cooked fresh and served on time by a family team.';
+      const mk = (ty, p) => ({ id: uid(), type: ty, props: Object.assign(clone(BLOCKS[ty].defaults), p) });
+      state.blocks = [
+        mk('navbar', { brand: 'Mabuhay', brandAccent: 'Catering', cta: 'Book a tasting', ctaHref: '#contact', links: [{ label: 'Menu', href: '#menu' }, { label: 'Contact', href: '#contact' }] }),
+        mk('hero', { eyebrow: 'Cebu City', title: 'Food your guests will *remember*', sub: 'Family run catering for weddings and company events across Cebu, cooked the morning of your event.', primary: 'Book a tasting', primaryHref: '#contact', secondary: '', img: '' }),
+        mk('menu', { eyebrow: 'Menu', title: 'What we cook', note: 'Every quote covers staff, serving equipment and cleanup.',
+          items: [{ name: 'Lechon belly', desc: 'Slow roasted, carved at the venue.', price: '4200', tag: 'Most booked' },
+                  { name: 'Pancit bihon', desc: 'Rice noodles with pork and vegetables.', price: '1800', tag: '' }] }),
+        mk('contact', { title: 'Talk to us', sub: 'Tell us your date and headcount and we will send a quote the same day.', email: 'hello@mabuhaycatering.ph', phone: '+63 917 555 0101', where: 'Mandaue City, Cebu' }),
+        mk('footer', { brand: 'Mabuhay', brandAccent: 'Catering', tagline: 'Catering for weddings and company events in Cebu.', fine: '2026 Mabuhay Catering', links: [{ label: 'Menu', href: '#menu' }, { label: 'Contact', href: '#contact' }] })
+      ];
+      return (await reviewPage(exportHTML())).map(f => f.level + '|' + f.title + (f.where ? ' [' + f.where + ']' : ''));
+    });
+    assert(!clean.length, 'the review cried wolf on a finished page: ' + clean.join(' / '));
+
+    // and one real mistake is caught precisely
+    const bad = await page.evaluate(async () => {
+      state.blocks[2].props.bg = '#FFF4E8'; state.blocks[2].props.ink = '#F3D9B8';
+      return (await reviewPage(exportHTML())).map(f => f.level + '|' + f.title);
+    });
+    assert(bad.some(f => /hard to read/i.test(f)), 'pale text on a pale section went unnoticed: ' + bad.join(' / '));
+    await page.close();
+  });
+
   await test('builder: export is a full standalone page; section colours and custom CSS travel with it', async () => {
     const page = await newPage();
     await login(page);

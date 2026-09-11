@@ -113,7 +113,7 @@ function siteCSS(t){
 :root{
   --bg:${t.bg}; --ink:${t.ink}; --accent:${t.accent}; --accent2:${t.accent2}; --r:${t.radius}px;
   --secpad:${({compact:'60px',normal:'84px',roomy:'116px'})[t.density||'normal']};
-  --muted:color-mix(in srgb, var(--ink) 58%, var(--bg));
+  --muted:color-mix(in srgb, var(--ink) 70%, var(--bg)); /* 58% landed at 4.0:1 on the page, under the 4.5 the review enforces */
   --line:color-mix(in srgb, var(--ink) 16%, transparent);
   --card:color-mix(in srgb, var(--ink) 5%, var(--bg));
   --card-2:color-mix(in srgb, var(--ink) 9%, var(--bg));
@@ -409,7 +409,7 @@ section{padding:var(--secpad) 0}
 .has-bg-c{--bg:var(--sbg);background:var(--sbg)!important}
 .has-ink-c{--ink:var(--sink);color:var(--sink)}
 .has-ink-c :is(h1,h2,h3,h4,.stat .v,.price,.q .who b,.faq-item summary){color:var(--sink)}
-.has-bg-c,.has-ink-c{--muted:color-mix(in srgb, var(--ink) 58%, var(--bg));--line:color-mix(in srgb, var(--ink) 16%, transparent);--card:color-mix(in srgb, var(--ink) 5%, var(--bg));--card-2:color-mix(in srgb, var(--ink) 9%, var(--bg))}
+.has-bg-c,.has-ink-c{--muted:color-mix(in srgb, var(--ink) 70%, var(--bg));--line:color-mix(in srgb, var(--ink) 16%, transparent);--card:color-mix(in srgb, var(--ink) 5%, var(--bg));--card-2:color-mix(in srgb, var(--ink) 9%, var(--bg))}
 .vt-dark{background:color-mix(in srgb, var(--ink) 96%, black);color:var(--bg)}
 .vt-dark :is(h2,h3,.stat .v,.price){color:var(--bg)}
 .vt-dark :is(p,.sec-head p,.stat .l,.faq-item p,.quote p,.plan .period,.plan li){color:color-mix(in srgb, var(--bg) 76%, var(--ink))}

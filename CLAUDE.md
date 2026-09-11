@@ -171,6 +171,29 @@ mail setup. Other actions keep the plain HTML form (mailto GET or a custom POST 
   system prompt that forbids preambles, invented facts and em dashes. The result replaces the field value (undoable). Without the
   key the toast tells the founder to add `ANTHROPIC_API_KEY` in Vercel.
 
+## Page review before export or publish (builder)
+
+The builder reviews the finished page before anyone can download or publish it, so staff who are still learning
+cannot quietly ship something broken.  renders the real export in an offscreen frame at 390px and
+ reads it the way a reviewer would. The panel sits above the buttons in the export
+modal (, );  asks for one confirmation before downloading or publishing a page
+that still has blockers, so shipping a broken page is a decision rather than an accident.
+
+Blockers: sample copy still on the page ( harvests every default string of 22 characters or more
+straight from , so the list maintains itself as blocks change), placeholder details ( patterns like
+you@email.com and +63 900 000 0000), text under 4.5:1 contrast (3:1 for large text), pictures with no alt
+attribute, no title, no search description, no h1, and sideways scroll on a phone. Warnings: very short or long
+title, short description, several h1s, skipped heading levels, tap targets under 32px, links still pointing at #.
+
+Two traps that produced nonsense before they were handled, so do not undo them. Chrome reports  results
+as  where the parts run 0 to 1, not 0 to 255, so  scales that form.
+And a gradient is a background image, never a background colour, so the backdrop behind gradient buttons and photo
+heroes cannot be read:  skips that text rather than reporting a false failure. Builder chrome (the logo
+link, the menu button, footer link lists) is excluded because staff cannot change it from the inspector.
+
+Writing this found a real fault in the builder's own defaults:  mixed 58% ink with the page and landed at
+4.0:1, under the minimum. It is now 70%. Keep both copies of that value in  in step.
+
 ## Small things worth knowing (public site and builder)
 
 - Pricing page section `#process` ("What happens after you say yes"): four steps and a "How you pay" box naming GCash, Maya and

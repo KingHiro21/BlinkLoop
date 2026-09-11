@@ -413,6 +413,19 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 .modal .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .modal .in{background:var(--glass-strong);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 12px;font-size:.86rem}
 .modal .in:focus{outline:none;border-color:var(--rust)}
+.check-box{margin:14px 0 12px;padding:13px 15px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass)}
+.check-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.check-title{font-size:.82rem;font-weight:700}
+.check-box.good .check-title{color:#2c7a4b}
+.check-box.warn .check-title{color:#8a5a12}
+.check-box.bad .check-title{color:#c0392b}
+.check-list{display:grid;gap:7px;margin-top:10px}
+.check-list:empty{margin-top:0}
+.check-item{display:flex;gap:9px;align-items:flex-start;font-size:.79rem;line-height:1.5;color:var(--muted)}
+.check-item .ic{flex:none;width:15px;text-align:center;margin-top:1px}
+.check-item b{color:var(--ink);font-weight:600}
+.check-item .where{display:block;font-size:.73rem;opacity:.8;margin-top:1px}
+.check-more{font-size:.76rem;color:var(--muted);padding-left:24px}
 .pub-box{margin-top:18px;padding:16px;border:1px solid color-mix(in srgb, var(--rust) 45%, var(--line));border-radius:var(--r-md);background:color-mix(in srgb, var(--rust) 5%, var(--glass))}
 .deploy-note{margin-top:18px;padding:14px 16px;background:var(--glass);border:1px solid var(--line);border-radius:var(--r-md);font-size:.82rem;color:var(--muted);line-height:1.6}
 .deploy-note b{color:var(--ink)}
@@ -614,6 +627,13 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
     <div class="row" style="margin-bottom:6px">
       <label for="exportName" id="exNameL" style="font-size:.8rem;font-weight:600;color:var(--muted)">File name</label>
       <input class="in" id="exportName" style="flex:1;min-width:160px" value="index.html" />
+    </div>
+    <div class="check-box" id="checkBox">
+      <div class="check-head">
+        <span class="check-title" id="checkTitle">Checking this page…</span>
+        <button type="button" class="tb-btn" id="reCheck" style="border:1px solid var(--line);font-size:.76rem;padding:5px 10px">Check again</button>
+      </div>
+      <div id="checkList" class="check-list"></div>
     </div>
     <div class="row">
       <button class="tb-cta" id="doExport">Download HTML</button>
