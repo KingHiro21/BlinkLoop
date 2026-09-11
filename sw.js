@@ -15,8 +15,8 @@ self.addEventListener('push', e => {
     if (d.tag !== 'bl-test' && wins.some(c => c.focused && /\/team/.test(c.url))) return;
     await self.registration.showNotification(d.title || 'BlinkLoop Team', {
       body: d.body || 'New message',
-      icon: '/assets/icon-192.png',
-      badge: '/assets/badge-96.png',
+      icon: '/assets/icon-192.png?v=2',
+      badge: '/assets/badge-96.png?v=2',
       tag: d.tag || 'bl-team',
       renotify: true,
       data: { url: d.url || '/team' }

@@ -55,7 +55,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       ld: [...document.querySelectorAll('script[type="application/ld+json"]')].map(s => { try { JSON.parse(s.textContent); return true; } catch { return false; } }),
       h1: document.querySelectorAll('h1').length, skip: !!document.querySelector('a[href="#main"], .skip, .skip-link'), lang: document.documentElement.lang,
       emDash: (document.body.innerText.match(/—/g) || []).length,
-      brand: !!document.querySelector('header img[src="/assets/blinkloop-icon.png"], .brand img[src="/assets/blinkloop-icon.png"]'), favicon: ((document.querySelector('link[rel="icon"]') || {}).href || '').endsWith('/assets/blinkloop-icon.png')
+      brand: !!document.querySelector('header img[src^="/assets/blinkloop-icon.png"], .brand img[src^="/assets/blinkloop-icon.png"]'), favicon: ((document.querySelector('link[rel="icon"]') || {}).href || '').includes('/assets/blinkloop-icon.png')
     }));
     assert(seo.brand && seo.favicon, 'brand icon or favicon missing');
     assert(seo.title.length > 10 && seo.desc.length > 40, 'title/description missing');

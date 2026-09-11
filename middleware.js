@@ -36,6 +36,7 @@ export default async function middleware(request) {
   const m = cookie.match(/(?:^|;\s*)bl_session=([^;]+)/);
   const code = m ? decodeURIComponent(m[1]) : '';
   if (await validCode(code, process.env.LOOP_SECRET || '')) return; // signed in: serve the page
+  if (url.pathname.startsWith('/assets/builder/')) return new Response('', { status: 401 }); // builder scripts: refuse, no redirect
   const login = new URL('/login', url);
   login.searchParams.set('next', url.pathname.replace(/\.html$/, ''));
   return Response.redirect(login, 307);
