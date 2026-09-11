@@ -915,7 +915,7 @@ body{overflow-x:clip}
   /* compact header up to laptop width: solid bar, logo row, section pills underneath (nav never squeezes) */
   header{background:rgba(255,252,247,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom-color:var(--line)}
   [data-theme="dark"] header,[data-theme="dark"] header.scrolled{background:rgba(20,8,6,.94)}
-  .nav{height:auto;min-height:0;flex-wrap:wrap;padding:12px 0 0}
+  .nav{height:auto;min-height:0;flex-wrap:wrap;padding-top:12px;padding-bottom:0} /* never the padding shorthand: this element is also .wrap, and its side gutters keep the logo off the screen edge */
   .nav > .brand{order:1;height:40px;gap:9px}
   .brand-icon{width:30px}
   .brand-word{height:22px}
@@ -925,7 +925,7 @@ body{overflow-x:clip}
     order:3;flex:0 0 100%;position:static;inset:auto;transform:none;
     display:flex;flex-direction:row;align-items:center;gap:8px;
     background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;border:0;
-    margin-top:12px;padding:0 0 12px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;
+    margin:12px 0 0;padding:0 0 12px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;
     scrollbar-width:none;-webkit-overflow-scrolling:touch;
     -webkit-mask-image:linear-gradient(90deg,#000 94%,transparent);mask-image:linear-gradient(90deg,#000 94%,transparent);
   }

@@ -79,6 +79,27 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     }
   });
 
+  await test('the header never touches the screen edge on phones and tablets', async () => {
+    // the header bar is <div class="wrap nav">, so a padding shorthand on .nav once wiped .wrap's side gutters
+    // and the logo sat flush against the left edge from 1180px down. Guard the gutter on every public page.
+    for (const p of ['/', '/hosting', '/work']) for (const w of [320, 390, 768, 820, 1024, 1180]){
+      const page = await newPage({ width: w, height: 700 });
+      await page.goto(BASE + p, { waitUntil: 'load' });
+      const m = await page.evaluate(() => {
+        const icon = [...document.querySelectorAll('.nav .brand-icon')].find(i => getComputedStyle(i).display !== 'none');
+        const box = el => { const b = el.getBoundingClientRect(); return { l: +b.left.toFixed(1), r: +b.right.toFixed(1) }; };
+        return { gutter: parseFloat(getComputedStyle(document.querySelector('header .wrap')).paddingLeft),
+          icon: icon ? box(icon) : null, links: box(document.querySelector('.nav-links')), acts: box(document.querySelector('.nav-actions')), vw: innerWidth };
+      });
+      assert(m.icon, `${p} at ${w}px: no visible brand icon`);
+      assert(m.gutter >= 12, `${p} at ${w}px: header gutter is ${m.gutter}px`);
+      assert(m.icon.l >= m.gutter - 0.6, `${p} at ${w}px: logo at ${m.icon.l} is inside the ${m.gutter}px gutter`);
+      assert(m.links.r <= m.vw - m.gutter + 0.6, `${p} at ${w}px: pill strip reaches ${m.links.r} of ${m.vw}`);
+      assert(m.acts.r <= m.vw - m.gutter + 0.6, `${p} at ${w}px: header actions reach ${m.acts.r} of ${m.vw}`);
+      await page.close();
+    }
+  });
+
   await test('dark theme renders on the homepage', async () => {
     const page = await newPage();
     await page.goto(BASE + '/', { waitUntil: 'load' });
