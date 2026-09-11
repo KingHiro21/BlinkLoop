@@ -362,8 +362,8 @@ details.item-card .item-body{padding:0 11px 11px}
 .brand img{display:block}
 .brand .bicon{height:30px;width:auto;filter:drop-shadow(0 2px 8px rgba(127,32,39,.25))}
 .brand .bword{height:21px;width:auto}
-:root[data-theme="dark"] .bword.wl{display:none}
-:root:not([data-theme="dark"]) .bword.wd{display:none}
+:root[data-theme="dark"] .bword.wl,:root[data-theme="dark"] .bicon.wl{display:none}
+:root:not([data-theme="dark"]) .bword.wd,:root:not([data-theme="dark"]) .bicon.wd{display:none}
 .chip{
   padding:5px 13px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   border:1px solid;white-space:nowrap;transition:transform .2s var(--ease);
@@ -453,7 +453,7 @@ kbd{background:var(--glass-strong);border:1px solid var(--line);border-bottom-wi
 <div class="app">
   <div class="topbar">
     <a class="brand" href="/" title="Back to BlinkLoop">
-      <img class="bicon" src="/assets/blinkloop-icon.png?v=2" alt="BlinkLoop" />
+      <img class="bicon wl" src="/assets/blinkloop-icon.png?v=2" alt="BlinkLoop" /><img class="bicon wd" src="/assets/blinkloop-icon-dark.png?v=2" alt="BlinkLoop" />
       <img class="bword wl" src="/assets/blinkloop-wordmark-transparent.png?v=2" alt="" />
       <img class="bword wd" src="/assets/blinkloop-wordmark-dark.png?v=2" alt="" />
       <small>Builder</small></a>

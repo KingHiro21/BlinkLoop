@@ -150,6 +150,9 @@ header.scrolled{
 [data-staff="1"] .staff-link{display:inline-block}
 .brand picture{display:contents}
 .brand .bw-dark{display:none}
+.brand .bi-dark{display:none}
+[data-theme="dark"] .brand .bi-light{display:none}
+[data-theme="dark"] .brand .bi-dark{display:block}
 [data-theme="dark"] .brand .bw-light{display:none}
 [data-theme="dark"] .brand .bw-dark{display:contents}
 section[id]{scroll-margin-top:16px}
@@ -954,7 +957,7 @@ body{overflow-x:clip}
 <header id="header">
   <div class="wrap nav">
     <a href="#top" class="brand" aria-label="BlinkLoop home">
-      <img class="brand-icon" src="/assets/blinkloop-icon.png?v=2" alt="" width="34" height="26" />
+      <img class="brand-icon bi-light" src="/assets/blinkloop-icon.png?v=2" alt="" width="34" height="26" /><img class="brand-icon bi-dark" src="/assets/blinkloop-icon-dark.png?v=2" alt="" width="34" height="26" />
       <picture class="bw-light"><source type="image/webp" srcset="/assets/blinkloop-wordmark-240.webp?v=2" /><img class="brand-word" src="/assets/blinkloop-wordmark-transparent.png?v=2" alt="BlinkLoop" width="481" height="153" /></picture>
       <picture class="bw-dark"><source type="image/webp" srcset="/assets/blinkloop-wordmark-dark-240.webp?v=2" /><img class="brand-word" src="/assets/blinkloop-wordmark-dark.png?v=2" alt="BlinkLoop" width="481" height="153" /></picture>
     </a>
@@ -1120,7 +1123,7 @@ body{overflow-x:clip}
     <div class="foot">
       <div class="foot-brand">
         <a href="#top" class="brand">
-            <img class="brand-icon" src="/assets/blinkloop-icon.png?v=2" alt="" width="26" height="20" />
+            <img class="brand-icon bi-light" src="/assets/blinkloop-icon.png?v=2" alt="" width="26" height="20" /><img class="brand-icon bi-dark" src="/assets/blinkloop-icon-dark.png?v=2" alt="" width="26" height="20" />
             <picture class="bw-light"><source type="image/webp" srcset="/assets/blinkloop-wordmark-240.webp?v=2" /><img class="brand-word brand-word-sm" src="/assets/blinkloop-wordmark-transparent.png?v=2" alt="BlinkLoop" width="481" height="153" loading="lazy" /></picture>
             <picture class="bw-dark"><source type="image/webp" srcset="/assets/blinkloop-wordmark-dark-240.webp?v=2" /><img class="brand-word brand-word-sm" src="/assets/blinkloop-wordmark-dark.png?v=2" alt="BlinkLoop" width="481" height="153" loading="lazy" /></picture>
           </a>

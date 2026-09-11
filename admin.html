@@ -42,8 +42,8 @@ body{
 h1{font-family:'Unbounded';font-size:1.2rem;margin-bottom:6px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 h1 .bicon{height:30px;width:auto}
 h1 .bword{height:20px;width:auto}
-:root[data-theme="dark"] h1 .bword.wl{display:none}
-:root:not([data-theme="dark"]) h1 .bword.wd{display:none}
+:root[data-theme="dark"] h1 .bword.wl,:root[data-theme="dark"] h1 .bicon.wl{display:none}
+:root:not([data-theme="dark"]) h1 .bword.wd,:root:not([data-theme="dark"]) h1 .bicon.wd{display:none}
 h1 span{color:var(--rust)}
 .sub{color:var(--muted);font-size:.85rem;margin-bottom:22px}
 label{display:block;font-size:.74rem;font-weight:600;color:var(--muted);margin:14px 0 6px;letter-spacing:.03em;text-transform:uppercase}
@@ -101,7 +101,7 @@ button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
     <a href="/team" style="border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:.78rem;font-weight:600;color:var(--muted);text-decoration:none">Team</a>
     <a href="/login" style="border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:.78rem;font-weight:600;color:var(--muted);text-decoration:none">Account</a>
   </nav>
-  <h1><img class="bicon" src="/assets/blinkloop-icon.png?v=2" alt="" width="272" height="210" /><img class="bword wl" src="/assets/blinkloop-wordmark-transparent.png?v=2" alt="BlinkLoop" width="962" height="305" /><img class="bword wd" src="/assets/blinkloop-wordmark-dark.png?v=2" alt="BlinkLoop" width="962" height="305" /> <span style="color:var(--muted);font-weight:500">· Client Codes</span></h1>
+  <h1><img class="bicon wl" src="/assets/blinkloop-icon.png?v=2" alt="" width="272" height="210" /><img class="bicon wd" src="/assets/blinkloop-icon-dark.png?v=2" alt="" width="272" height="210" /><img class="bword wl" src="/assets/blinkloop-wordmark-transparent.png?v=2" alt="BlinkLoop" width="962" height="305" /><img class="bword wd" src="/assets/blinkloop-wordmark-dark.png?v=2" alt="BlinkLoop" width="962" height="305" /> <span style="color:var(--muted);font-weight:500">· Client Codes</span></h1>
   <p class="sub">Generate an access code after a customer pays. The code stops working by itself when the date passes.</p>
 
   <label for="key">Admin key</label>

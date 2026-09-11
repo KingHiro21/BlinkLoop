@@ -25,9 +25,9 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 .brand span{color:var(--rust)}
 .brand .bicon{height:30px;width:auto;filter:drop-shadow(0 2px 8px rgba(127,32,39,.25))}
 .brand .bword{height:21px;width:auto}
-.brand .bword.wd{display:none}
-:root[data-theme="dark"] .brand .bword.wl{display:none}
-:root[data-theme="dark"] .brand .bword.wd{display:inline}
+.brand .bword.wd,.brand .bicon.wd{display:none}
+:root[data-theme="dark"] .brand .bword.wl,:root[data-theme="dark"] .brand .bicon.wl{display:none}
+:root[data-theme="dark"] .brand .bword.wd,:root[data-theme="dark"] .brand .bicon.wd{display:inline}
 :root[data-theme="dark"] .brand .bicon{filter:drop-shadow(0 0 10px rgba(244,93,42,.5))}
 .legal-nav{display:flex;gap:6px;flex-wrap:wrap}
 .legal-nav a{font-size:.82rem;font-weight:600;text-decoration:none;padding:6px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}

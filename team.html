@@ -66,8 +66,8 @@ header{
 .brand{font-family:'Unbounded';font-weight:700;font-size:.98rem;display:inline-flex;align-items:center;gap:8px}
 .brand .bicon{height:26px;width:auto;filter:drop-shadow(0 2px 8px rgba(127,32,39,.25))}
 .brand .bword{height:17px;width:auto}
-:root[data-theme="dark"] .brand .bword.wl{display:none}
-:root:not([data-theme="dark"]) .brand .bword.wd{display:none}
+:root[data-theme="dark"] .brand .bword.wl,:root[data-theme="dark"] .brand .bicon.wl{display:none}
+:root:not([data-theme="dark"]) .brand .bword.wd,:root:not([data-theme="dark"]) .brand .bicon.wd{display:none}
 .brand span{color:var(--rust)}
 .brand em{font-style:normal;font-weight:500;font-size:.62rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-left:6px}
 .hright{display:flex;align-items:center;gap:14px;font-size:.82rem;color:var(--muted)}
@@ -213,7 +213,7 @@ footer{border-top:1px solid var(--line);background:var(--glass-strong);backdrop-
 </head>
 <body>
 <header>
-  <div class="brand"><img class="bicon" src="/assets/blinkloop-icon.png?v=2" alt="" width="272" height="210" /><img class="bword wl" src="/assets/blinkloop-wordmark-transparent.png?v=2" alt="BlinkLoop" width="962" height="305" /><img class="bword wd" src="/assets/blinkloop-wordmark-dark.png?v=2" alt="BlinkLoop" width="962" height="305" /><em>Team</em></div>
+  <div class="brand"><img class="bicon wl" src="/assets/blinkloop-icon.png?v=2" alt="" width="272" height="210" /><img class="bicon wd" src="/assets/blinkloop-icon-dark.png?v=2" alt="" width="272" height="210" /><img class="bword wl" src="/assets/blinkloop-wordmark-transparent.png?v=2" alt="BlinkLoop" width="962" height="305" /><img class="bword wd" src="/assets/blinkloop-wordmark-dark.png?v=2" alt="BlinkLoop" width="962" height="305" /><em>Team</em></div>
   <div class="hright">
     <span id="onlineBar" title="Online now"></span>
     <span id="liveDot" class="live" title="Live: new messages appear instantly" hidden>live</span>
