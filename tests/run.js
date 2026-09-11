@@ -54,8 +54,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       canonical: (document.querySelector('link[rel="canonical"]') || {}).href || '', robots: (document.querySelector('meta[name="robots"]') || {}).content || '',
       ld: [...document.querySelectorAll('script[type="application/ld+json"]')].map(s => { try { JSON.parse(s.textContent); return true; } catch { return false; } }),
       h1: document.querySelectorAll('h1').length, skip: !!document.querySelector('a[href="#main"], .skip, .skip-link'), lang: document.documentElement.lang,
-      emDash: (document.body.innerText.match(/—/g) || []).length
+      emDash: (document.body.innerText.match(/—/g) || []).length,
+      brand: !!document.querySelector('header img[src="/assets/blinkloop-icon.png"], .brand img[src="/assets/blinkloop-icon.png"]'), favicon: ((document.querySelector('link[rel="icon"]') || {}).href || '').endsWith('/assets/blinkloop-icon.png')
     }));
+    assert(seo.brand && seo.favicon, 'brand icon or favicon missing');
     assert(seo.title.length > 10 && seo.desc.length > 40, 'title/description missing');
     assert(seo.canonical.startsWith('https://www.blinkloop-ph.com/'), 'canonical ' + seo.canonical);
     assert(/index/.test(seo.robots), 'robots ' + seo.robots);

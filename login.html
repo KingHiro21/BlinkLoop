@@ -39,7 +39,11 @@ body{
   border:1px solid var(--line);border-radius:26px;padding:34px;text-align:center;
   box-shadow:0 20px 60px rgba(43,20,14,.14);
 }
-h1{font-family:'Unbounded';font-size:1.15rem;margin-bottom:6px}
+h1{font-family:'Unbounded';font-size:1.15rem;margin-bottom:6px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+h1 .bicon{height:30px;width:auto}
+h1 .bword{height:20px;width:auto}
+:root[data-theme="dark"] h1 .bword.wl{display:none}
+:root:not([data-theme="dark"]) h1 .bword.wd{display:none}
 h1 span{color:var(--rust)}
 h1 em{font-style:normal;font-weight:500;font-size:.68rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-left:4px}
 .sub{color:var(--muted);font-size:.88rem;margin-bottom:20px}
@@ -79,7 +83,7 @@ a.btnlike.ghost{background:transparent;border:1px solid var(--line);color:var(--
 </head>
 <body>
 <div class="card">
-  <h1>Blink<span>Loop</span> <em>Staff</em></h1>
+  <h1><img class="bicon" src="/assets/blinkloop-icon.png" alt="" width="272" height="210" /><img class="bword wl" src="/assets/blinkloop-wordmark-transparent.png" alt="BlinkLoop" width="962" height="305" /><img class="bword wd" src="/assets/blinkloop-wordmark-dark.png" alt="BlinkLoop" width="962" height="305" /> <em>Staff</em></h1>
 
   <div id="formBox">
     <p class="sub">Sign in with your team code to open the builder.</p>
