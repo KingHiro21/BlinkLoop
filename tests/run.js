@@ -173,6 +173,39 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     }
   });
 
+  await test('the mark and the letters share an optical centre', async () => {
+    // The wordmark file includes the long descender under "Loop", so centring the two boxes leaves the letters
+    // riding about 3px high. Measure the rendered ink: the centre of the mark against the centre of the letter
+    // bodies, ignoring that descender. Dark theme, because the check reads light ink on a dark bar.
+    for (const [path, w] of [['/', 390], ['/', 1366]]){
+      const page = await newPage({ width: w, height: 300 });
+      await page.evaluateOnNewDocument(() => { try { localStorage.setItem('bl-theme', 'dark'); } catch {} });
+      await page.goto(BASE + path, { waitUntil: 'load' }); await sleep(350);
+      const clip = await page.evaluate(() => { const b = document.querySelector('.nav .brand').getBoundingClientRect(); return { x: b.left - 4, y: b.top - 10, width: b.width + 8, height: b.height + 20 }; });
+      const shot = await page.screenshot({ clip, encoding: 'base64' });
+      const off = await page.evaluate(async b64 => {
+        const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+        const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+        const d = ctx.getImageData(0, 0, c.width, c.height).data, W = c.width, H = c.height;
+        const ink = (x, y) => { const i = (y * W + x) * 4; return 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2] > 70; };
+        const cols = []; for (let x = 0; x < W; x++){ let n = 0; for (let y = 0; y < H; y++) if (ink(x, y)) n++; cols.push(n); }
+        let best = null, run = 0;
+        for (let x = 0; x < W; x++){ if (cols[x] === 0){ run++; if (!best || run > best.len) best = { end: x, len: run }; } else run = 0; }
+        const split = best ? best.end - Math.floor(best.len / 2) : Math.floor(W / 2);
+        const bodyMid = (x0, x1) => {
+          const rows = []; for (let y = 0; y < H; y++){ let n = 0; for (let x = x0; x < x1; x++) if (ink(x, y)) n++; rows.push(n); }
+          const peak = Math.max.apply(null, rows); let a = -1, b = -1;
+          for (let y = 0; y < H; y++) if (rows[y] > peak * 0.22){ if (a < 0) a = y; b = y; }
+          return (a + b) / 2;
+        };
+        return (bodyMid(split, W) - bodyMid(0, split)) / (window.devicePixelRatio || 1);
+      }, shot);
+      assert(Math.abs(off) < 1.2, `${path} at ${w}px: the letters sit ${off.toFixed(2)}px off the mark's centre`);
+      await page.close();
+    }
+  });
+
   await test('dark theme renders on the homepage', async () => {
     const page = await newPage();
     await page.goto(BASE + '/', { waitUntil: 'load' });

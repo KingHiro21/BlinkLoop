@@ -41,7 +41,7 @@ body{
 }
 h1{font-family:'Unbounded';font-size:1.15rem;margin-bottom:6px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 h1 .bicon{height:30px;width:auto}
-h1 .bword{height:20px;width:auto}
+h1 .bword{height:20px;width:auto;transform:translateY(14.5%)} /* optical alignment: the wordmark file carries the long descender under "Loop", so centring the boxes leaves the letters riding high */
 :root[data-theme="dark"] h1 .bword.wl,:root[data-theme="dark"] h1 .bicon.wl{display:none}
 :root:not([data-theme="dark"]) h1 .bword.wd,:root:not([data-theme="dark"]) h1 .bicon.wd{display:none}
 h1 span{color:var(--rust)}

@@ -361,7 +361,7 @@ details.item-card .item-body{padding:0 11px 11px}
 /* v3: brand + access */
 .brand img{display:block}
 .brand .bicon{height:30px;width:auto;filter:drop-shadow(0 2px 8px rgba(127,32,39,.25))}
-.brand .bword{height:21px;width:auto}
+.brand .bword{height:21px;width:auto;transform:translateY(14.5%)} /* optical alignment: the wordmark file carries the long descender under "Loop", so centring the boxes leaves the letters riding high */
 :root[data-theme="dark"] .bword.wl,:root[data-theme="dark"] .bicon.wl{display:none}
 :root:not([data-theme="dark"]) .bword.wd,:root:not([data-theme="dark"]) .bicon.wd{display:none}
 .chip{

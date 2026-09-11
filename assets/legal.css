@@ -24,7 +24,7 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 .brand{font-family:'Unbounded',sans-serif;font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:10px}
 .brand span{color:var(--rust)}
 .brand .bicon{height:30px;width:auto;filter:drop-shadow(0 2px 8px rgba(127,32,39,.25))}
-.brand .bword{height:21px;width:auto}
+.brand .bword{height:21px;width:auto;transform:translateY(14.5%)} /* optical alignment: the wordmark file carries the long descender under "Loop", so centring the boxes leaves the letters riding high */
 .brand .bword.wd,.brand .bicon.wd{display:none}
 :root[data-theme="dark"] .brand .bword.wl,:root[data-theme="dark"] .brand .bicon.wl{display:none}
 :root[data-theme="dark"] .brand .bword.wd,:root[data-theme="dark"] .brand .bicon.wd{display:inline}
