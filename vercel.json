@@ -41,8 +41,48 @@
   ],
   "rewrites": [
     {
+      "source": "/api/login",
+      "destination": "/api/auth?fn=login"
+    },
+    {
+      "source": "/api/me",
+      "destination": "/api/auth?fn=me"
+    },
+    {
+      "source": "/api/logout",
+      "destination": "/api/auth?fn=logout"
+    },
+    {
+      "source": "/api/verify",
+      "destination": "/api/auth?fn=verify"
+    },
+    {
+      "source": "/api/generate",
+      "destination": "/api/auth?fn=generate"
+    },
+    {
+      "source": "/api/leads",
+      "destination": "/api/lead?fn=admin"
+    },
+    {
+      "source": "/api/publish",
+      "destination": "/api/site?fn=publish"
+    },
+    {
+      "source": "/api/preview",
+      "destination": "/api/site?fn=preview"
+    },
+    {
+      "source": "/api/ai",
+      "destination": "/api/site?fn=ai"
+    },
+    {
+      "source": "/api/upload",
+      "destination": "/api/site?fn=upload"
+    },
+    {
       "source": "/p/:slug/:key",
-      "destination": "/api/preview?s=:slug&k=:key"
+      "destination": "/api/site?fn=preview&s=:slug&k=:key"
     }
   ]
 }

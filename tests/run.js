@@ -116,6 +116,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.close();
   });
 
+  await test('deploy: api/ has at most 12 serverless functions (Vercel Hobby limit) and every rewritten route answers', async () => {
+    const files = require('fs').readdirSync(require('path').join(__dirname, '..', 'api')).filter(f => f.endsWith('.js'));
+    assert(files.length <= 12, files.length + ' functions in api/: ' + files.join(', '));
+    const page = await newPage();
+    await page.goto(BASE + '/login', { waitUntil: 'domcontentloaded' });
+    const r = await page.evaluate(async () => { const out = {}; for (const p of ['/api/login', '/api/me', '/api/logout', '/api/verify', '/api/generate', '/api/lead', '/api/leads', '/api/publish', '/api/ai', '/api/upload', '/api/chat', '/api/presence', '/api/push', '/api/realtime', '/api/import']) out[p] = (await fetch(p)).status; return out; });
+    for (const [p, st] of Object.entries(r)) assert(st !== 404 && st < 500, p + ' answered ' + st);
+    await page.close();
+  });
+
   /* ---------------- auth ---------------- */
   await test('auth: middleware redirects /builder and /team to /login without a session', async () => {
     const page = await newPage();

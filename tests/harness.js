@@ -29,9 +29,16 @@ try {
 } catch (e) { console.error('blob stub not installed:', e.message); }
 try { const wp = require('web-push'); const k = wp.generateVAPIDKeys(); process.env.VAPID_PUBLIC_KEY = k.publicKey; process.env.VAPID_PRIVATE_KEY = k.privateKey; process.env.VAPID_SUBJECT = 'mailto:test@example.com'; } catch {}
 
-const API_NAMES = ['login', 'me', 'logout', 'verify', 'generate', 'chat', 'presence', 'push', 'realtime', 'import', 'lead', 'leads', 'publish', 'ai', 'preview', 'upload'];
+/* the real functions, exactly the files Vercel deploys (Hobby plan: 12 at most, guarded by a test in tests/run.js) */
 const apis = {};
-for (const n of API_NAMES) { try { apis[n] = require(path.join(ROOT, 'api', n + '.js')); } catch (e) { console.error('api/' + n + '.js did not load:', e.message); } }
+for (const f of fs.readdirSync(path.join(ROOT, 'api')).filter(f => f.endsWith('.js'))){ const n = f.replace(/\.js$/, ''); try { apis[n] = require(path.join(ROOT, 'api', f)); } catch (e) { console.error('api/' + f + ' did not load:', e.message); } }
+/* vercel.json rewrites, applied like Vercel does: the source's query is merged into the destination's */
+function escRe(s){ return s.replace(/[.*+?^{}()|[\]\\]/g, function (m){ return '\\' + m; }); }
+const REWRITES = (JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8')).rewrites || []).map(r => { const names = []; const re = new RegExp('^' + escRe(r.source).replace(/:(\w+)/g, function (m, n){ names.push(n); return '([^/]+)'; }) + '$'); return { re, names, destination: r.destination }; });
+function applyRewrites(u){
+  for (const r of REWRITES){ const m = u.pathname.match(r.re); if (!m) continue; let dest = r.destination; r.names.forEach((n, i) => { dest = dest.split(':' + n).join(m[i + 1]); }); const d = new URL(dest, 'http://x'); for (const [k, val] of u.searchParams) if (!d.searchParams.has(k)) d.searchParams.set(k, val); return d; }
+  return u;
+}
 const SAMPLE = path.join(__dirname, 'fixtures', 'sample-wp.html');
 
 /* ---- staff codes: same HMAC as api/login and middleware.js ---- */
@@ -150,15 +157,14 @@ function start(port = PORT){
           if (u.pathname === '/__reset'){ for (const k in db) db[k] = []; stats.calls = 0; stats.byTable = {}; stats.pushes = []; stats.broadcasts = []; return res.end('ok'); }
           if (u.pathname === '/__code'){ return res.end(mintCode(u.searchParams.get('name') || 'TEST')); }
           if (u.pathname.startsWith('/__blob/')){ const k = decodeURIComponent(u.pathname.slice(8)); const b = blobMem.get(k); if (!b){ res.statusCode = 404; return res.end('no blob'); } res.setHeader('Content-Type', b.type); return res.end(b.data); }
-          const pv = u.pathname.match(/^\/p\/([^/]+)\/([^/]+)$/); // vercel.json rewrite for preview links
-          if (pv && apis.preview){ req.query = { s: pv[1], k: pv[2] }; res.status = c => { res.statusCode = c; return res; }; res.json = o => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(o)); }; return apis.preview(req, res); }
           if (u.pathname === '/__sample-wp'){ res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.end(samplePage('')); }
           const pm = u.pathname.match(/^\/(menus|packages|gallery|about|contact)\/?$/);
           if (pm){ res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.end(samplePage(pm[1])); }
           if (u.pathname === '/__sample-wp.css'){ res.setHeader('Content-Type', 'text/css; charset=utf-8'); return res.end(fs.readFileSync(SAMPLE.replace(/\.html$/, '.css'))); }
-          const m = u.pathname.match(/^\/api\/(\w+)$/);
+          const ru = applyRewrites(u);
+          const m = ru.pathname.match(/^\/api\/(\w+)$/);
           if (m && apis[m[1]]){
-            req.body = body; req.query = Object.fromEntries(u.searchParams.entries());
+            req.url = ru.pathname + ru.search; req.body = body; req.query = Object.fromEntries(ru.searchParams.entries());
             res.status = c => { res.statusCode = c; return res; }; res.json = o => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(o)); };
             return Promise.resolve(apis[m[1]](req, res)).catch(e => { console.error('api/' + m[1] + ' threw:', e); if (!res.headersSent){ res.statusCode = 500; res.end(JSON.stringify({ ok: false, reason: 'threw', detail: String(e && e.message) })); } });
           }
